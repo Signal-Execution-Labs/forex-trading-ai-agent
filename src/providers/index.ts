@@ -196,3 +196,15 @@ export function parseModelRef(ref: string): { provider: string; model: string } 
     model: parts.slice(1).join('/')
   };
 }
+
+// LLM Client
+export { 
+  LLMClient, 
+  createLLMClient, 
+  LLMMessage, 
+  ChatOptions, 
+  ChatResponse,
+  StreamChunk,
+  ToolCall,
+  ToolDefinition 
+} from './llm-client';
