@@ -69,6 +69,7 @@ kit/
 |--------|------------------|--------|
 | 🪙 **Crypto** | Binance, Kraken, Coinbase, OKX, Bybit | ✅ Ready |
 | 💱 **Forex** | MetaTrader 4/5, RoboForex, OANDA, IC Markets | ✅ Ready |
+| 🎯 **Binary Options** | BinaryFaster | ✅ Ready |
 | 📈 **Stocks** | Interactive Brokers, Alpaca | 🚧 In Progress |
 | 📊 **ETFs** | Same as Stocks | 🚧 In Progress |
 | 🏦 **DeFi** | Uniswap, Aave, Lido | 📋 Planned |

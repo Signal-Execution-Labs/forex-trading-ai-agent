@@ -336,6 +336,122 @@ ${c.green}╔══════════════════════�
       console.log(`\n${c.yellow}→ MetaTrader 5 selected. Python packages will be installed automatically.${c.reset}`);
       this.pythonPackages.push('MetaTrader5', 'pandas', 'numpy');
     }
+
+    // Binary Options
+    console.log(`\n${c.magenta}Binary Options:${c.reset}\n`);
+    
+    const enableBinary = await this.askYesNo(`  ${c.cyan}BinaryFaster${c.reset} (Binary Options Trading)?`, false);
+    
+    if (enableBinary) {
+      console.log(`
+${c.cyan}━━━ BinaryFaster Setup ━━━${c.reset}
+
+${c.yellow}BinaryFaster is a binary options trading platform.${c.reset}
+Website: https://binaryfaster.com
+`);
+      
+      const email = await this.ask(`  ${c.cyan}Email:${c.reset} `);
+      const password = await this.ask(`  ${c.cyan}Password:${c.reset} `);
+      
+      if (email && password) {
+        console.log(`\n  ${c.yellow}Connecting to BinaryFaster...${c.reset}`);
+        
+        // Try to login
+        try {
+          const axios = (await import('axios')).default;
+          const loginResp = await axios.post('https://wsauto.binaryfaster.com/automation/auth/login', {
+            email,
+            password
+          });
+          
+          const data = loginResp.data;
+          
+          // Check if 2FA required
+          if (data.requires_2fa || data.two_factor_required || !data.api_key) {
+            console.log(`\n  ${c.yellow}🔐 Two-Factor Authentication required${c.reset}`);
+            const twoFactorCode = await this.ask(`  ${c.cyan}Enter 2FA code from your authenticator:${c.reset} `);
+            
+            // Login with 2FA
+            const login2FAResp = await axios.post('https://wsauto.binaryfaster.com/automation/auth/login', {
+              email,
+              password,
+              two_factor_code: twoFactorCode,
+              totp_code: twoFactorCode
+            });
+            
+            if (login2FAResp.data.api_key) {
+              this.config.exchanges!.binaryfaster = {
+                enabled: true,
+                type: 'binary',
+                email,
+                apiKey: login2FAResp.data.api_key
+              };
+              console.log(`  ${c.green}✓ BinaryFaster connected!${c.reset}`);
+              
+              // Get balance
+              try {
+                const balanceResp = await axios.get('https://wsauto.binaryfaster.com/automation/user/balance', {
+                  headers: { 'x-api-key': login2FAResp.data.api_key }
+                });
+                console.log(`  ${c.green}Balance: $${balanceResp.data.real || balanceResp.data.balance}${c.reset}`);
+              } catch {}
+            } else {
+              console.log(`  ${c.red}✗ 2FA verification failed${c.reset}`);
+            }
+          } else if (data.api_key) {
+            this.config.exchanges!.binaryfaster = {
+              enabled: true,
+              type: 'binary',
+              email,
+              apiKey: data.api_key
+            };
+            console.log(`  ${c.green}✓ BinaryFaster connected!${c.reset}`);
+            
+            // Get balance
+            try {
+              const balanceResp = await axios.get('https://wsauto.binaryfaster.com/automation/user/balance', {
+                headers: { 'x-api-key': data.api_key }
+              });
+              console.log(`  ${c.green}Balance: $${balanceResp.data.real || balanceResp.data.balance}${c.reset}`);
+            } catch {}
+          }
+        } catch (error: any) {
+          const errMsg = error.response?.data?.message || error.message;
+          
+          // Check if 2FA required in error
+          if (errMsg?.includes('2FA') || errMsg?.includes('two-factor') || error.response?.data?.requires_2fa) {
+            console.log(`\n  ${c.yellow}🔐 Two-Factor Authentication required${c.reset}`);
+            const twoFactorCode = await this.ask(`  ${c.cyan}Enter 2FA code from your authenticator:${c.reset} `);
+            
+            try {
+              const axios = (await import('axios')).default;
+              const login2FAResp = await axios.post('https://wsauto.binaryfaster.com/automation/auth/login', {
+                email,
+                password,
+                two_factor_code: twoFactorCode,
+                totp_code: twoFactorCode
+              });
+              
+              if (login2FAResp.data.api_key) {
+                this.config.exchanges!.binaryfaster = {
+                  enabled: true,
+                  type: 'binary',
+                  email,
+                  apiKey: login2FAResp.data.api_key
+                };
+                console.log(`  ${c.green}✓ BinaryFaster connected!${c.reset}`);
+              }
+            } catch (e2: any) {
+              console.log(`  ${c.red}✗ Login failed: ${e2.response?.data?.message || e2.message}${c.reset}`);
+            }
+          } else {
+            console.log(`  ${c.red}✗ Login failed: ${errMsg}${c.reset}`);
+            console.log(`  ${c.yellow}You can configure manually later in ~/.kit/config.json${c.reset}`);
+          }
+        }
+      }
+      console.log('');
+    }
   }
 
   private async stepTradingMode(): Promise<void> {
