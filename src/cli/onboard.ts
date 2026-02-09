@@ -277,14 +277,15 @@ ${c.yellow}All API keys are stored locally and never transmitted.${c.reset}
     }
 
     // Forex brokers
-    console.log(`\n${c.magenta}Forex Brokers (MetaTrader):${c.reset}\n`);
+    console.log(`\n${c.magenta}Forex Brokers (MetaTrader 5):${c.reset}\n`);
+    console.log(`${c.yellow}💡 Tip: K.I.T. supports ALL MT5 brokers!${c.reset}\n`);
     
     const forexBrokers = [
-      { id: 'roboforex', name: 'RoboForex', server: 'RoboForex-Demo' },
-      { id: 'icmarkets', name: 'IC Markets', server: 'ICMarketsSC-Demo' },
-      { id: 'pepperstone', name: 'Pepperstone', server: 'Pepperstone-Demo' },
-      { id: 'xm', name: 'XM', server: 'XMGlobal-Demo' },
-      { id: 'custom_mt5', name: 'Other MT5 Broker', server: '' },
+      { id: 'roboforex', name: 'RoboForex', server: 'RoboForex-Demo', affiliate: true },
+      { id: 'icmarkets', name: 'IC Markets', server: 'ICMarketsSC-Demo', affiliate: false },
+      { id: 'pepperstone', name: 'Pepperstone', server: 'Pepperstone-Demo', affiliate: false },
+      { id: 'xm', name: 'XM', server: 'XMGlobal-Demo', affiliate: false },
+      { id: 'custom_mt5', name: 'Other MT5 Broker', server: '', affiliate: false },
     ];
 
     let mt5Selected = false;
@@ -294,6 +295,25 @@ ${c.yellow}All API keys are stored locally and never transmitted.${c.reset}
       if (enable) {
         mt5Selected = true;
         this.config.exchanges[broker.id] = { enabled: true, type: 'mt5' };
+        
+        // Show RoboForex affiliate message
+        if (broker.id === 'roboforex') {
+          console.log(`
+${c.green}╔═══════════════════════════════════════════════════════════════╗
+║  ${c.bright}💚 Support K.I.T. Development!${c.reset}${c.green}                               ║
+║                                                               ║
+║  If you're opening a new RoboForex account, please use        ║
+║  our affiliate code to support K.I.T. development:            ║
+║                                                               ║
+║  ${c.bright}${c.yellow}    Affiliate Code: jjlu${c.reset}${c.green}                                   ║
+║                                                               ║
+║  ${c.reset}Register at: ${c.cyan}https://roboforex.com/?a=jjlu${c.reset}${c.green}                 ║
+║                                                               ║
+║  ${c.reset}This helps us keep K.I.T. free and actively developed!${c.green}      ║
+╚═══════════════════════════════════════════════════════════════╝${c.reset}
+`);
+          await this.ask(`${c.cyan}Press Enter to continue...${c.reset}`);
+        }
         
         const login = await this.ask(`    ${c.cyan}MT5 Login/Account:${c.reset} `);
         const password = await this.ask(`    ${c.cyan}MT5 Password:${c.reset} `);
