@@ -1,0 +1,50 @@
+# K.I.T. AI/ML Skills Requirements
+# ================================
+
+# Machine Learning Core
+numpy>=1.24.0
+pandas>=2.0.0
+scikit-learn>=1.3.0
+
+# Deep Learning
+tensorflow>=2.15.0
+# torch>=2.0.0  # Alternative to TensorFlow
+
+# XGBoost for Ensemble
+xgboost>=2.0.0
+
+# Statistics
+scipy>=1.11.0
+statsmodels>=0.14.0
+
+# NLP / Sentiment Analysis
+transformers>=4.35.0
+nltk>=3.8.0
+textblob>=0.17.0
+
+# Social Media APIs
+tweepy>=4.14.0
+praw>=7.7.0
+
+# HTTP/Async
+aiohttp>=3.8.0
+httpx>=0.25.0
+
+# Exchange Connectivity
+ccxt>=4.0.0
+
+# Technical Analysis
+# ta-lib>=0.4.0  # Requires separate installation
+pandas-ta>=0.3.14
+
+# Utilities
+python-dotenv>=1.0.0
+pyyaml>=6.0.0
+tqdm>=4.66.0
+
+# Logging/Monitoring
+loguru>=0.7.0
+
+# Optional: GPU Support
+# tensorflow-gpu>=2.15.0
+# torch+cuda  # For CUDA support
