@@ -123,6 +123,12 @@ export const PROTOCOL_METHODS = {
   MESSAGE_SEND: 'send',
   MESSAGE_HISTORY: 'history',
   
+  // Chat (AI Agent interaction)
+  CHAT_SEND: 'chat.send',
+  CHAT_HISTORY: 'chat.history',
+  CHAT_ABORT: 'chat.abort',
+  CHAT_STREAM: 'chat.stream',
+  
   // Memory
   MEMORY_SEARCH: 'memory.search',
   MEMORY_GET: 'memory.get',
@@ -163,6 +169,15 @@ export const PROTOCOL_EVENTS = {
   AGENT_TOOL_RESULT: 'agent.tool_result',
   AGENT_COMPLETE: 'agent.complete',
   AGENT_ERROR: 'agent.error',
+  
+  // Chat streaming
+  CHAT_START: 'chat.start',
+  CHAT_CHUNK: 'chat.chunk',
+  CHAT_TOOL_CALL: 'chat.tool_call',
+  CHAT_TOOL_RESULT: 'chat.tool_result',
+  CHAT_COMPLETE: 'chat.complete',
+  CHAT_ABORTED: 'chat.aborted',
+  CHAT_ERROR: 'chat.error',
   
   // Presence
   PRESENCE_UPDATE: 'presence',
