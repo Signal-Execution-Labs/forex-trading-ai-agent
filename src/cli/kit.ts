@@ -49,13 +49,57 @@ program
   .command('start')
   .alias('gateway')
   .description('Start the K.I.T. gateway')
-  .option('-p, --port <port>', 'Port to listen on', '18790')
+  .option('-p, --port <port>', 'Port to listen on', '18799')
+  .option('-h, --host <host>', 'Host to bind to', '127.0.0.1')
   .option('-d, --detach', 'Run in background')
+  .option('-t, --token <token>', 'Gateway auth token')
   .action(async (options) => {
-    console.log('🚀 Starting K.I.T. Gateway...');
-    // TODO: Implement gateway start
-    console.log(`   Port: ${options.port}`);
-    console.log('   (Gateway implementation in progress)');
+    const { createGatewayServer } = await import('../gateway/server');
+    const { loadConfig } = await import('../config');
+    
+    // Load config and merge with CLI options
+    const config = loadConfig();
+    
+    const gatewayConfig = {
+      port: parseInt(options.port, 10) || config.gateway.port,
+      host: options.host || config.gateway.host,
+      token: options.token || config.gateway.token,
+      stateDir: KIT_HOME,
+      workspaceDir: path.join(KIT_HOME, 'workspace'),
+      agent: config.agent,
+      heartbeat: config.heartbeat,
+      cron: config.cron,
+      memory: config.memory,
+    };
+    
+    if (options.detach) {
+      // Run in background using spawn
+      const { spawn } = await import('child_process');
+      const child = spawn(process.execPath, [__filename, 'start', '-p', String(gatewayConfig.port)], {
+        detached: true,
+        stdio: 'ignore',
+      });
+      child.unref();
+      
+      console.log(`🚀 K.I.T. Gateway started in background (PID: ${child.pid})`);
+      console.log(`   Endpoint: ws://${gatewayConfig.host}:${gatewayConfig.port}`);
+      process.exit(0);
+    }
+    
+    // Start gateway in foreground
+    const gateway = createGatewayServer(gatewayConfig);
+    
+    await gateway.start();
+    
+    // Graceful shutdown
+    const shutdown = async () => {
+      console.log('\n👋 Shutting down K.I.T. Gateway...');
+      await gateway.stop();
+      process.exit(0);
+    };
+    
+    process.on('SIGINT', shutdown);
+    process.on('SIGTERM', shutdown);
   });
 
 // ═══════════════════════════════════════════════════════════════
@@ -64,17 +108,122 @@ program
 program
   .command('status')
   .description('Check K.I.T. system status')
-  .action(async () => {
+  .option('-j, --json', 'Output as JSON')
+  .action(async (options) => {
+    const configExists = fs.existsSync(path.join(KIT_HOME, 'config.json'));
+    const workspaceExists = fs.existsSync(path.join(KIT_HOME, 'workspace'));
+    
+    // Try to connect to gateway
+    let gatewayStatus = 'offline';
+    let gatewayHealth: any = null;
+    
+    try {
+      const { loadConfig } = await import('../config');
+      const config = loadConfig();
+      const ws = await import('ws');
+      
+      const client = new ws.default(`ws://${config.gateway.host}:${config.gateway.port}`);
+      
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          client.close();
+          reject(new Error('Connection timeout'));
+        }, 2000);
+        
+        client.on('open', () => {
+          clearTimeout(timeout);
+          client.send(JSON.stringify({
+            type: 'req',
+            id: 'status_check',
+            method: 'connect',
+            params: {}
+          }));
+        });
+        
+        client.on('message', (data) => {
+          try {
+            const response = JSON.parse(data.toString());
+            if (response.ok) {
+              gatewayStatus = 'online';
+              gatewayHealth = response.payload?.health;
+            }
+          } catch {}
+          client.close();
+          resolve();
+        });
+        
+        client.on('error', () => {
+          clearTimeout(timeout);
+          reject(new Error('Connection failed'));
+        });
+      });
+    } catch {
+      // Gateway not running
+    }
+    
+    if (options.json) {
+      console.log(JSON.stringify({
+        version: VERSION,
+        config: configExists,
+        workspace: workspaceExists,
+        gateway: {
+          status: gatewayStatus,
+          health: gatewayHealth,
+        },
+      }, null, 2));
+      return;
+    }
+    
     console.log(`
 🤖 K.I.T. Status
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Version:     ${VERSION}
-Config:      ${fs.existsSync(path.join(KIT_HOME, 'config.json')) ? '✅ Found' : '❌ Not found'}
-Workspace:   ${fs.existsSync(path.join(KIT_HOME, 'workspace')) ? '✅ Found' : '❌ Not found'}
-
-Run 'kit onboard' to configure K.I.T.
+Config:      ${configExists ? '✅ Found' : '❌ Not found'}
+Workspace:   ${workspaceExists ? '✅ Found' : '❌ Not found'}
+Gateway:     ${gatewayStatus === 'online' ? '🟢 Online' : '🔴 Offline'}
+${gatewayHealth ? `
+  Uptime:    ${Math.floor(gatewayHealth.uptime / 1000)}s
+  Clients:   ${gatewayHealth.clients}
+  Sessions:  ${gatewayHealth.sessions}
+` : ''}
+${!configExists ? "Run 'kit onboard' to configure K.I.T." : ''}
+${gatewayStatus === 'offline' ? "Run 'kit start' to start the gateway." : ''}
 `);
+  });
+
+// ═══════════════════════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════════════════════
+program
+  .command('dashboard')
+  .alias('ui')
+  .description('Open K.I.T. dashboard in browser')
+  .option('-p, --port <port>', 'Dashboard port', '18800')
+  .action(async (options) => {
+    const { loadConfig } = await import('../config');
+    const config = loadConfig();
+    
+    const dashboardPort = parseInt(options.port, 10);
+    const gatewayUrl = `ws://${config.gateway.host}:${config.gateway.port}`;
+    
+    console.log('🎛️  Starting K.I.T. Dashboard...');
+    console.log(`   Gateway: ${gatewayUrl}`);
+    console.log(`   Dashboard: http://localhost:${dashboardPort}`);
+    
+    // Start dashboard server
+    const { startDashboard } = await import('../dashboard/server');
+    
+    try {
+      await startDashboard({
+        port: dashboardPort,
+        gatewayUrl,
+        openBrowser: true,
+      });
+    } catch (error: any) {
+      console.error('❌ Failed to start dashboard:', error.message);
+      process.exit(1);
+    }
   });
 
 // ═══════════════════════════════════════════════════════════════

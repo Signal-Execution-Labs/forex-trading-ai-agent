@@ -25,6 +25,7 @@ interface DashboardConfig {
   port: number;
   gatewayUrl?: string;
   staticDir?: string;
+  openBrowser?: boolean;
 }
 
 interface ChatMessage {
@@ -86,9 +87,30 @@ export class DashboardServer {
     // Connect to K.I.T. Gateway
     this.connectToGateway();
     
-    server.listen(this.config.port, () => {
-      console.log(`🖥️  K.I.T. Dashboard running at http://localhost:${this.config.port}`);
+    server.listen(this.config.port, async () => {
+      const url = `http://localhost:${this.config.port}`;
+      console.log(`🖥️  K.I.T. Dashboard running at ${url}`);
       console.log(`📡 Gateway URL: ${this.config.gatewayUrl}`);
+      
+      // Open browser if requested
+      if (this.config.openBrowser) {
+        try {
+          const { exec } = await import('child_process');
+          const platform = process.platform;
+          
+          const command = platform === 'win32' ? `start ${url}`
+            : platform === 'darwin' ? `open ${url}`
+            : `xdg-open ${url}`;
+          
+          exec(command, (error) => {
+            if (error) {
+              console.log(`   Open ${url} in your browser`);
+            }
+          });
+        } catch {
+          console.log(`   Open ${url} in your browser`);
+        }
+      }
     });
   }
   

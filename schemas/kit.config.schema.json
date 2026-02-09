@@ -1,0 +1,356 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/kayzaa/k.i.t.-bot/schemas/kit.config.schema.json",
+  "title": "K.I.T. Configuration",
+  "description": "Configuration schema for K.I.T. - Knight Industries Trading AI Agent Framework",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "JSON Schema reference"
+    },
+    "version": {
+      "type": "string",
+      "description": "Configuration version",
+      "default": "1.0.0"
+    },
+    "agent": {
+      "type": "object",
+      "description": "AI Agent configuration",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique agent identifier",
+          "default": "main"
+        },
+        "name": {
+          "type": "string",
+          "description": "Agent display name",
+          "default": "K.I.T."
+        },
+        "description": {
+          "type": "string",
+          "description": "Agent description"
+        },
+        "model": {
+          "type": "string",
+          "description": "Default AI model (provider/model format)",
+          "examples": ["anthropic/claude-sonnet-4-20250514", "openai/gpt-4o", "openrouter/anthropic/claude-3.5-sonnet"]
+        },
+        "systemPrompt": {
+          "type": "string",
+          "description": "System prompt for the agent"
+        }
+      },
+      "required": ["id", "name"]
+    },
+    "gateway": {
+      "type": "object",
+      "description": "Gateway server configuration",
+      "properties": {
+        "host": {
+          "type": "string",
+          "description": "Host to bind to",
+          "default": "127.0.0.1"
+        },
+        "port": {
+          "type": "integer",
+          "description": "Port to listen on",
+          "default": 18799,
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "token": {
+          "type": "string",
+          "description": "Authentication token"
+        },
+        "ssl": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean", "default": false },
+            "cert": { "type": "string", "description": "Path to SSL certificate" },
+            "key": { "type": "string", "description": "Path to SSL key" }
+          }
+        }
+      }
+    },
+    "ai": {
+      "type": "object",
+      "description": "AI provider configuration",
+      "properties": {
+        "defaultProvider": {
+          "type": "string",
+          "description": "Default AI provider",
+          "enum": ["anthropic", "openai", "openrouter", "google", "ollama", "groq", "mistral", "deepseek", "xai"],
+          "default": "anthropic"
+        },
+        "defaultModel": {
+          "type": "string",
+          "description": "Default model to use",
+          "default": "claude-sonnet-4-20250514"
+        },
+        "providers": {
+          "type": "object",
+          "description": "Provider-specific configurations",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "apiKey": { "type": "string", "description": "API key for the provider" },
+              "baseUrl": { "type": "string", "description": "Base URL for API calls" },
+              "models": { 
+                "type": "array", 
+                "items": { "type": "string" },
+                "description": "Available models" 
+              },
+              "enabled": { "type": "boolean", "default": true }
+            }
+          }
+        }
+      }
+    },
+    "exchanges": {
+      "type": "object",
+      "description": "Exchange/broker configurations",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["crypto", "mt5", "broker"],
+            "description": "Exchange type"
+          },
+          "enabled": {
+            "type": "boolean",
+            "default": true
+          },
+          "credentials": {
+            "type": "object",
+            "properties": {
+              "apiKey": { "type": "string" },
+              "secret": { "type": "string" },
+              "password": { "type": "string" },
+              "server": { "type": "string", "description": "MT5 server" },
+              "login": { "type": "string", "description": "MT5 login" }
+            }
+          },
+          "sandbox": {
+            "type": "boolean",
+            "description": "Use sandbox/testnet mode",
+            "default": false
+          },
+          "rateLimit": {
+            "type": "integer",
+            "description": "Rate limit in ms between requests"
+          }
+        },
+        "required": ["type", "enabled"]
+      }
+    },
+    "trading": {
+      "type": "object",
+      "description": "Trading configuration",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable trading functionality",
+          "default": false
+        },
+        "autoTrade": {
+          "type": "boolean",
+          "description": "Enable automated trading",
+          "default": false
+        },
+        "riskManagement": {
+          "type": "object",
+          "properties": {
+            "maxPositionSize": {
+              "type": "number",
+              "description": "Maximum position size as fraction of portfolio",
+              "default": 0.1,
+              "minimum": 0,
+              "maximum": 1
+            },
+            "maxDailyLoss": {
+              "type": "number",
+              "description": "Maximum daily loss as fraction",
+              "default": 0.02,
+              "minimum": 0,
+              "maximum": 1
+            },
+            "maxDrawdown": {
+              "type": "number",
+              "description": "Maximum drawdown before stopping",
+              "default": 0.1,
+              "minimum": 0,
+              "maximum": 1
+            },
+            "stopLossPercent": {
+              "type": "number",
+              "description": "Default stop loss percentage",
+              "default": 0.02
+            },
+            "takeProfitPercent": {
+              "type": "number",
+              "description": "Default take profit percentage",
+              "default": 0.04
+            }
+          }
+        },
+        "allowedSymbols": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Whitelist of tradeable symbols"
+        },
+        "blockedSymbols": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Blacklist of symbols to never trade"
+        }
+      }
+    },
+    "heartbeat": {
+      "type": "object",
+      "description": "Heartbeat/polling configuration",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "every": {
+          "type": "string",
+          "description": "Interval (e.g., '30m', '1h', '15m')",
+          "default": "30m",
+          "pattern": "^\\d+[smhd]$"
+        },
+        "activeHours": {
+          "type": "object",
+          "properties": {
+            "start": { "type": "string", "pattern": "^\\d{2}:\\d{2}$" },
+            "end": { "type": "string", "pattern": "^\\d{2}:\\d{2}$" },
+            "timezone": { "type": "string", "default": "UTC" }
+          }
+        },
+        "prompt": {
+          "type": "string",
+          "description": "Custom heartbeat prompt"
+        }
+      }
+    },
+    "cron": {
+      "type": "object",
+      "description": "Cron job configuration",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "jobs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "schedule": { 
+                "type": "string",
+                "description": "Cron expression (e.g., '0 9 * * 1-5')"
+              },
+              "task": { "type": "string", "description": "Task to execute" },
+              "enabled": { "type": "boolean", "default": true },
+              "channel": { "type": "string", "description": "Output channel" }
+            },
+            "required": ["name", "schedule", "task"]
+          }
+        }
+      }
+    },
+    "memory": {
+      "type": "object",
+      "description": "Memory/embeddings configuration",
+      "properties": {
+        "embeddings": {
+          "type": "object",
+          "properties": {
+            "provider": {
+              "type": "string",
+              "enum": ["openai", "local", "none"],
+              "default": "none"
+            },
+            "model": { "type": "string" },
+            "apiKey": { "type": "string" }
+          }
+        },
+        "vectorStore": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["local", "pinecone", "qdrant"]
+            },
+            "path": { "type": "string" },
+            "apiKey": { "type": "string" },
+            "url": { "type": "string" }
+          }
+        }
+      }
+    },
+    "workspace": {
+      "type": "object",
+      "description": "Workspace configuration",
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Path to workspace directory"
+        },
+        "autoSave": {
+          "type": "boolean",
+          "default": true
+        },
+        "gitAutoCommit": {
+          "type": "boolean",
+          "description": "Auto-commit workspace changes",
+          "default": false
+        }
+      }
+    },
+    "channels": {
+      "type": "object",
+      "description": "Communication channel configurations",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["telegram", "discord", "whatsapp", "slack", "signal"]
+          },
+          "enabled": { "type": "boolean", "default": true },
+          "credentials": {
+            "type": "object",
+            "additionalProperties": { "type": "string" }
+          },
+          "defaultChannel": { "type": "string" }
+        },
+        "required": ["type", "enabled"]
+      }
+    },
+    "logging": {
+      "type": "object",
+      "description": "Logging configuration",
+      "properties": {
+        "level": {
+          "type": "string",
+          "enum": ["debug", "info", "warn", "error"],
+          "default": "info"
+        },
+        "file": {
+          "type": "string",
+          "description": "Log file path"
+        },
+        "console": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    }
+  },
+  "required": ["agent", "gateway"]
+}
