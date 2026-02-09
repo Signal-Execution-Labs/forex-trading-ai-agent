@@ -1,0 +1,110 @@
+# K.I.T. Signal Copier Configuration
+# Copy this to signal-copier.yaml and customize
+
+# Telegram API (get from https://my.telegram.org)
+telegram:
+  api_id: YOUR_API_ID
+  api_hash: YOUR_API_HASH
+  phone: +49123456789
+
+# Signal Channels to Monitor
+channels:
+  # Crypto Signals
+  - type: telegram
+    id: "@CryptoSignalsPro"
+    name: "Crypto Signals Pro"
+    markets: [crypto]
+    auto_execute: true
+    enabled: true
+    
+  # Forex Signals  
+  - type: telegram
+    id: "@ForexVIPSignals"
+    name: "Forex VIP"
+    markets: [forex]
+    auto_execute: true
+    enabled: true
+    
+  # Binary Options Signals
+  - type: telegram
+    id: "@BinaryGoldSignals"
+    name: "Binary Gold"
+    markets: [binary]
+    auto_execute: true
+    enabled: true
+    
+  # Multi-Market Provider
+  - type: telegram
+    id: "@AllMarketsSignals"
+    name: "All Markets"
+    markets: [crypto, forex, binary, stocks]
+    auto_execute: false  # Require confirmation
+    enabled: true
+
+# Risk Management Settings
+settings:
+  max_risk_per_trade: 0.02      # 2% of portfolio per trade
+  max_trades_per_day: 20        # Max trades across all channels
+  max_trades_per_channel: 10    # Max trades per single channel
+  execution_delay_max: 30       # Skip signal if older than X seconds
+  require_confirmation: false   # true = ask before executing
+  paper_trading: false          # true = simulate only
+  
+  # Binary Options specific
+  binary_trade_amount: 10       # Fixed amount per binary trade
+  binary_default_expiry: 5m     # Default expiry if not specified
+  
+  # Loss limits
+  daily_loss_limit: 100         # Stop trading if daily loss > $100
+  daily_loss_percent: 5         # Or > 5% of portfolio
+
+# Platform Routing (where to execute each market)
+routing:
+  crypto: binance         # binance, kraken, coinbase, bybit
+  forex: mt5              # mt5, mt4, oanda
+  binary: binaryfaster    # binaryfaster, iqoption, pocketoption
+  stocks: alpaca          # alpaca, ibkr
+  defi: uniswap           # uniswap, pancakeswap
+
+# Exchange/Broker Credentials
+credentials:
+  # Crypto - Binance
+  binance:
+    api_key: YOUR_BINANCE_API_KEY
+    api_secret: YOUR_BINANCE_SECRET
+    
+  # Forex - MT5/RoboForex
+  mt5:
+    server: RoboForex-Demo
+    login: YOUR_MT5_LOGIN
+    password: YOUR_MT5_PASSWORD
+    
+  # Binary Options - BinaryFaster
+  binaryfaster:
+    email: your@email.com
+    password: YOUR_PASSWORD
+    
+  # Stocks - Alpaca
+  alpaca:
+    api_key: YOUR_ALPACA_KEY
+    secret: YOUR_ALPACA_SECRET
+    paper: true  # Use paper trading
+
+# Notifications
+notifications:
+  on_signal: true         # Notify when signal detected
+  on_execution: true      # Notify when trade executed
+  on_result: true         # Notify when trade closes (win/loss)
+  
+  # Where to send notifications
+  channel: telegram       # telegram, discord, both
+  chat_id: YOUR_CHAT_ID   # Your personal Telegram chat
+
+# Filters (optional)
+filters:
+  min_confidence: medium  # Only execute high/medium confidence
+  blacklist_symbols: []   # Symbols to never trade
+  whitelist_symbols: []   # Only trade these (empty = all)
+  trading_hours:          # Only trade during these hours (UTC)
+    start: "08:00"
+    end: "22:00"
