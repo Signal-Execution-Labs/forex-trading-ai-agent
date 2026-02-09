@@ -1,0 +1,16 @@
+# MetaTrader 5 Skill Dependencies
+
+# Core (required)
+MetaTrader5>=5.0.45
+pandas>=1.5.0
+numpy>=1.23.0
+
+# Session Timer (for timezone handling)
+pytz>=2023.0
+
+# Optional: For advanced features
+# requests>=2.28.0       # For signal provider webhooks
+# flask>=2.2.0           # For EA bridge server
+# psutil>=5.9.0          # For VPS monitoring
+# ta-lib>=0.4.25         # For technical analysis (requires separate installation)
+# scikit-learn>=1.2.0    # For ML strategies
