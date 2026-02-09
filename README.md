@@ -8,7 +8,21 @@
 
 > **Your Autonomous AI Financial Agent** 🤖💰
 
-K.I.T. is an **AI Agent Framework** that takes full control of your financial life. It trades crypto, forex, stocks, ETFs, and DeFi - all on autopilot.
+K.I.T. is your **personal AI trading agent** - like having a professional trader working for you 24/7. Just tell it what you want, and it handles everything else.
+
+**For Users:** Just chat with K.I.T. via Telegram/Discord - it trades autonomously.  
+**For Developers:** Use K.I.T. as a framework to build your own trading apps.
+
+```
+You: "Investiere 500€ in Bitcoin wenn der Preis unter 40k fällt"
+K.I.T.: "✅ Limit Order gesetzt. Ich benachrichtige dich wenn ausgeführt."
+
+You: "Wie läuft mein Portfolio?"
+K.I.T.: "📊 Portfolio: $12,450 (+3.2% heute). BTC +5%, ETH -1%, EURUSD +0.8%"
+
+You: "Kopiere Signale von @CryptoWhale"  
+K.I.T.: "📡 Signal Copier aktiviert. Auto-Trading: ON"
+```
 
 ```
 "One man can make a difference... especially with proper position sizing."
@@ -18,6 +32,41 @@ K.I.T. is an **AI Agent Framework** that takes full control of your financial li
 <p align="center">
   <img src="docs/assets/kit-dashboard.png" alt="K.I.T. Dashboard" width="600">
 </p>
+
+## 🎯 Two Ways to Use K.I.T.
+
+### 1️⃣ As Your Personal AI Trader (No Coding!)
+
+Just install, connect, and chat. K.I.T. does the rest.
+
+```bash
+kit start                    # Start K.I.T.
+kit connect binance          # Connect exchange
+kit connect telegram         # Connect Telegram
+# Done! Chat with K.I.T. via Telegram
+```
+
+**K.I.T. can:**
+- 📊 Trade autonomously based on your goals
+- 💬 Understand natural language ("Kauf BTC wenn RSI unter 30")
+- 📡 Copy signals from Telegram channels automatically
+- 🔔 Alert you about important market events
+- 📈 Analyze any market on request
+- 🛡️ Manage risk automatically
+
+### 2️⃣ As a Framework for Developers
+
+Build your own trading bots, apps, and services.
+
+```typescript
+import { createBot } from '@binaryfaster/kit';
+const bot = createBot({ exchange: 'binance', strategy: 'rsi' });
+bot.start();
+```
+
+👉 See [Developer SDK](docs/developers/sdk.md)
+
+---
 
 ## 🚀 Quick Start
 
