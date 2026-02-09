@@ -1,50 +1,48 @@
 # Dependencies
 node_modules/
-.pnpm-store/
 
-# Environment
+# Build output
+dist/
+
+# Environment files (NEVER commit!)
 .env
 .env.local
 .env.*.local
-*.env
 
-# Credentials (NEVER commit!)
-credentials.json
-secrets/
-*.pem
-*.key
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
 
-# Build
-dist/
-build/
-*.tsbuildinfo
+# OS
+.DS_Store
+Thumbs.db
 
 # Logs
 logs/
 *.log
 npm-debug.log*
 
-# OS
-.DS_Store
-Thumbs.db
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-
 # Testing
 coverage/
-.nyc_output/
 
-# Trading Data (sensitive)
-data/live/
-reports/
-*.sqlite
-*.db
-
-# Temp
-tmp/
-temp/
+# Cache
 .cache/
+*.tsbuildinfo
+
+# K.I.T. specific
+# API keys and secrets
+credentials.json
+secrets.json
+
+# User workspace data (keep templates, ignore user data)
+workspace/memory/
+workspace/MEMORY.md
+
+# Backtest data (can be large)
+data/historical/
+*.csv
+
+# Reports (regeneratable)
+reports/
