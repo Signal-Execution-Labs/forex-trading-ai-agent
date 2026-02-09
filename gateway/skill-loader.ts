@@ -1,14 +1,25 @@
 /**
  * K.I.T. Skill Loader
  * 
+ * Issue #13: Bug Fix - Placeholder Skill Executor
+ * 
  * Discovers and loads trading skills from the skills directory.
  * Each skill has a SKILL.md file with metadata and documentation.
+ * 
+ * This version uses real tool implementations instead of mocks.
  */
 
 import * as fs from 'fs';
 import * as path from 'path';
 import { EventEmitter } from 'events';
 import * as yaml from 'yaml';
+
+// Import real tool implementations
+import { AutoTrader, createAutoTrader } from '../src/tools/auto-trader';
+import { MarketAnalyzer, createMarketAnalyzer } from '../src/tools/market-analysis';
+import { PortfolioTracker, createPortfolioTracker } from '../src/tools/portfolio-tracker';
+import { AlertSystem, createAlertSystem } from '../src/tools/alert-system';
+import type { ExchangeConfig } from '../src/tools/types';
 
 export interface SkillMetadata {
   name: string;
@@ -42,12 +53,105 @@ export interface LoadedSkill {
   removeAllListeners?: (event: string) => void;
 }
 
+export interface SkillLoaderConfig {
+  exchange?: ExchangeConfig;
+  autoConnect?: boolean;
+}
+
 export class SkillLoader extends EventEmitter {
   private skills: Map<string, LoadedSkill> = new Map();
   private skillPaths: string[] = [];
+  private config: SkillLoaderConfig;
+  
+  // Tool instances (initialized lazily)
+  private autoTrader?: AutoTrader;
+  private marketAnalyzer?: MarketAnalyzer;
+  private portfolioTracker?: PortfolioTracker;
+  private alertSystem?: AlertSystem;
+  private toolsInitialized: boolean = false;
+
+  constructor(config?: SkillLoaderConfig) {
+    super();
+    this.config = config || {};
+  }
+
+  /**
+   * Initialize tool instances
+   */
+  private async initializeTools(): Promise<void> {
+    if (this.toolsInitialized) return;
+
+    try {
+      // Create tool instances
+      this.autoTrader = createAutoTrader({
+        exchange: this.config.exchange,
+        dryRun: true, // Start in dry run mode for safety
+      });
+
+      this.marketAnalyzer = createMarketAnalyzer(this.config.exchange);
+      
+      this.portfolioTracker = createPortfolioTracker({
+        exchanges: this.config.exchange ? [this.config.exchange] : undefined,
+      });
+
+      this.alertSystem = createAlertSystem({
+        exchange: this.config.exchange,
+      });
+
+      // Auto-connect if configured
+      if (this.config.autoConnect) {
+        await Promise.all([
+          this.autoTrader.connect(),
+          this.marketAnalyzer.connect(),
+          this.portfolioTracker.connect(),
+          this.alertSystem.start(),
+        ]);
+      }
+
+      this.toolsInitialized = true;
+      console.log('✓ Tools initialized');
+    } catch (error: any) {
+      console.error('Failed to initialize tools:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Get or create tool instance
+   */
+  private async getAutoTrader(): Promise<AutoTrader> {
+    if (!this.autoTrader) {
+      await this.initializeTools();
+    }
+    return this.autoTrader!;
+  }
+
+  private async getMarketAnalyzer(): Promise<MarketAnalyzer> {
+    if (!this.marketAnalyzer) {
+      await this.initializeTools();
+    }
+    return this.marketAnalyzer!;
+  }
+
+  private async getPortfolioTracker(): Promise<PortfolioTracker> {
+    if (!this.portfolioTracker) {
+      await this.initializeTools();
+    }
+    return this.portfolioTracker!;
+  }
+
+  private async getAlertSystem(): Promise<AlertSystem> {
+    if (!this.alertSystem) {
+      await this.initializeTools();
+    }
+    return this.alertSystem!;
+  }
 
   async loadSkills(paths: string[]): Promise<void> {
     this.skillPaths = paths;
+
+    // Initialize tools first
+    await this.initializeTools();
 
     for (const skillPath of paths) {
       if (!fs.existsSync(skillPath)) {
@@ -161,154 +265,239 @@ export class SkillLoader extends EventEmitter {
       }
     }
 
-    // Check required binaries (simplified - just check if in PATH)
+    // Check required binaries (simplified)
     if (requires.bins) {
-      for (const bin of requires.bins) {
-        // In a real implementation, we'd check if the binary exists
-        // For now, we'll assume it does
-      }
+      // In a real implementation, check if binaries exist in PATH
     }
 
     return true;
   }
 
+  /**
+   * Create skill executor with REAL implementations
+   */
   private createSkillExecutor(skillName: string, skillDir: string): (method: string, params: any) => Promise<any> {
-    // This is a placeholder executor
-    // In a real implementation, skills would have actual handler code
     return async (method: string, params: any): Promise<any> => {
-      console.log(`[${skillName}] Executing ${method} with params:`, params);
+      console.log(`[${skillName}] Executing ${method}`);
       
-      // Skill-specific implementations would go here
-      // For now, return mock data based on skill type
-      
+      // Route to real tool implementations
       switch (skillName) {
         case 'exchange-connector':
-          return this.mockExchangeConnector(method, params);
+          return this.executeExchangeConnector(method, params);
         case 'portfolio-tracker':
-          return this.mockPortfolioTracker(method, params);
+          return this.executePortfolioTracker(method, params);
         case 'market-analysis':
-          return this.mockMarketAnalysis(method, params);
+          return this.executeMarketAnalysis(method, params);
         case 'auto-trader':
-          return this.mockAutoTrader(method, params);
+          return this.executeAutoTrader(method, params);
         case 'backtester':
-          return this.mockBacktester(method, params);
+          return this.executeBacktester(method, params);
         case 'alert-system':
-          return this.mockAlertSystem(method, params);
+          return this.executeAlertSystem(method, params);
         case 'news-tracker':
-          return this.mockNewsTracker(method, params);
+          return this.executeNewsTracker(method, params);
         default:
           throw new Error(`Skill ${skillName} has no implementation`);
       }
     };
   }
 
-  // Mock implementations for demonstration
-  // These would be replaced with real implementations
-
-  private async mockExchangeConnector(method: string, params: any): Promise<any> {
+  /**
+   * Execute exchange-connector skill methods
+   */
+  private async executeExchangeConnector(method: string, params: any): Promise<any> {
+    const trader = await this.getAutoTrader();
+    
     switch (method) {
       case 'status':
-        return { connected: true, exchanges: ['binance'] };
+        return { 
+          connected: trader !== null,
+          exchanges: this.config.exchange ? [this.config.exchange.id] : ['binance'],
+        };
       case 'connect':
+        const connected = await trader.connect(params.exchange);
+        return { success: connected };
+      case 'disconnect':
+        trader.disconnect();
         return { success: true };
       default:
         throw new Error(`Unknown method: ${method}`);
     }
   }
 
-  private async mockPortfolioTracker(method: string, params: any): Promise<any> {
+  /**
+   * Execute portfolio-tracker skill methods
+   */
+  private async executePortfolioTracker(method: string, params: any): Promise<any> {
+    const tracker = await this.getPortfolioTracker();
+    
     switch (method) {
       case 'snapshot':
-        return {
-          totalValueUsd: 10000,
-          assets: [
-            { symbol: 'BTC', amount: 0.1, valueUsd: 5000 },
-            { symbol: 'ETH', amount: 2, valueUsd: 5000 },
-          ],
-          change24h: 2.5,
-        };
+        return tracker.snapshot();
+      case 'balance':
+        return tracker.getBalance(params?.exchange);
+      case 'pnl':
+        return tracker.getPnL();
+      case 'allocation':
+        return tracker.getAllocation();
+      case 'performance':
+        return tracker.getPerformance();
+      case 'history':
+        return tracker.getHistory(params?.days || 30);
       default:
         throw new Error(`Unknown method: ${method}`);
     }
   }
 
-  private async mockMarketAnalysis(method: string, params: any): Promise<any> {
+  /**
+   * Execute market-analysis skill methods
+   */
+  private async executeMarketAnalysis(method: string, params: any): Promise<any> {
+    const analyzer = await this.getMarketAnalyzer();
+    
     switch (method) {
       case 'getData':
-        return {
-          pair: params.pair,
-          price: 50000,
-          change24h: 1.5,
-          rsi: 55,
-          trend: 'bullish',
-        };
+        return analyzer.getData({
+          symbol: params.pair || params.symbol,
+          timeframe: params.timeframe,
+          limit: params.limit,
+        });
       case 'analyze':
-        return {
-          signal: 'hold',
-          confidence: 0.6,
-          indicators: { rsi: 55, macd: 'bullish' },
-        };
+        return analyzer.analyze({
+          symbol: params.pair || params.symbol,
+          timeframe: params.timeframe,
+          indicators: params.indicators,
+        });
+      case 'indicators':
+        const data = await analyzer.getData({
+          symbol: params.pair || params.symbol,
+          timeframe: params.timeframe,
+        });
+        return analyzer.calculateIndicators(data, params.indicators);
+      case 'price':
+        return { price: await analyzer.getPrice(params.pair || params.symbol) };
+      case 'orderbook':
+        return analyzer.getOrderbook(params.pair || params.symbol, params.limit);
       default:
         throw new Error(`Unknown method: ${method}`);
     }
   }
 
-  private async mockAutoTrader(method: string, params: any): Promise<any> {
+  /**
+   * Execute auto-trader skill methods
+   */
+  private async executeAutoTrader(method: string, params: any): Promise<any> {
+    const trader = await this.getAutoTrader();
+    
     switch (method) {
       case 'trade':
-        return {
-          orderId: `order-${Date.now()}`,
-          status: 'filled',
-          pair: params.pair,
-          side: params.action,
+        return trader.trade({
+          symbol: params.pair || params.symbol,
+          side: params.action || params.side,
           amount: params.amount,
-          price: 50000,
-        };
+          amountUsd: params.amountUsd,
+          type: params.type || 'market',
+          price: params.price,
+          stopLoss: params.stopLoss,
+          takeProfit: params.takeProfit,
+          riskPercent: params.riskPercent,
+        });
+      case 'close':
+        return trader.closePosition(params.symbol, params.percentage);
+      case 'positions':
+        return trader.getOpenPositions();
+      case 'position':
+        return trader.getPosition(params.symbol);
+      case 'balance':
+        return trader.getBalance();
+      case 'trades':
+        return trader.getTrades();
+      case 'pnl':
+        return { dailyPnl: trader.getDailyPnl() };
       default:
         throw new Error(`Unknown method: ${method}`);
     }
   }
 
-  private async mockBacktester(method: string, params: any): Promise<any> {
+  /**
+   * Execute backtester skill methods (placeholder for future implementation)
+   */
+  private async executeBacktester(method: string, params: any): Promise<any> {
+    // Backtester requires more complex implementation
+    // For now, return structured placeholder
     switch (method) {
       case 'run':
         return {
           strategy: params.strategy,
-          pair: params.pair,
+          pair: params.pair || params.symbol,
+          startDate: params.start,
+          endDate: params.end,
           metrics: {
-            totalReturn: 25,
-            maxDrawdown: 15,
-            sharpeRatio: 1.5,
-            winRate: 60,
+            totalReturn: 0,
+            maxDrawdown: 0,
+            sharpeRatio: 0,
+            winRate: 0,
           },
-          trades: [],
+          status: 'backtester_not_implemented',
+          message: 'Backtester tool is planned for future release',
         };
       default:
         throw new Error(`Unknown method: ${method}`);
     }
   }
 
-  private async mockAlertSystem(method: string, params: any): Promise<any> {
+  /**
+   * Execute alert-system skill methods
+   */
+  private async executeAlertSystem(method: string, params: any): Promise<any> {
+    const alerts = await this.getAlertSystem();
+    
     switch (method) {
       case 'create':
-        return { alertId: `alert-${Date.now()}`, status: 'active' };
+        return alerts.create({
+          type: params.type || 'price',
+          symbol: params.pair || params.symbol,
+          condition: params.condition,
+          value: params.value,
+          message: params.message,
+          expiresIn: params.expiresIn,
+        });
       case 'list':
-        return { alerts: [] };
+        return { alerts: alerts.list(params?.status) };
+      case 'get':
+        return alerts.get(params.alertId);
+      case 'delete':
+        return { success: alerts.delete(params.alertId) };
+      case 'pause':
+        return { success: alerts.pause(params.alertId) };
+      case 'resume':
+        return { success: alerts.resume(params.alertId) };
+      case 'summary':
+        return alerts.getSummary();
       default:
         throw new Error(`Unknown method: ${method}`);
     }
   }
 
-  private async mockNewsTracker(method: string, params: any): Promise<any> {
+  /**
+   * Execute news-tracker skill methods (placeholder)
+   */
+  private async executeNewsTracker(method: string, params: any): Promise<any> {
+    // News tracker would require external API integration
     switch (method) {
       case 'latest':
         return {
-          news: [
-            { title: 'Bitcoin reaches new high', source: 'CoinDesk', sentiment: 0.8 },
-          ],
+          news: [],
+          status: 'news_tracker_not_implemented',
+          message: 'News tracker requires external API setup',
         };
       case 'sentiment':
-        return { asset: params.asset, sentiment: 0.65, trend: 'bullish' };
+        return { 
+          asset: params.asset, 
+          sentiment: 0.5,
+          trend: 'neutral',
+          status: 'placeholder',
+        };
       default:
         throw new Error(`Unknown method: ${method}`);
     }
@@ -323,10 +512,13 @@ export class SkillLoader extends EventEmitter {
   }
 
   getHealthStatus(): Record<string, any> {
-    const status: Record<string, any> = {};
+    const status: Record<string, any> = {
+      toolsInitialized: this.toolsInitialized,
+      skills: {},
+    };
     
     for (const [name, skill] of this.skills) {
-      status[name] = {
+      status.skills[name] = {
         status: skill.status,
         error: skill.error,
       };
@@ -334,4 +526,25 @@ export class SkillLoader extends EventEmitter {
     
     return status;
   }
+
+  /**
+   * Cleanup resources
+   */
+  async shutdown(): Promise<void> {
+    if (this.autoTrader) {
+      this.autoTrader.disconnect();
+    }
+    if (this.portfolioTracker) {
+      this.portfolioTracker.disconnect();
+    }
+    if (this.alertSystem) {
+      this.alertSystem.stop();
+    }
+    
+    this.toolsInitialized = false;
+    console.log('Skills shutdown complete');
+  }
 }
+
+// Export for use in other modules
+export default SkillLoader;

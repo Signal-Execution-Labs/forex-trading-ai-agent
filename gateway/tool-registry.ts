@@ -3,7 +3,11 @@
  * 
  * Manages available tools that AI agents can use.
  * Tools are actions like trade, market, portfolio, backtest.
+ * 
+ * Updated to use real tool implementations from src/tools/
  */
+
+import { SkillLoader } from './skill-loader';
 
 export interface ToolParameter {
   type: 'string' | 'number' | 'boolean' | 'object' | 'array';
@@ -28,6 +32,14 @@ export interface ToolInfo {
 
 export class ToolRegistry {
   private tools: Map<string, ToolDefinition> = new Map();
+  private skillLoader?: SkillLoader;
+
+  /**
+   * Set skill loader for tool execution
+   */
+  setSkillLoader(skillLoader: SkillLoader): void {
+    this.skillLoader = skillLoader;
+  }
 
   register(tool: ToolDefinition): void {
     if (this.tools.has(tool.name)) {
@@ -158,9 +170,10 @@ export class ToolRegistry {
 }
 
 /**
- * Default trading tools that K.I.T. provides
+ * Create tools that delegate to skill loader
+ * This connects the tool registry to the actual skill implementations
  */
-export function createDefaultTools(): ToolDefinition[] {
+export function createDefaultTools(skillLoader: SkillLoader): ToolDefinition[] {
   return [
     {
       name: 'trade',
@@ -178,6 +191,12 @@ export function createDefaultTools(): ToolDefinition[] {
         amount: {
           type: 'number',
           description: 'Amount to trade',
+          optional: true,
+        },
+        amountUsd: {
+          type: 'number',
+          description: 'Amount in USD to trade',
+          optional: true,
         },
         type: {
           type: 'string',
@@ -191,15 +210,26 @@ export function createDefaultTools(): ToolDefinition[] {
           description: 'Limit price (required for limit orders)',
           optional: true,
         },
-        exchange: {
-          type: 'string',
-          description: 'Exchange to use (defaults to primary)',
+        stopLoss: {
+          type: 'number',
+          description: 'Stop loss price',
+          optional: true,
+        },
+        takeProfit: {
+          type: 'number',
+          description: 'Take profit price',
+          optional: true,
+        },
+        riskPercent: {
+          type: 'number',
+          description: 'Risk percentage of account',
           optional: true,
         },
       },
       handler: async (args) => {
-        // Placeholder - would delegate to auto-trader skill
-        return { orderId: `order-${Date.now()}`, status: 'pending' };
+        const skill = skillLoader.getSkill('auto-trader');
+        if (!skill) throw new Error('auto-trader skill not loaded');
+        return skill.execute('trade', args);
       },
     },
     {
@@ -227,10 +257,26 @@ export function createDefaultTools(): ToolDefinition[] {
           optional: true,
           default: 100,
         },
+        indicators: {
+          type: 'array',
+          description: 'Specific indicators to calculate',
+          optional: true,
+        },
       },
       handler: async (args) => {
-        // Placeholder - would delegate to market-analysis skill
-        return { price: 50000, change24h: 2.5 };
+        const skill = skillLoader.getSkill('market-analysis');
+        if (!skill) throw new Error('market-analysis skill not loaded');
+        
+        switch (args.action) {
+          case 'price':
+            return skill.execute('price', args);
+          case 'analyze':
+            return skill.execute('analyze', args);
+          case 'orderbook':
+            return skill.execute('orderbook', args);
+          default:
+            return skill.execute('getData', args);
+        }
       },
     },
     {
@@ -240,7 +286,7 @@ export function createDefaultTools(): ToolDefinition[] {
         action: {
           type: 'string',
           description: 'Type of portfolio data',
-          enum: ['snapshot', 'balance', 'positions', 'pnl', 'history'],
+          enum: ['snapshot', 'balance', 'positions', 'pnl', 'allocation', 'performance', 'history'],
         },
         exchange: {
           type: 'string',
@@ -252,10 +298,25 @@ export function createDefaultTools(): ToolDefinition[] {
           description: 'Filter by asset',
           optional: true,
         },
+        days: {
+          type: 'number',
+          description: 'Number of days for history',
+          optional: true,
+          default: 30,
+        },
       },
       handler: async (args) => {
-        // Placeholder - would delegate to portfolio-tracker skill
-        return { totalValue: 10000, change24h: 2.5 };
+        const skill = skillLoader.getSkill('portfolio-tracker');
+        if (!skill) throw new Error('portfolio-tracker skill not loaded');
+        
+        switch (args.action) {
+          case 'positions':
+            const traderSkill = skillLoader.getSkill('auto-trader');
+            if (traderSkill) return traderSkill.execute('positions', args);
+            break;
+        }
+        
+        return skill.execute(args.action, args);
       },
     },
     {
@@ -292,12 +353,9 @@ export function createDefaultTools(): ToolDefinition[] {
         },
       },
       handler: async (args) => {
-        // Placeholder - would delegate to backtester skill
-        return { 
-          totalReturn: 25,
-          maxDrawdown: 15,
-          sharpeRatio: 1.5,
-        };
+        const skill = skillLoader.getSkill('backtester');
+        if (!skill) throw new Error('backtester skill not loaded');
+        return skill.execute('run', args);
       },
     },
     {
@@ -307,12 +365,12 @@ export function createDefaultTools(): ToolDefinition[] {
         action: {
           type: 'string',
           description: 'Alert action',
-          enum: ['create', 'list', 'delete', 'pause', 'resume'],
+          enum: ['create', 'list', 'delete', 'pause', 'resume', 'summary'],
         },
         type: {
           type: 'string',
           description: 'Alert type',
-          enum: ['price', 'rsi', 'macd', 'portfolio'],
+          enum: ['price', 'rsi', 'macd', 'volume', 'portfolio'],
           optional: true,
         },
         pair: {
@@ -322,7 +380,7 @@ export function createDefaultTools(): ToolDefinition[] {
         },
         condition: {
           type: 'string',
-          description: 'Alert condition (above, below, cross)',
+          description: 'Alert condition (above, below, cross_above, cross_below)',
           optional: true,
         },
         value: {
@@ -335,10 +393,16 @@ export function createDefaultTools(): ToolDefinition[] {
           description: 'Alert ID (for delete/pause/resume)',
           optional: true,
         },
+        message: {
+          type: 'string',
+          description: 'Custom alert message',
+          optional: true,
+        },
       },
       handler: async (args) => {
-        // Placeholder - would delegate to alert-system skill
-        return { alertId: `alert-${Date.now()}`, status: 'created' };
+        const skill = skillLoader.getSkill('alert-system');
+        if (!skill) throw new Error('alert-system skill not loaded');
+        return skill.execute(args.action, args);
       },
     },
     {
@@ -362,17 +426,22 @@ export function createDefaultTools(): ToolDefinition[] {
         },
       },
       handler: async (args) => {
-        // Placeholder - would delegate to market-analysis skill
-        return {
-          trend: 'bullish',
-          signal: 'hold',
-          confidence: 0.65,
-          indicators: {
-            rsi: 55,
-            macd: { value: 123, signal: 110, histogram: 13 },
-          },
-        };
+        const skill = skillLoader.getSkill('market-analysis');
+        if (!skill) throw new Error('market-analysis skill not loaded');
+        return skill.execute('analyze', { symbol: args.pair, ...args });
       },
     },
   ];
+}
+
+/**
+ * Register all default tools with the registry
+ */
+export function registerDefaultTools(registry: ToolRegistry, skillLoader: SkillLoader): void {
+  registry.setSkillLoader(skillLoader);
+  
+  const tools = createDefaultTools(skillLoader);
+  for (const tool of tools) {
+    registry.register(tool);
+  }
 }
