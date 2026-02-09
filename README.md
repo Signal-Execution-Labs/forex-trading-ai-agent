@@ -1,219 +1,238 @@
-# 🤖 K.I.T. - AI Financial Agent Framework
+# K.I.T. - Knight Industries Trading
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-0.1.0--alpha-blue.svg)](https://github.com/kayzaa/k.i.t.-bot/releases)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
-[![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-green.svg)](https://nodejs.org/)
+> **Your Autonomous AI Financial Agent**
 
-> **Like OpenClaw, but for finance.** Your autonomous AI agent that takes over your entire financial life.
+K.I.T. is an **AI Agent Framework** that takes full control of your financial life. It trades crypto, forex, stocks, ETFs, and DeFi - all on autopilot.
 
-K.I.T. (Künstliche Intelligenz Trading) is not just a trading bot - it's a **complete AI agent framework** that autonomously manages your entire financial portfolio across all markets.
+```
+"One man can make a difference... especially with proper position sizing."
+   - K.I.T.
+```
 
 ## 🎯 The Vision
 
-**One AI. All your finances. Fully autonomous.**
+**K.I.T. is not a trading bot.** It's your personal AI financial manager that:
 
-K.I.T. doesn't just execute trades - it **becomes your personal financial manager**:
+- 🤖 **Trades autonomously** across ALL markets
+- 📊 **Manages your entire portfolio** 24/7/365
+- 🛡️ **Protects your capital** with intelligent risk management
+- 📈 **Grows your wealth** through diversified strategies
+- 💼 **Handles taxes** and reporting automatically
+- 🔄 **Rebalances** your portfolio to maintain target allocations
+- 📰 **Reacts to news** and market conditions in real-time
 
-- 📊 **Analyzes** markets 24/7 across crypto, forex, stocks, ETFs, commodities
-- 🧠 **Decides** when to buy, sell, hold, or rebalance
-- ⚡ **Executes** trades automatically across all your connected exchanges
-- 📱 **Reports** to you via Telegram, Discord, Signal, or WhatsApp
-- 🛡️ **Protects** your portfolio with intelligent risk management
-- 📈 **Grows** your wealth while you sleep
+## 🚀 Operating Modes
 
-## ✨ What Makes K.I.T. Different
+### 1. Manual Mode (Training Wheels)
+Every trade requires your approval. K.I.T. suggests, you decide.
 
-### It's a Framework, Not a Bot
+### 2. Semi-Auto Mode (Co-Pilot)
+Small trades execute automatically. Large or risky trades need approval.
 
-Like [OpenClaw](https://github.com/openclaw/openclaw), K.I.T. gives you the **power to build your own financial AI**:
-
-- 📝 **SOUL.md** - Define your agent's personality and risk tolerance
-- 🛠️ **Skills** - Modular capabilities you can enable/disable
-- 🔧 **Tools** - Trading primitives you control
-- 💬 **Channels** - Talk to your agent wherever you are
-- 🧠 **Memory** - Your agent remembers everything
-
-### Full Autonomy Levels
-
-| Level | Mode | Description |
-|-------|------|-------------|
-| 🟢 | **Manual** | K.I.T. suggests, you confirm |
-| 🟡 | **Semi-Auto** | K.I.T. executes within limits, asks for big trades |
-| 🔴 | **Full Auto** | K.I.T. manages everything autonomously |
-
-## 💹 Supported Markets
-
-| Market | Platforms | Status |
-|--------|-----------|--------|
-| 🪙 **Crypto** | Binance, Kraken, Coinbase, Bybit, OKX | ✅ |
-| 💱 **Forex** | MetaTrader 4, MetaTrader 5, OANDA | ✅ |
-| 📈 **Stocks** | Alpaca, Interactive Brokers | 🔄 Coming |
-| 📊 **ETFs** | Via stock brokers | 🔄 Coming |
-| 🥇 **Commodities** | Via MT4/MT5, futures brokers | 🔄 Coming |
-| 🏦 **DeFi** | Uniswap, Aave, Compound, Curve | 🔄 Coming |
-
-## 🔌 Trading Skills
-
-K.I.T. uses a skill-based architecture. Enable what you need:
-
-| Skill | Description |
-|-------|-------------|
-| 🔗 **exchange-connector** | Connect to any exchange or broker |
-| 📊 **portfolio-tracker** | Track holdings, P&L, allocations |
-| 🔔 **alert-system** | Price, volume, and indicator alerts |
-| 📈 **market-analysis** | Technical analysis and chart patterns |
-| 🤖 **auto-trader** | Autonomous strategy execution |
-| 🧪 **backtester** | Test strategies on historical data |
-| 📰 **news-tracker** | News aggregation and sentiment |
-| 💰 **tax-tracker** | Tax reporting for all trades |
-| 💵 **dividend-manager** | Track and reinvest dividends |
-| ⚖️ **rebalancer** | Automatic portfolio rebalancing |
-| 🏦 **defi-connector** | DeFi protocols (staking, lending, yield) |
-| 📱 **metatrader** | MT4/MT5 Expert Advisor integration |
-
-## 💬 Communication Channels
-
-Talk to K.I.T. like you'd talk to a human:
-
-- **Telegram** - Full bot with inline buttons
-- **Discord** - Server bot with slash commands
-- **Signal** - Secure, encrypted messaging
-- **WhatsApp** - Business API integration
-- **Web Dashboard** - Real-time monitoring
-
-```
-You: How's my portfolio doing?
-K.I.T.: 📊 Portfolio: $45,230 (+3.2% today)
-        Best performer: ETH +8.5%
-        I rebalanced BTC allocation this morning.
-        Want me to show the full breakdown?
-
-You: Yeah, and set an alert if BTC drops below 40k
-K.I.T.: 📋 Here's your breakdown...
-        🔔 Alert set: BTC < $40,000
-        I'll notify you immediately if it triggers.
-```
+### 3. Full-Auto Mode (Autopilot) 🛫
+K.I.T. takes full control. You get daily reports. It handles the rest.
 
 ## 🏗️ Architecture
 
 ```
-k.i.t./
-├── src/
-│   ├── gateway/        # WebSocket daemon (like OpenClaw)
-│   ├── channels/       # Telegram, Discord, Signal, WhatsApp
-│   ├── tools/          # Trading tools (trade, market, portfolio)
-│   └── core/           # Agent brain, memory, sessions
+kit/
+├── gateway/              # The Brain
+│   ├── server.ts         # WebSocket Gateway
+│   ├── autopilot.ts      # 🤖 Autonomous Decision Engine
+│   ├── scheduler.ts      # ⏰ Task Automation
+│   ├── protocol.ts       # Message Protocol
+│   ├── skill-loader.ts   # Plugin System
+│   └── tool-registry.ts  # Agent Actions
 │
-├── skills/             # Modular trading skills
-│   ├── exchange-connector/
-│   ├── portfolio-tracker/
-│   ├── auto-trader/
-│   ├── metatrader/
-│   └── ...
+├── skills/               # Modular Capabilities
+│   ├── exchange-connector/   # 🔌 Exchange APIs
+│   ├── portfolio-tracker/    # 💼 Holdings & P&L
+│   ├── alert-system/         # 🔔 Price Alerts
+│   ├── market-analysis/      # 📈 Technical Analysis
+│   ├── auto-trader/          # 🤖 Strategy Execution
+│   ├── backtester/           # ⏮️ Historical Testing
+│   └── news-tracker/         # 📰 News & Sentiment
 │
-├── templates/          # Workspace templates for users
-│   ├── AGENTS.md       # Operating instructions
-│   ├── SOUL.md         # Agent personality
-│   ├── USER.md         # User preferences
-│   ├── TOOLS.md        # Local tool notes
-│   └── HEARTBEAT.md    # Periodic market checks
+├── workspace/            # Your Agent's Home
+│   ├── SOUL.md           # K.I.T.'s Personality
+│   ├── AGENTS.md         # Trading Instructions
+│   ├── TOOLS.md          # Your Configuration
+│   └── HEARTBEAT.md      # Monitoring Tasks
 │
-└── docs/               # Full documentation
+└── cli/                  # Command Line Interface
+    └── kit.ts
 ```
+
+## 💰 Supported Markets
+
+| Market | Exchanges/Brokers | Status |
+|--------|------------------|--------|
+| 🪙 **Crypto** | Binance, Kraken, Coinbase, OKX, Bybit | ✅ Ready |
+| 💱 **Forex** | OANDA, Interactive Brokers | 🚧 In Progress |
+| 📈 **Stocks** | Interactive Brokers, Alpaca | 🚧 In Progress |
+| 📊 **ETFs** | Same as Stocks | 🚧 In Progress |
+| 🏦 **DeFi** | Uniswap, Aave, Lido | 📋 Planned |
+
+## 🛡️ Safety Features
+
+### Risk Management
+- **Max Daily Loss**: Stop trading after X% loss
+- **Max Drawdown**: Emergency stop at X% from peak
+- **Position Limits**: No single position > X% of portfolio
+- **Leverage Limits**: Never exceed X leverage
+
+### Kill Switch
+```bash
+kit trade kill  # Instantly close all positions, stop all trading
+```
+
+### Approval System
+- Every decision is logged with reasoning
+- High-risk trades require manual approval
+- Review pending decisions anytime
+
+## 📅 Automated Tasks
+
+K.I.T. runs these tasks automatically:
+
+| Task | Frequency | Description |
+|------|-----------|-------------|
+| 📊 Daily Report | Daily 8 AM | Portfolio summary |
+| 📊 Weekly Report | Monday 9 AM | Week performance review |
+| 🔄 Rebalancing | Weekly | Maintain target allocations |
+| 🔍 Market Scan | Hourly | Find opportunities |
+| 📰 News Digest | Daily 7 AM | Market news analysis |
 
 ## 🚀 Quick Start
 
 ```bash
 # Install K.I.T.
-npm install -g kit-trading
+npm install -g @binaryfaster/kit
 
-# Initialize your workspace
+# Initialize workspace
 kit init
 
-# Configure your first exchange
-kit exchange add binance
+# Configure exchanges (interactive)
+kit setup
 
-# Start the gateway
-kit gateway
+# Start in manual mode (safe!)
+kit gateway start
 
-# Talk to K.I.T. via Telegram
-# ... or any other configured channel
+# Check portfolio
+kit portfolio
+
+# Analyze an asset
+kit analyze BTC/USDT
+
+# When ready for autopilot...
+kit autopilot enable --mode semi-auto
 ```
 
-## ⚙️ Configuration
+## 📊 Example Daily Report
 
-### Workspace Files (You Control Everything)
+```
+🤖 K.I.T. Daily Report - Feb 9, 2026
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-**SOUL.md** - Define your agent's personality:
-```markdown
-# My Trading Agent
+📈 Portfolio Value: $45,231.50 (+2.3%)
+   BTC:  $33,750 (74.6%) ↑ +3.2%
+   ETH:  $8,750 (19.3%)  ↑ +1.8%
+   Cash: $2,731 (6.0%)
 
-## Personality
-- Conservative risk approach
-- Focus on long-term growth
-- Explain decisions clearly
+📊 Today's Activity:
+   • 2 trades executed
+   • Win rate: 100%
+   • Net P&L: +$523.40
 
-## Risk Tolerance
-- Max 5% per position
-- Stop loss at 10%
-- Never use leverage above 2x
+🎯 Open Positions:
+   • BTC/USDT Long: +$156 (+3.2%)
+   • ETH/USDT Long: -$24 (-0.8%)
+
+⚠️ Risk Status:
+   • Daily P&L: +2.3% (limit: -5%)
+   • Drawdown: 0% (limit: 15%)
+   • Exposure: 45% (limit: 80%)
+
+📰 Key News:
+   • SEC Bitcoin ETF update (bullish)
+   • Fed rate decision unchanged
+
+🔮 Tomorrow's Plan:
+   • Watch BTC resistance at $52K
+   • Consider ETH add if support holds
+
+"Your wealth is my mission. Sleep well."
+   - K.I.T.
 ```
 
-**HEARTBEAT.md** - What K.I.T. checks automatically:
-```markdown
-# Every 30 Minutes
-- Check portfolio balance
-- Scan for price alerts
-- Monitor open positions
+## 🔧 CLI Commands
 
-# Daily
-- Generate performance report
-- Rebalance if needed
-- Check news for holdings
+```bash
+# Gateway
+kit gateway start       # Start the Gateway
+kit gateway stop        # Stop the Gateway
+kit gateway status      # Check status
+
+# Portfolio
+kit portfolio           # Portfolio summary
+kit portfolio --detailed # Full breakdown
+kit portfolio pnl       # P&L analysis
+
+# Trading
+kit trade buy BTC/USDT 0.01   # Buy
+kit trade sell ETH/USDT 1.0   # Sell
+kit trade positions           # Open positions
+kit trade history             # Trade history
+
+# Analysis
+kit analyze BTC/USDT          # Full analysis
+kit analyze BTC/USDT --tf 1h  # Specific timeframe
+
+# Autopilot
+kit autopilot status          # Check autopilot
+kit autopilot enable          # Enable autopilot
+kit autopilot disable         # Disable autopilot
+kit autopilot decisions       # Pending decisions
+kit autopilot approve <id>    # Approve decision
+
+# Alerts
+kit alert list                # List alerts
+kit alert price BTC above 50000  # Create alert
+
+# Backtest
+kit backtest --strategy ma_cross --pair BTC/USDT
 ```
 
-## 🛡️ Security
+## 🧠 Decision Making
 
-- 🔐 API keys stored locally, never transmitted
-- 🔑 Optional 2FA for trade confirmations
-- 📋 Withdrawal address whitelist
-- ⚠️ Configurable trade limits
-- 🚫 Kill switch for emergencies
+K.I.T. makes decisions based on:
 
-## 📊 Dashboard
+1. **Technical Analysis** - RSI, MACD, Bollinger, MA crossovers
+2. **Market Structure** - Support/Resistance, Trend direction
+3. **Risk Assessment** - Position sizing, stop-loss placement
+4. **Portfolio Context** - Current exposure, correlation
+5. **News Sentiment** - Impact analysis
+6. **Historical Performance** - Backtested strategies
 
-Access the web dashboard at `http://localhost:3000`:
-
-- Real-time portfolio overview
-- P&L tracking and charts
-- Trade history
-- Strategy performance
-- Risk metrics
-- Live market data
-
-## 🤝 The Team
-
-K.I.T. is being developed by a team of AI agents, coordinated by humans who believe in autonomous financial freedom.
+Every decision includes:
+- Reasoning (why this trade?)
+- Confidence score (0-100%)
+- Risk assessment (potential loss/gain)
+- Approval status (auto/pending/approved)
 
 ## ⚠️ Disclaimer
 
-Trading involves significant risk. K.I.T. is experimental software. Only trade what you can afford to lose. Past performance does not guarantee future results. You are responsible for your own financial decisions.
+K.I.T. is a **tool**, not financial advice. Trading involves risk.
+
+- Always start with paper trading
+- Never risk more than you can afford to lose
+- Past performance doesn't guarantee future results
+- You are responsible for your own financial decisions
 
 ## 📄 License
 
-MIT License - See [LICENSE](LICENSE)
+MIT License - Build something amazing!
 
 ---
 
-<div align="center">
-
-**🤖 K.I.T. - Your AI Financial Agent**
-
-*Built with love by the K.I.T. Agent Team*
-
-*Inspired by [OpenClaw](https://github.com/openclaw/openclaw)*
-
-[Documentation](docs/) · [Skills](skills/) · [Discord](#) · [Twitter](#)
-
-</div>
+*K.I.T. - Because your wealth deserves an AI that never sleeps.* 🌙

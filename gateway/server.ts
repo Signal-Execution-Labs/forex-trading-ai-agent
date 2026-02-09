@@ -248,13 +248,17 @@ export class Gateway extends EventEmitter {
     }
 
     // Stream progress events
-    backtester.on('progress', (progress: any) => {
-      this.sendEvent(ws, 'backtest:progress', progress);
-    });
+    if (backtester.on) {
+      backtester.on('progress', (progress: any) => {
+        this.sendEvent(ws, 'backtest:progress', progress);
+      });
+    }
 
     const result = await backtester.execute('run', params);
     
-    backtester.removeAllListeners('progress');
+    if (backtester.removeAllListeners) {
+      backtester.removeAllListeners('progress');
+    }
     
     return result;
   }
