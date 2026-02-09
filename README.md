@@ -1,5 +1,10 @@
 # 🤖 K.I.T. - AI Financial Agent Framework
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Version](https://img.shields.io/badge/version-0.1.0--alpha-blue.svg)](https://github.com/kayzaa/k.i.t.-bot/releases)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-green.svg)](https://nodejs.org/)
+
 > **Like OpenClaw, but for finance.** Your autonomous AI agent that takes over your entire financial life.
 
 K.I.T. (Künstliche Intelligenz Trading) is not just a trading bot - it's a **complete AI agent framework** that autonomously manages your entire financial portfolio across all markets.
