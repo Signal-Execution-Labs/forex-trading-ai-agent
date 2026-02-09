@@ -68,7 +68,7 @@ kit/
 | Market | Exchanges/Brokers | Status |
 |--------|------------------|--------|
 | 🪙 **Crypto** | Binance, Kraken, Coinbase, OKX, Bybit | ✅ Ready |
-| 💱 **Forex** | OANDA, Interactive Brokers | 🚧 In Progress |
+| 💱 **Forex** | MetaTrader 4/5, RoboForex, OANDA, IC Markets | ✅ Ready |
 | 📈 **Stocks** | Interactive Brokers, Alpaca | 🚧 In Progress |
 | 📊 **ETFs** | Same as Stocks | 🚧 In Progress |
 | 🏦 **DeFi** | Uniswap, Aave, Lido | 📋 Planned |
