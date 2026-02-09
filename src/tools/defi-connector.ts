@@ -1,441 +1,693 @@
 /**
- * K.I.T. DeFi Connector Tool
- * 
- * Issue #9: DeFi Integration - Yield Farming, Lending, DEX
- * 
- * Provides DeFi protocol integration:
- * - DEX aggregation (Uniswap, Sushiswap, etc.)
- * - Yield farming opportunities
- * - Lending/borrowing (Aave, Compound)
- * - Liquidity pool tracking
+ * K.I.T. DeFi Connector - DeFi Protocol Integration
+ * Issue #9: Staking, lending, yield farming, auto-compound
  */
 
-import { EventEmitter } from 'events';
 import * as fs from 'fs';
 import * as path from 'path';
 
+// ============================================================
+// TYPES
+// ============================================================
+
 export type DeFiProtocol = 
-  | 'uniswap_v2' | 'uniswap_v3' | 'sushiswap' | 'pancakeswap'
-  | 'aave_v2' | 'aave_v3' | 'compound'
-  | 'curve' | 'balancer' | 'yearn';
+  | 'aave'
+  | 'compound'
+  | 'lido'
+  | 'rocketpool'
+  | 'uniswap'
+  | 'curve'
+  | 'convex'
+  | 'osmosis'
+  | 'yearn';
 
-export type NetworkId = 'ethereum' | 'polygon' | 'arbitrum' | 'optimism' | 'bsc' | 'avalanche';
+export type Chain = 
+  | 'ethereum'
+  | 'polygon'
+  | 'arbitrum'
+  | 'optimism'
+  | 'avalanche'
+  | 'bsc'
+  | 'solana'
+  | 'cosmos';
 
-export interface Token {
-  address: string;
-  symbol: string;
-  decimals: number;
-  name?: string;
-  logoUrl?: string;
-}
+export type PositionType = 'staking' | 'lending' | 'borrowing' | 'liquidity' | 'farming';
 
-export interface DexQuote {
-  protocol: DeFiProtocol;
-  network: NetworkId;
-  tokenIn: Token;
-  tokenOut: Token;
-  amountIn: string;
-  amountOut: string;
-  priceImpact: number;
-  route: string[];
-  gasEstimate?: string;
-  timestamp: number;
-}
-
-export interface LiquidityPool {
+export interface DeFiPosition {
   id: string;
   protocol: DeFiProtocol;
-  network: NetworkId;
-  tokens: Token[];
-  reserves: string[];
-  totalLiquidity: string;
-  volume24h: string;
-  fee: number;
-  apy?: number;
-}
-
-export interface YieldOpportunity {
-  id: string;
-  protocol: DeFiProtocol;
-  network: NetworkId;
-  name: string;
-  type: 'farming' | 'staking' | 'lending' | 'liquidity';
-  tokens: Token[];
+  chain: Chain;
+  type: PositionType;
+  
+  // Asset info
+  asset: string;
+  amount: number;
+  valueUsd: number;
+  
+  // Yield info
   apy: number;
-  tvl: string;
-  risk: 'low' | 'medium' | 'high';
-  rewards?: Token[];
-}
-
-export interface LendingPosition {
-  protocol: DeFiProtocol;
-  network: NetworkId;
-  supplied: { token: Token; amount: string; value: string; apy: number }[];
-  borrowed: { token: Token; amount: string; value: string; apy: number }[];
+  rewardsToken?: string;
+  pendingRewards: number;
+  pendingRewardsUsd: number;
+  
+  // For lending/borrowing
   healthFactor?: number;
-  netApy: number;
+  liquidationThreshold?: number;
+  borrowedAmount?: number;
+  borrowedValueUsd?: number;
+  borrowApy?: number;
+  
+  // Metadata
+  entryDate: Date;
+  lastUpdate: Date;
 }
 
-export interface DeFiConnectorConfig {
-  networks: NetworkId[];
-  rpcUrls?: Record<NetworkId, string>;
-  walletAddress?: string;
-  persistPath?: string;
+export interface StakingInfo {
+  protocol: DeFiProtocol;
+  asset: string;
+  apy: number;
+  tvlUsd: number;
+  minStake?: number;
+  lockPeriod?: number;  // Days
+  rewards: string[];    // Reward tokens
 }
 
-const DEFAULT_CONFIG: DeFiConnectorConfig = {
-  networks: ['ethereum', 'polygon', 'arbitrum'],
-  persistPath: path.join(process.env.HOME || process.env.USERPROFILE || '', '.kit', 'defi'),
-};
+export interface LendingInfo {
+  protocol: DeFiProtocol;
+  asset: string;
+  supplyApy: number;
+  borrowApy: number;
+  ltv: number;           // Loan-to-value ratio
+  liquidationThreshold: number;
+  tvlUsd: number;
+  utilization: number;   // % of pool borrowed
+}
 
-// Mock data for demonstration (real implementation would use Web3/ethers.js)
-const MOCK_PROTOCOLS: Record<DeFiProtocol, { name: string; networks: NetworkId[] }> = {
-  uniswap_v2: { name: 'Uniswap V2', networks: ['ethereum'] },
-  uniswap_v3: { name: 'Uniswap V3', networks: ['ethereum', 'polygon', 'arbitrum', 'optimism'] },
-  sushiswap: { name: 'SushiSwap', networks: ['ethereum', 'polygon', 'arbitrum', 'avalanche'] },
-  pancakeswap: { name: 'PancakeSwap', networks: ['bsc'] },
-  aave_v2: { name: 'Aave V2', networks: ['ethereum', 'polygon'] },
-  aave_v3: { name: 'Aave V3', networks: ['ethereum', 'polygon', 'arbitrum', 'optimism', 'avalanche'] },
-  compound: { name: 'Compound', networks: ['ethereum'] },
-  curve: { name: 'Curve Finance', networks: ['ethereum', 'polygon', 'arbitrum'] },
-  balancer: { name: 'Balancer', networks: ['ethereum', 'polygon', 'arbitrum'] },
-  yearn: { name: 'Yearn Finance', networks: ['ethereum'] },
-};
+export interface YieldFarm {
+  protocol: DeFiProtocol;
+  pool: string;
+  chain: Chain;
+  apy: number;
+  tvlUsd: number;
+  tokens: string[];
+  rewards: string[];
+  risk: 'low' | 'medium' | 'high';
+}
 
-export class DeFiConnector extends EventEmitter {
-  private config: DeFiConnectorConfig;
-  private trackedPositions: LendingPosition[] = [];
-  private watchlist: YieldOpportunity[] = [];
+export interface AutoCompoundConfig {
+  enabled: boolean;
+  minRewardUsd: number;      // Minimum rewards to trigger compound
+  intervalHours: number;     // Check interval
+  maxGasGwei: number;        // Max gas to pay for compound
+  reinvestTo: string;        // Asset to reinvest into
+}
 
-  constructor(config?: Partial<DeFiConnectorConfig>) {
-    super();
-    this.config = { ...DEFAULT_CONFIG, ...config };
-    this.loadData();
-  }
+export interface DeFiConfig {
+  wallets: Partial<Record<Chain, string>>;
+  autoCompound: AutoCompoundConfig;
+  riskTolerance: 'conservative' | 'moderate' | 'aggressive';
+  maxProtocolExposurePct: number;
+  minTvlUsd: number;         // Minimum TVL to consider
+  persistPath: string;
+}
 
-  /**
-   * Get available protocols for a network
-   */
-  getProtocols(network?: NetworkId): { protocol: DeFiProtocol; name: string; networks: NetworkId[] }[] {
-    return Object.entries(MOCK_PROTOCOLS)
-      .filter(([_, info]) => !network || info.networks.includes(network))
-      .map(([protocol, info]) => ({
-        protocol: protocol as DeFiProtocol,
-        name: info.name,
-        networks: info.networks,
-      }));
-  }
+// ============================================================
+// MOCK DATA (In production, fetch from APIs/contracts)
+// ============================================================
 
-  /**
-   * Get DEX quote for a swap
-   */
-  async getQuote(params: {
-    network: NetworkId;
-    tokenIn: string;
-    tokenOut: string;
-    amountIn: string;
-    protocols?: DeFiProtocol[];
-  }): Promise<DexQuote[]> {
-    // Mock implementation - real version would query DEX aggregators
-    const quotes: DexQuote[] = [];
-    const protocols = params.protocols || ['uniswap_v3', 'sushiswap'];
+const MOCK_STAKING: StakingInfo[] = [
+  { protocol: 'lido', asset: 'ETH', apy: 3.8, tvlUsd: 15_000_000_000, rewards: ['stETH'] },
+  { protocol: 'rocketpool', asset: 'ETH', apy: 3.5, tvlUsd: 2_000_000_000, rewards: ['rETH', 'RPL'] },
+  { protocol: 'osmosis', asset: 'ATOM', apy: 18.5, tvlUsd: 500_000_000, lockPeriod: 21, rewards: ['OSMO'] },
+];
 
-    for (const protocol of protocols) {
-      const protocolInfo = MOCK_PROTOCOLS[protocol];
-      if (!protocolInfo?.networks.includes(params.network)) continue;
+const MOCK_LENDING: LendingInfo[] = [
+  { protocol: 'aave', asset: 'USDC', supplyApy: 4.2, borrowApy: 5.8, ltv: 0.8, liquidationThreshold: 0.85, tvlUsd: 5_000_000_000, utilization: 0.72 },
+  { protocol: 'aave', asset: 'ETH', supplyApy: 1.8, borrowApy: 3.2, ltv: 0.8, liquidationThreshold: 0.825, tvlUsd: 8_000_000_000, utilization: 0.45 },
+  { protocol: 'compound', asset: 'USDC', supplyApy: 3.8, borrowApy: 5.2, ltv: 0.75, liquidationThreshold: 0.8, tvlUsd: 3_000_000_000, utilization: 0.68 },
+];
 
-      // Simulate quote calculation
-      const amountOut = (parseFloat(params.amountIn) * (0.95 + Math.random() * 0.1)).toString();
-      const priceImpact = Math.random() * 2;
+const MOCK_FARMS: YieldFarm[] = [
+  { protocol: 'curve', pool: '3pool', chain: 'ethereum', apy: 5.2, tvlUsd: 2_000_000_000, tokens: ['USDC', 'USDT', 'DAI'], rewards: ['CRV'], risk: 'low' },
+  { protocol: 'convex', pool: 'cvx3pool', chain: 'ethereum', apy: 8.5, tvlUsd: 1_500_000_000, tokens: ['USDC', 'USDT', 'DAI'], rewards: ['CVX', 'CRV'], risk: 'low' },
+  { protocol: 'uniswap', pool: 'ETH/USDC', chain: 'ethereum', apy: 12.3, tvlUsd: 500_000_000, tokens: ['ETH', 'USDC'], rewards: ['UNI'], risk: 'medium' },
+];
 
-      quotes.push({
-        protocol,
-        network: params.network,
-        tokenIn: { address: params.tokenIn, symbol: 'TOKEN_IN', decimals: 18 },
-        tokenOut: { address: params.tokenOut, symbol: 'TOKEN_OUT', decimals: 18 },
-        amountIn: params.amountIn,
-        amountOut,
-        priceImpact,
-        route: [params.tokenIn, params.tokenOut],
-        gasEstimate: '150000',
-        timestamp: Date.now(),
-      });
-    }
+// ============================================================
+// DEFI CONNECTOR CLASS
+// ============================================================
 
-    // Sort by best output
-    quotes.sort((a, b) => parseFloat(b.amountOut) - parseFloat(a.amountOut));
-    
-    this.emit('quote', quotes[0]);
-    return quotes;
-  }
-
-  /**
-   * Get best yield opportunities
-   */
-  async getYieldOpportunities(params?: {
-    network?: NetworkId;
-    type?: YieldOpportunity['type'];
-    minApy?: number;
-    maxRisk?: YieldOpportunity['risk'];
-  }): Promise<YieldOpportunity[]> {
-    // Mock data - real implementation would query DeFi Llama, etc.
-    const opportunities: YieldOpportunity[] = [
-      {
-        id: 'aave-eth-supply',
-        protocol: 'aave_v3',
-        network: 'ethereum',
-        name: 'ETH Supply',
-        type: 'lending',
-        tokens: [{ address: '0x...', symbol: 'ETH', decimals: 18 }],
-        apy: 3.5,
-        tvl: '5000000000',
-        risk: 'low',
+export class DeFiConnector {
+  private config: DeFiConfig;
+  private positions: Map<string, DeFiPosition> = new Map();
+  
+  constructor(config: Partial<DeFiConfig> = {}) {
+    this.config = {
+      wallets: {},
+      autoCompound: {
+        enabled: true,
+        minRewardUsd: 10,
+        intervalHours: 24,
+        maxGasGwei: 50,
+        reinvestTo: 'staking'
       },
-      {
-        id: 'curve-3pool',
-        protocol: 'curve',
-        network: 'ethereum',
-        name: '3Pool (DAI/USDC/USDT)',
-        type: 'liquidity',
-        tokens: [
-          { address: '0x...', symbol: 'DAI', decimals: 18 },
-          { address: '0x...', symbol: 'USDC', decimals: 6 },
-          { address: '0x...', symbol: 'USDT', decimals: 6 },
-        ],
-        apy: 5.2,
-        tvl: '3000000000',
-        risk: 'low',
-        rewards: [{ address: '0x...', symbol: 'CRV', decimals: 18 }],
-      },
-      {
-        id: 'uniswap-eth-usdc',
-        protocol: 'uniswap_v3',
-        network: 'ethereum',
-        name: 'ETH/USDC 0.3%',
-        type: 'liquidity',
-        tokens: [
-          { address: '0x...', symbol: 'ETH', decimals: 18 },
-          { address: '0x...', symbol: 'USDC', decimals: 6 },
-        ],
-        apy: 15.8,
-        tvl: '500000000',
-        risk: 'medium',
-      },
-      {
-        id: 'yearn-dai-vault',
-        protocol: 'yearn',
-        network: 'ethereum',
-        name: 'DAI Vault',
-        type: 'farming',
-        tokens: [{ address: '0x...', symbol: 'DAI', decimals: 18 }],
-        apy: 8.3,
-        tvl: '200000000',
-        risk: 'medium',
-      },
-    ];
-
-    // Filter based on params
-    let filtered = opportunities;
-
-    if (params?.network) {
-      filtered = filtered.filter(o => o.network === params.network);
-    }
-    if (params?.type) {
-      filtered = filtered.filter(o => o.type === params.type);
-    }
-    if (params?.minApy) {
-      filtered = filtered.filter(o => o.apy >= params.minApy!);
-    }
-    if (params?.maxRisk) {
-      const riskLevels = { low: 1, medium: 2, high: 3 };
-      filtered = filtered.filter(o => riskLevels[o.risk] <= riskLevels[params.maxRisk!]);
-    }
-
-    // Sort by APY descending
-    filtered.sort((a, b) => b.apy - a.apy);
-
-    return filtered;
-  }
-
-  /**
-   * Get liquidity pools
-   */
-  async getLiquidityPools(params?: {
-    protocol?: DeFiProtocol;
-    network?: NetworkId;
-    tokens?: string[];
-  }): Promise<LiquidityPool[]> {
-    // Mock data
-    const pools: LiquidityPool[] = [
-      {
-        id: 'uni-v3-eth-usdc',
-        protocol: 'uniswap_v3',
-        network: 'ethereum',
-        tokens: [
-          { address: '0x...', symbol: 'ETH', decimals: 18 },
-          { address: '0x...', symbol: 'USDC', decimals: 6 },
-        ],
-        reserves: ['50000', '100000000'],
-        totalLiquidity: '200000000',
-        volume24h: '50000000',
-        fee: 0.003,
-        apy: 15.8,
-      },
-      {
-        id: 'curve-3pool',
-        protocol: 'curve',
-        network: 'ethereum',
-        tokens: [
-          { address: '0x...', symbol: 'DAI', decimals: 18 },
-          { address: '0x...', symbol: 'USDC', decimals: 6 },
-          { address: '0x...', symbol: 'USDT', decimals: 6 },
-        ],
-        reserves: ['1000000000', '1000000000', '1000000000'],
-        totalLiquidity: '3000000000',
-        volume24h: '100000000',
-        fee: 0.0004,
-        apy: 5.2,
-      },
-    ];
-
-    let filtered = pools;
-    if (params?.protocol) filtered = filtered.filter(p => p.protocol === params.protocol);
-    if (params?.network) filtered = filtered.filter(p => p.network === params.network);
-
-    return filtered;
-  }
-
-  /**
-   * Get lending positions (requires wallet)
-   */
-  async getLendingPositions(walletAddress?: string): Promise<LendingPosition[]> {
-    const address = walletAddress || this.config.walletAddress;
-    
-    if (!address) {
-      return this.trackedPositions;
-    }
-
-    // Mock position data
-    const position: LendingPosition = {
-      protocol: 'aave_v3',
-      network: 'ethereum',
-      supplied: [
-        {
-          token: { address: '0x...', symbol: 'ETH', decimals: 18 },
-          amount: '10.5',
-          value: '25000',
-          apy: 3.5,
-        },
-      ],
-      borrowed: [
-        {
-          token: { address: '0x...', symbol: 'USDC', decimals: 6 },
-          amount: '5000',
-          value: '5000',
-          apy: 5.2,
-        },
-      ],
-      healthFactor: 2.5,
-      netApy: 2.1,
+      riskTolerance: 'moderate',
+      maxProtocolExposurePct: 30,
+      minTvlUsd: 100_000_000,
+      persistPath: path.join(process.env.HOME || process.env.USERPROFILE || '', '.kit', 'defi'),
+      ...config
     };
-
-    return [position];
+    
+    this.ensureDirectory();
+    this.loadPositions();
   }
-
-  /**
-   * Add opportunity to watchlist
-   */
-  addToWatchlist(opportunity: YieldOpportunity): void {
-    if (!this.watchlist.find(o => o.id === opportunity.id)) {
-      this.watchlist.push(opportunity);
-      this.persistData();
-      this.emit('watchlistUpdated', this.watchlist);
+  
+  // --------------------------------------------------------
+  // Protocol Data
+  // --------------------------------------------------------
+  
+  getStakingOptions(): StakingInfo[] {
+    // Filter by TVL
+    return MOCK_STAKING.filter(s => s.tvlUsd >= this.config.minTvlUsd);
+  }
+  
+  getLendingOptions(): LendingInfo[] {
+    return MOCK_LENDING.filter(l => l.tvlUsd >= this.config.minTvlUsd);
+  }
+  
+  getYieldFarms(): YieldFarm[] {
+    // Filter by TVL and risk tolerance
+    return MOCK_FARMS.filter(f => {
+      if (f.tvlUsd < this.config.minTvlUsd) return false;
+      
+      if (this.config.riskTolerance === 'conservative' && f.risk !== 'low') return false;
+      if (this.config.riskTolerance === 'moderate' && f.risk === 'high') return false;
+      
+      return true;
+    });
+  }
+  
+  getBestYield(type: 'staking' | 'lending' | 'farming'): StakingInfo | LendingInfo | YieldFarm | null {
+    switch (type) {
+      case 'staking':
+        const staking = this.getStakingOptions();
+        return staking.sort((a, b) => b.apy - a.apy)[0] || null;
+        
+      case 'lending':
+        const lending = this.getLendingOptions();
+        return lending.sort((a, b) => b.supplyApy - a.supplyApy)[0] || null;
+        
+      case 'farming':
+        const farms = this.getYieldFarms();
+        return farms.sort((a, b) => b.apy - a.apy)[0] || null;
+        
+      default:
+        return null;
     }
   }
+  
+  // --------------------------------------------------------
+  // Position Management
+  // --------------------------------------------------------
+  
+  addPosition(position: Omit<DeFiPosition, 'id' | 'lastUpdate'>): DeFiPosition {
+    const id = this.generateId();
+    const fullPosition: DeFiPosition = {
+      ...position,
+      id,
+      lastUpdate: new Date()
+    };
+    
+    this.positions.set(id, fullPosition);
+    this.savePositions();
+    
+    return fullPosition;
+  }
+  
+  updatePosition(id: string, updates: Partial<DeFiPosition>): DeFiPosition | null {
+    const position = this.positions.get(id);
+    if (!position) return null;
+    
+    const updated = {
+      ...position,
+      ...updates,
+      lastUpdate: new Date()
+    };
+    
+    this.positions.set(id, updated);
+    this.savePositions();
+    
+    return updated;
+  }
+  
+  removePosition(id: string): boolean {
+    const deleted = this.positions.delete(id);
+    if (deleted) this.savePositions();
+    return deleted;
+  }
+  
+  getPosition(id: string): DeFiPosition | null {
+    return this.positions.get(id) || null;
+  }
+  
+  getAllPositions(): DeFiPosition[] {
+    return Array.from(this.positions.values());
+  }
+  
+  getPositionsByType(type: PositionType): DeFiPosition[] {
+    return this.getAllPositions().filter(p => p.type === type);
+  }
+  
+  getPositionsByProtocol(protocol: DeFiProtocol): DeFiPosition[] {
+    return this.getAllPositions().filter(p => p.protocol === protocol);
+  }
+  
+  // --------------------------------------------------------
+  // Portfolio Overview
+  // --------------------------------------------------------
+  
+  getPortfolioSummary(): {
+    totalValueUsd: number;
+    totalPendingRewardsUsd: number;
+    byProtocol: Record<string, number>;
+    byType: Record<PositionType, number>;
+    byChain: Record<string, number>;
+    weightedApy: number;
+    healthStatus: 'safe' | 'warning' | 'danger';
+    positions: DeFiPosition[];
+  } {
+    const positions = this.getAllPositions();
+    
+    let totalValueUsd = 0;
+    let totalPendingRewardsUsd = 0;
+    let weightedApySum = 0;
+    let lowestHealthFactor = Infinity;
+    
+    const byProtocol: Record<string, number> = {};
+    const byType: Record<PositionType, number> = {
+      staking: 0,
+      lending: 0,
+      borrowing: 0,
+      liquidity: 0,
+      farming: 0
+    };
+    const byChain: Record<string, number> = {};
+    
+    for (const pos of positions) {
+      totalValueUsd += pos.valueUsd;
+      totalPendingRewardsUsd += pos.pendingRewardsUsd;
+      weightedApySum += pos.apy * pos.valueUsd;
+      
+      byProtocol[pos.protocol] = (byProtocol[pos.protocol] || 0) + pos.valueUsd;
+      byType[pos.type] = (byType[pos.type] || 0) + pos.valueUsd;
+      byChain[pos.chain] = (byChain[pos.chain] || 0) + pos.valueUsd;
+      
+      if (pos.healthFactor !== undefined) {
+        lowestHealthFactor = Math.min(lowestHealthFactor, pos.healthFactor);
+      }
+    }
+    
+    const weightedApy = totalValueUsd > 0 ? weightedApySum / totalValueUsd : 0;
+    
+    let healthStatus: 'safe' | 'warning' | 'danger' = 'safe';
+    if (lowestHealthFactor < 1.2) healthStatus = 'danger';
+    else if (lowestHealthFactor < 1.5) healthStatus = 'warning';
+    
+    return {
+      totalValueUsd,
+      totalPendingRewardsUsd,
+      byProtocol,
+      byType,
+      byChain,
+      weightedApy,
+      healthStatus,
+      positions
+    };
+  }
+  
+  // --------------------------------------------------------
+  // Health Monitoring
+  // --------------------------------------------------------
+  
+  checkHealthFactors(): { position: DeFiPosition; status: string; action: string }[] {
+    const alerts: { position: DeFiPosition; status: string; action: string }[] = [];
+    
+    for (const pos of this.getAllPositions()) {
+      if (pos.healthFactor === undefined) continue;
+      
+      if (pos.healthFactor < 1.1) {
+        alerts.push({
+          position: pos,
+          status: '🔴 CRITICAL',
+          action: 'IMMEDIATE REPAY OR ADD COLLATERAL'
+        });
+      } else if (pos.healthFactor < 1.3) {
+        alerts.push({
+          position: pos,
+          status: '🟡 WARNING',
+          action: 'Consider repaying debt or adding collateral'
+        });
+      }
+    }
+    
+    return alerts;
+  }
+  
+  // --------------------------------------------------------
+  // Auto-Compound
+  // --------------------------------------------------------
+  
+  async checkAutoCompound(): Promise<{
+    shouldCompound: boolean;
+    totalPendingUsd: number;
+    positions: { position: DeFiPosition; rewardsUsd: number }[];
+  }> {
+    const positions = this.getAllPositions().filter(p => p.pendingRewardsUsd > 0);
+    const positionsWithRewards = positions.map(p => ({
+      position: p,
+      rewardsUsd: p.pendingRewardsUsd
+    }));
+    
+    const totalPendingUsd = positions.reduce((sum, p) => sum + p.pendingRewardsUsd, 0);
+    const shouldCompound = totalPendingUsd >= this.config.autoCompound.minRewardUsd;
+    
+    return { shouldCompound, totalPendingUsd, positions: positionsWithRewards };
+  }
+  
+  async executeAutoCompound(): Promise<{
+    success: boolean;
+    compoundedUsd: number;
+    message: string;
+  }> {
+    if (!this.config.autoCompound.enabled) {
+      return { success: false, compoundedUsd: 0, message: 'Auto-compound disabled' };
+    }
+    
+    const { shouldCompound, totalPendingUsd, positions } = await this.checkAutoCompound();
+    
+    if (!shouldCompound) {
+      return {
+        success: false,
+        compoundedUsd: 0,
+        message: `Pending rewards ($${totalPendingUsd.toFixed(2)}) below threshold ($${this.config.autoCompound.minRewardUsd})`
+      };
+    }
+    
+    // In production, this would:
+    // 1. Claim rewards from each protocol
+    // 2. Swap to target asset
+    // 3. Re-deposit
+    
+    console.log(`🔄 Auto-compounding $${totalPendingUsd.toFixed(2)} in rewards...`);
+    
+    // Simulate compounding
+    for (const { position } of positions) {
+      position.pendingRewards = 0;
+      position.pendingRewardsUsd = 0;
+      position.lastUpdate = new Date();
+    }
+    
+    this.savePositions();
+    
+    return {
+      success: true,
+      compoundedUsd: totalPendingUsd,
+      message: `Compounded $${totalPendingUsd.toFixed(2)} from ${positions.length} positions`
+    };
+  }
+  
+  // --------------------------------------------------------
+  // Yield Optimization
+  // --------------------------------------------------------
+  
+  findBetterYield(asset: string): {
+    currentApy: number;
+    bestApy: number;
+    improvement: number;
+    recommendation: string;
+  } | null {
+    // Find current position for this asset
+    const currentPosition = this.getAllPositions().find(p => p.asset === asset);
+    if (!currentPosition) return null;
+    
+    // Find best yield for this asset
+    const stakingOptions = this.getStakingOptions().filter(s => s.asset === asset);
+    const lendingOptions = this.getLendingOptions().filter(l => l.asset === asset);
+    
+    const allOptions = [
+      ...stakingOptions.map(s => ({ type: 'staking', apy: s.apy, protocol: s.protocol })),
+      ...lendingOptions.map(l => ({ type: 'lending', apy: l.supplyApy, protocol: l.protocol }))
+    ];
+    
+    const best = allOptions.sort((a, b) => b.apy - a.apy)[0];
+    if (!best) return null;
+    
+    const improvement = best.apy - currentPosition.apy;
+    
+    return {
+      currentApy: currentPosition.apy,
+      bestApy: best.apy,
+      improvement,
+      recommendation: improvement > 0.5
+        ? `Consider moving to ${best.protocol} (${best.type}) for +${improvement.toFixed(2)}% APY`
+        : 'Current position has competitive yield'
+    };
+  }
+  
+  // --------------------------------------------------------
+  // Reports
+  // --------------------------------------------------------
+  
+  generateReport(): string {
+    const summary = this.getPortfolioSummary();
+    
+    let report = `
+🌾 DEFI PORTFOLIO REPORT
+${'='.repeat(60)}
 
-  /**
-   * Remove from watchlist
-   */
-  removeFromWatchlist(opportunityId: string): boolean {
-    const index = this.watchlist.findIndex(o => o.id === opportunityId);
-    if (index >= 0) {
-      this.watchlist.splice(index, 1);
-      this.persistData();
-      this.emit('watchlistUpdated', this.watchlist);
+OVERVIEW
+${'-'.repeat(60)}
+Total Value:        $${summary.totalValueUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+Pending Rewards:    $${summary.totalPendingRewardsUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+Weighted APY:       ${summary.weightedApy.toFixed(2)}%
+Health Status:      ${summary.healthStatus === 'safe' ? '🟢 SAFE' : summary.healthStatus === 'warning' ? '🟡 WARNING' : '🔴 DANGER'}
+
+BY PROTOCOL
+${'-'.repeat(60)}
+`;
+
+    for (const [protocol, value] of Object.entries(summary.byProtocol)) {
+      const pct = (value / summary.totalValueUsd * 100).toFixed(1);
+      report += `${protocol.toUpperCase().padEnd(15)} $${value.toLocaleString().padStart(12)} (${pct}%)\n`;
+    }
+
+    report += `
+BY TYPE
+${'-'.repeat(60)}
+`;
+
+    for (const [type, value] of Object.entries(summary.byType)) {
+      if (value > 0) {
+        const pct = (value / summary.totalValueUsd * 100).toFixed(1);
+        const emoji = type === 'staking' ? '🥩' : type === 'lending' ? '💰' : type === 'farming' ? '🌾' : '📊';
+        report += `${emoji} ${type.padEnd(12)} $${value.toLocaleString().padStart(12)} (${pct}%)\n`;
+      }
+    }
+
+    report += `
+POSITIONS
+${'-'.repeat(60)}
+`;
+
+    for (const pos of summary.positions) {
+      const hf = pos.healthFactor ? ` HF:${pos.healthFactor.toFixed(2)}` : '';
+      report += `${pos.protocol.padEnd(10)} ${pos.asset.padEnd(6)} $${pos.valueUsd.toLocaleString().padStart(10)} APY:${pos.apy.toFixed(1)}%${hf}\n`;
+    }
+
+    // Health alerts
+    const alerts = this.checkHealthFactors();
+    if (alerts.length > 0) {
+      report += `
+⚠️ HEALTH ALERTS
+${'-'.repeat(60)}
+`;
+      for (const alert of alerts) {
+        report += `${alert.status} ${alert.position.protocol} ${alert.position.asset}: ${alert.action}\n`;
+      }
+    }
+
+    return report;
+  }
+  
+  // --------------------------------------------------------
+  // Staking Operations (Simulated)
+  // --------------------------------------------------------
+  
+  async stake(protocol: DeFiProtocol, asset: string, amount: number, chain: Chain = 'ethereum'): Promise<DeFiPosition> {
+    const stakingInfo = this.getStakingOptions().find(s => s.protocol === protocol && s.asset === asset);
+    if (!stakingInfo) {
+      throw new Error(`Staking not available for ${asset} on ${protocol}`);
+    }
+    
+    // In production, this would interact with the actual protocol
+    console.log(`🥩 Staking ${amount} ${asset} on ${protocol}...`);
+    
+    const position = this.addPosition({
+      protocol,
+      chain,
+      type: 'staking',
+      asset,
+      amount,
+      valueUsd: amount * 2500,  // Mock price
+      apy: stakingInfo.apy,
+      rewardsToken: stakingInfo.rewards[0],
+      pendingRewards: 0,
+      pendingRewardsUsd: 0,
+      entryDate: new Date()
+    });
+    
+    return position;
+  }
+  
+  async unstake(positionId: string): Promise<boolean> {
+    const position = this.getPosition(positionId);
+    if (!position || position.type !== 'staking') {
+      return false;
+    }
+    
+    console.log(`📤 Unstaking ${position.amount} ${position.asset} from ${position.protocol}...`);
+    
+    return this.removePosition(positionId);
+  }
+  
+  // --------------------------------------------------------
+  // Lending Operations (Simulated)
+  // --------------------------------------------------------
+  
+  async supply(protocol: DeFiProtocol, asset: string, amount: number, chain: Chain = 'ethereum'): Promise<DeFiPosition> {
+    const lendingInfo = this.getLendingOptions().find(l => l.protocol === protocol && l.asset === asset);
+    if (!lendingInfo) {
+      throw new Error(`Lending not available for ${asset} on ${protocol}`);
+    }
+    
+    console.log(`💰 Supplying ${amount} ${asset} to ${protocol}...`);
+    
+    const position = this.addPosition({
+      protocol,
+      chain,
+      type: 'lending',
+      asset,
+      amount,
+      valueUsd: amount * (asset === 'ETH' ? 2500 : 1),  // Mock price
+      apy: lendingInfo.supplyApy,
+      pendingRewards: 0,
+      pendingRewardsUsd: 0,
+      healthFactor: 999,  // No borrows yet
+      liquidationThreshold: lendingInfo.liquidationThreshold,
+      entryDate: new Date()
+    });
+    
+    return position;
+  }
+  
+  async withdraw(positionId: string, amount?: number): Promise<boolean> {
+    const position = this.getPosition(positionId);
+    if (!position || position.type !== 'lending') {
+      return false;
+    }
+    
+    const withdrawAmount = amount || position.amount;
+    console.log(`📤 Withdrawing ${withdrawAmount} ${position.asset} from ${position.protocol}...`);
+    
+    if (!amount || amount >= position.amount) {
+      return this.removePosition(positionId);
+    } else {
+      this.updatePosition(positionId, {
+        amount: position.amount - amount,
+        valueUsd: position.valueUsd * ((position.amount - amount) / position.amount)
+      });
       return true;
     }
-    return false;
   }
-
-  /**
-   * Get watchlist
-   */
-  getWatchlist(): YieldOpportunity[] {
-    return [...this.watchlist];
-  }
-
-  /**
-   * Calculate impermanent loss for LP position
-   */
-  calculateImpermanentLoss(priceChangePercent: number): number {
-    // IL formula: 2 * sqrt(priceRatio) / (1 + priceRatio) - 1
-    const priceRatio = 1 + priceChangePercent / 100;
-    const il = 2 * Math.sqrt(priceRatio) / (1 + priceRatio) - 1;
-    return Math.abs(il) * 100;
-  }
-
-  /**
-   * Get DeFi summary
-   */
-  async getSummary(): Promise<{
-    protocols: number;
-    opportunities: number;
-    bestApy: { name: string; apy: number };
-    watchlistCount: number;
-  }> {
-    const opportunities = await this.getYieldOpportunities();
-    const best = opportunities[0];
-
-    return {
-      protocols: Object.keys(MOCK_PROTOCOLS).length,
-      opportunities: opportunities.length,
-      bestApy: best ? { name: best.name, apy: best.apy } : { name: 'N/A', apy: 0 },
-      watchlistCount: this.watchlist.length,
-    };
-  }
-
-  // Private methods
-
-  private loadData(): void {
-    if (!this.config.persistPath) return;
-    try {
-      const watchlistPath = path.join(this.config.persistPath, 'watchlist.json');
-      if (fs.existsSync(watchlistPath)) {
-        this.watchlist = JSON.parse(fs.readFileSync(watchlistPath, 'utf-8'));
-      }
-    } catch (e: any) {
-      console.warn('Could not load DeFi data:', e.message);
+  
+  // --------------------------------------------------------
+  // Persistence
+  // --------------------------------------------------------
+  
+  private ensureDirectory(): void {
+    if (!fs.existsSync(this.config.persistPath)) {
+      fs.mkdirSync(this.config.persistPath, { recursive: true });
     }
   }
-
-  private persistData(): void {
-    if (!this.config.persistPath) return;
+  
+  private getPositionsFilePath(): string {
+    return path.join(this.config.persistPath, 'positions.json');
+  }
+  
+  private savePositions(): void {
+    const data = Array.from(this.positions.entries());
+    fs.writeFileSync(
+      this.getPositionsFilePath(),
+      JSON.stringify(data, null, 2)
+    );
+  }
+  
+  private loadPositions(): void {
+    const filePath = this.getPositionsFilePath();
+    if (!fs.existsSync(filePath)) return;
+    
     try {
-      if (!fs.existsSync(this.config.persistPath)) {
-        fs.mkdirSync(this.config.persistPath, { recursive: true });
-      }
-      fs.writeFileSync(
-        path.join(this.config.persistPath, 'watchlist.json'),
-        JSON.stringify(this.watchlist, null, 2)
+      const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+      this.positions = new Map(
+        data.map(([id, pos]: [string, DeFiPosition]) => [
+          id,
+          {
+            ...pos,
+            entryDate: new Date(pos.entryDate),
+            lastUpdate: new Date(pos.lastUpdate)
+          }
+        ])
       );
-    } catch (e: any) {
-      console.error('Could not persist DeFi data:', e.message);
+    } catch (error) {
+      console.error('Failed to load DeFi positions:', error);
     }
+  }
+  
+  // --------------------------------------------------------
+  // Utilities
+  // --------------------------------------------------------
+  
+  private generateId(): string {
+    return `defi_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  }
+  
+  setConfig(updates: Partial<DeFiConfig>): void {
+    this.config = { ...this.config, ...updates };
+  }
+  
+  getConfig(): DeFiConfig {
+    return { ...this.config };
   }
 }
 
-export function createDeFiConnector(config?: Partial<DeFiConnectorConfig>): DeFiConnector {
-  return new DeFiConnector(config);
+// ============================================================
+// FACTORY & EXPORT
+// ============================================================
+
+let defiConnectorInstance: DeFiConnector | null = null;
+
+export function createDeFiConnector(config?: Partial<DeFiConfig>): DeFiConnector {
+  if (!defiConnectorInstance) {
+    defiConnectorInstance = new DeFiConnector(config);
+  }
+  return defiConnectorInstance;
+}
+
+export function getDeFiConnector(): DeFiConnector {
+  if (!defiConnectorInstance) {
+    defiConnectorInstance = new DeFiConnector();
+  }
+  return defiConnectorInstance;
 }
 
 export default DeFiConnector;

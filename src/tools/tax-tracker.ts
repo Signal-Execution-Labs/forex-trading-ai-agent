@@ -1,477 +1,636 @@
 /**
- * K.I.T. Tax Tracker Tool
- * 
- * Issue #7: Tax Tracking & Reporting
- * 
- * Provides tax calculation and reporting capabilities:
- * - Track cost basis (FIFO, LIFO, HIFO, Specific ID)
- * - Calculate capital gains/losses
- * - Generate tax reports
- * - Support multiple tax jurisdictions
+ * K.I.T. Tax Tracker - Automated Tax Tracking for Trading
+ * Issue #7: Calculate capital gains, generate tax reports, tax-loss harvesting
  */
 
-import { EventEmitter } from 'events';
 import * as fs from 'fs';
 import * as path from 'path';
-import { Trade, OrderSide } from './types';
 
-export type CostBasisMethod = 'fifo' | 'lifo' | 'hifo' | 'specific';
-export type TaxJurisdiction = 'us' | 'de' | 'uk' | 'generic';
+// ============================================================
+// TYPES
+// ============================================================
+
+export type TaxMethod = 'FIFO' | 'LIFO' | 'HIFO' | 'ACB';  // Average Cost Basis
+
+export type Jurisdiction = 'DE' | 'AT' | 'CH' | 'US' | 'UK';
+
+export interface Trade {
+  id: string;
+  exchange: string;
+  symbol: string;
+  side: 'buy' | 'sell';
+  amount: number;
+  price: number;
+  cost: number;  // amount * price
+  fee: number;
+  feeCurrency: string;
+  timestamp: number;
+  date: string;  // ISO date
+}
 
 export interface TaxLot {
   id: string;
-  symbol: string;
+  asset: string;
   amount: number;
-  costBasis: number;
-  costPerUnit: number;
-  acquiredAt: number;
-  exchange?: string;
-  tradeId?: string;
+  costBasis: number;  // Per unit
+  totalCost: number;
+  acquiredAt: Date;
+  exchange: string;
+  remainingAmount: number;
 }
 
-export interface DisposalEvent {
+export interface CapitalGain {
   id: string;
-  symbol: string;
+  asset: string;
   amount: number;
   proceeds: number;
   costBasis: number;
-  gainLoss: number;
-  isShortTerm: boolean;
-  disposedAt: number;
-  acquiredAt: number;
-  lotId: string;
-  exchange?: string;
-  tradeId?: string;
+  gain: number;
+  gainPercent: number;
+  holdingDays: number;
+  isLongTerm: boolean;
+  isTaxFree: boolean;  // Germany: 1 year holding = tax free
+  taxableGain: number;
+  disposedAt: Date;
+  acquiredAt: Date;
+  method: TaxMethod;
+}
+
+export interface TaxLossHarvestOpportunity {
+  asset: string;
+  currentAmount: number;
+  costBasis: number;
+  currentPrice: number;
+  currentValue: number;
+  unrealizedLoss: number;
+  potentialTaxSavings: number;  // At estimated rate
+  holdingDays: number;
+  recommendation: string;
 }
 
 export interface TaxSummary {
   year: number;
-  shortTermGains: number;
-  shortTermLosses: number;
+  jurisdiction: Jurisdiction;
+  method: TaxMethod;
+  
+  // Gains
+  totalProceeds: number;
+  totalCostBasis: number;
+  totalGains: number;
+  totalLosses: number;
+  netGainLoss: number;
+  
+  // Tax-free (Germany specific)
   longTermGains: number;
-  longTermLosses: number;
-  netShortTerm: number;
-  netLongTerm: number;
-  totalGainLoss: number;
-  disposalCount: number;
-  jurisdiction: TaxJurisdiction;
+  shortTermGains: number;
+  taxFreeGains: number;
+  taxableGains: number;
+  
+  // Fees
+  totalFees: number;
+  
+  // Estimated tax
+  estimatedTax: number;
+  effectiveRate: number;
+  
+  // By asset
+  byAsset: Record<string, {
+    gains: number;
+    losses: number;
+    net: number;
+    taxable: number;
+  }>;
+  
+  // Trade stats
+  totalTrades: number;
+  buyTrades: number;
+  sellTrades: number;
 }
 
-export interface TaxReport {
-  period: { start: string; end: string };
-  summary: TaxSummary;
-  disposals: DisposalEvent[];
-  unrealizedGains: { symbol: string; amount: number; costBasis: number; unrealized: number }[];
-  generatedAt: number;
+export interface TaxConfig {
+  jurisdiction: Jurisdiction;
+  method: TaxMethod;
+  taxYear: number;
+  
+  // Tax rates by jurisdiction
+  shortTermRate: number;  // For short-term gains
+  longTermRate: number;   // For long-term gains
+  cryptoHoldingPeriod: number;  // Days for tax-free (DE: 365)
+  
+  // Paths
+  persistPath: string;
 }
 
-export interface TaxTrackerConfig {
-  costBasisMethod: CostBasisMethod;
-  jurisdiction: TaxJurisdiction;
-  shortTermThresholdDays?: number;
-  persistPath?: string;
-}
+// ============================================================
+// TAX TRACKER CLASS
+// ============================================================
 
-const DEFAULT_CONFIG: TaxTrackerConfig = {
-  costBasisMethod: 'fifo',
-  jurisdiction: 'generic',
-  shortTermThresholdDays: 365, // 1 year for most jurisdictions
-  persistPath: path.join(process.env.HOME || process.env.USERPROFILE || '', '.kit', 'tax'),
-};
-
-// Jurisdiction-specific settings
-const JURISDICTION_CONFIG: Record<TaxJurisdiction, { shortTermDays: number; name: string }> = {
-  us: { shortTermDays: 365, name: 'United States' },
-  de: { shortTermDays: 365, name: 'Germany (Spekulationsfrist)' },
-  uk: { shortTermDays: 0, name: 'United Kingdom (no distinction)' },
-  generic: { shortTermDays: 365, name: 'Generic' },
-};
-
-export class TaxTracker extends EventEmitter {
-  private config: TaxTrackerConfig;
-  private lots: Map<string, TaxLot[]> = new Map(); // symbol -> lots
-  private disposals: DisposalEvent[] = [];
-
-  constructor(config?: Partial<TaxTrackerConfig>) {
-    super();
-    this.config = { ...DEFAULT_CONFIG, ...config };
+export class TaxTracker {
+  private config: TaxConfig;
+  private trades: Trade[] = [];
+  private lots: Map<string, TaxLot[]> = new Map();  // asset -> lots
+  private gains: CapitalGain[] = [];
+  
+  constructor(config: Partial<TaxConfig> = {}) {
+    this.config = {
+      jurisdiction: 'DE',
+      method: 'FIFO',
+      taxYear: new Date().getFullYear(),
+      shortTermRate: 0.42,  // Germany: up to 45% + Soli
+      longTermRate: 0,      // Germany: crypto tax-free after 1 year
+      cryptoHoldingPeriod: 365,
+      persistPath: path.join(process.env.HOME || process.env.USERPROFILE || '', '.kit', 'tax'),
+      ...config
+    };
     
-    // Apply jurisdiction-specific settings
-    const jurisdictionSettings = JURISDICTION_CONFIG[this.config.jurisdiction];
-    this.config.shortTermThresholdDays = jurisdictionSettings.shortTermDays;
-    
+    this.ensureDirectory();
     this.loadData();
   }
-
-  /**
-   * Record a buy transaction (adds tax lot)
-   */
-  recordBuy(params: {
-    symbol: string;
-    amount: number;
-    price: number;
-    timestamp: number;
-    exchange?: string;
-    tradeId?: string;
-  }): TaxLot {
-    const lot: TaxLot = {
-      id: `lot_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      symbol: params.symbol,
-      amount: params.amount,
-      costBasis: params.amount * params.price,
-      costPerUnit: params.price,
-      acquiredAt: params.timestamp,
-      exchange: params.exchange,
-      tradeId: params.tradeId,
+  
+  // --------------------------------------------------------
+  // Trade Import
+  // --------------------------------------------------------
+  
+  importTrade(trade: Omit<Trade, 'id'>): Trade {
+    const fullTrade: Trade = {
+      ...trade,
+      id: this.generateId('trade')
     };
-
-    const symbolLots = this.lots.get(params.symbol) || [];
-    symbolLots.push(lot);
-    this.lots.set(params.symbol, symbolLots);
-
-    this.persistData();
-    this.emit('lotAdded', lot);
-
-    return lot;
-  }
-
-  /**
-   * Record a sell transaction (disposes of lots, calculates gains)
-   */
-  recordSell(params: {
-    symbol: string;
-    amount: number;
-    price: number;
-    timestamp: number;
-    exchange?: string;
-    tradeId?: string;
-    specificLotId?: string; // For specific identification method
-  }): DisposalEvent[] {
-    const symbolLots = this.lots.get(params.symbol) || [];
     
-    if (symbolLots.length === 0) {
-      throw new Error(`No tax lots found for ${params.symbol}`);
-    }
-
-    const totalAvailable = symbolLots.reduce((sum, lot) => sum + lot.amount, 0);
-    if (totalAvailable < params.amount) {
-      throw new Error(`Insufficient lots for ${params.symbol}: have ${totalAvailable}, need ${params.amount}`);
-    }
-
-    // Sort lots based on cost basis method
-    const sortedLots = this.sortLotsByMethod(symbolLots, params.specificLotId);
+    this.trades.push(fullTrade);
     
-    let remainingAmount = params.amount;
-    const proceeds = params.amount * params.price;
-    const events: DisposalEvent[] = [];
-    const lotsToRemove: string[] = [];
-
-    for (const lot of sortedLots) {
-      if (remainingAmount <= 0) break;
-
-      const disposedAmount = Math.min(remainingAmount, lot.amount);
-      const disposedCostBasis = (disposedAmount / lot.amount) * lot.costBasis;
-      const disposedProceeds = (disposedAmount / params.amount) * proceeds;
-      const gainLoss = disposedProceeds - disposedCostBasis;
-
-      const holdingPeriodMs = params.timestamp - lot.acquiredAt;
-      const holdingPeriodDays = holdingPeriodMs / (1000 * 60 * 60 * 24);
-      const isShortTerm = holdingPeriodDays < (this.config.shortTermThresholdDays || 365);
-
-      const disposal: DisposalEvent = {
-        id: `disposal_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        symbol: params.symbol,
-        amount: disposedAmount,
-        proceeds: disposedProceeds,
-        costBasis: disposedCostBasis,
-        gainLoss,
-        isShortTerm,
-        disposedAt: params.timestamp,
-        acquiredAt: lot.acquiredAt,
-        lotId: lot.id,
-        exchange: params.exchange,
-        tradeId: params.tradeId,
-      };
-
-      events.push(disposal);
-      this.disposals.push(disposal);
-
-      // Update or remove lot
-      lot.amount -= disposedAmount;
-      lot.costBasis -= disposedCostBasis;
-
-      if (lot.amount <= 0.00000001) {
-        lotsToRemove.push(lot.id);
-      }
-
-      remainingAmount -= disposedAmount;
-    }
-
-    // Remove depleted lots
-    const updatedLots = symbolLots.filter(lot => !lotsToRemove.includes(lot.id));
-    this.lots.set(params.symbol, updatedLots);
-
-    this.persistData();
-    for (const event of events) {
-      this.emit('disposal', event);
-    }
-
-    return events;
-  }
-
-  /**
-   * Record a trade (auto-detects buy/sell)
-   */
-  recordTrade(trade: Trade): DisposalEvent[] | TaxLot {
-    const baseAsset = trade.symbol.split('/')[0];
-    
+    // Update tax lots
     if (trade.side === 'buy') {
-      return this.recordBuy({
-        symbol: baseAsset,
-        amount: trade.amount,
-        price: trade.price,
-        timestamp: trade.timestamp,
-        tradeId: trade.id,
-      });
+      this.addLot(trade);
     } else {
-      return this.recordSell({
-        symbol: baseAsset,
-        amount: trade.amount,
-        price: trade.price,
-        timestamp: trade.timestamp,
-        tradeId: trade.id,
+      this.disposeLots(trade);
+    }
+    
+    this.saveData();
+    return fullTrade;
+  }
+  
+  importTrades(trades: Omit<Trade, 'id'>[]): Trade[] {
+    // Sort by timestamp to process in order
+    const sorted = [...trades].sort((a, b) => a.timestamp - b.timestamp);
+    return sorted.map(t => this.importTrade(t));
+  }
+  
+  // --------------------------------------------------------
+  // Tax Lot Management
+  // --------------------------------------------------------
+  
+  private addLot(trade: Omit<Trade, 'id'>): void {
+    const asset = trade.symbol.split('/')[0];  // BTC from BTC/USDT
+    
+    const lot: TaxLot = {
+      id: this.generateId('lot'),
+      asset,
+      amount: trade.amount,
+      costBasis: trade.price,
+      totalCost: trade.cost + trade.fee,
+      acquiredAt: new Date(trade.timestamp),
+      exchange: trade.exchange,
+      remainingAmount: trade.amount
+    };
+    
+    if (!this.lots.has(asset)) {
+      this.lots.set(asset, []);
+    }
+    this.lots.get(asset)!.push(lot);
+  }
+  
+  private disposeLots(trade: Omit<Trade, 'id'>): void {
+    const asset = trade.symbol.split('/')[0];
+    const lots = this.lots.get(asset) || [];
+    
+    if (lots.length === 0) {
+      console.warn(`No tax lots found for ${asset} - trade may be missing`);
+      return;
+    }
+    
+    // Sort lots based on method
+    const sortedLots = this.sortLotsByMethod(lots);
+    
+    let remainingToSell = trade.amount;
+    const sellDate = new Date(trade.timestamp);
+    
+    for (const lot of sortedLots) {
+      if (remainingToSell <= 0) break;
+      if (lot.remainingAmount <= 0) continue;
+      
+      const soldAmount = Math.min(lot.remainingAmount, remainingToSell);
+      const proceeds = soldAmount * trade.price;
+      const costBasis = soldAmount * (lot.totalCost / lot.amount);
+      const gain = proceeds - costBasis;
+      const holdingDays = Math.floor((sellDate.getTime() - lot.acquiredAt.getTime()) / (1000 * 60 * 60 * 24));
+      
+      const isLongTerm = holdingDays >= this.config.cryptoHoldingPeriod;
+      const isTaxFree = this.config.jurisdiction === 'DE' && isLongTerm;
+      
+      const capitalGain: CapitalGain = {
+        id: this.generateId('gain'),
+        asset,
+        amount: soldAmount,
+        proceeds,
+        costBasis,
+        gain,
+        gainPercent: (gain / costBasis) * 100,
+        holdingDays,
+        isLongTerm,
+        isTaxFree,
+        taxableGain: isTaxFree ? 0 : gain,
+        disposedAt: sellDate,
+        acquiredAt: lot.acquiredAt,
+        method: this.config.method
+      };
+      
+      this.gains.push(capitalGain);
+      
+      // Update lot
+      lot.remainingAmount -= soldAmount;
+      remainingToSell -= soldAmount;
+    }
+  }
+  
+  private sortLotsByMethod(lots: TaxLot[]): TaxLot[] {
+    const available = lots.filter(l => l.remainingAmount > 0);
+    
+    switch (this.config.method) {
+      case 'FIFO':  // First In, First Out
+        return available.sort((a, b) => a.acquiredAt.getTime() - b.acquiredAt.getTime());
+        
+      case 'LIFO':  // Last In, First Out
+        return available.sort((a, b) => b.acquiredAt.getTime() - a.acquiredAt.getTime());
+        
+      case 'HIFO':  // Highest In, First Out
+        return available.sort((a, b) => b.costBasis - a.costBasis);
+        
+      case 'ACB':   // Average Cost Basis - treat as single lot
+      default:
+        return available;
+    }
+  }
+  
+  // --------------------------------------------------------
+  // Tax Calculations
+  // --------------------------------------------------------
+  
+  calculateTaxSummary(year?: number): TaxSummary {
+    const taxYear = year || this.config.taxYear;
+    const yearGains = this.gains.filter(g => g.disposedAt.getFullYear() === taxYear);
+    const yearTrades = this.trades.filter(t => new Date(t.timestamp).getFullYear() === taxYear);
+    
+    // Calculate totals
+    let totalProceeds = 0;
+    let totalCostBasis = 0;
+    let totalGains = 0;
+    let totalLosses = 0;
+    let longTermGains = 0;
+    let shortTermGains = 0;
+    let taxFreeGains = 0;
+    let taxableGains = 0;
+    const byAsset: TaxSummary['byAsset'] = {};
+    
+    for (const gain of yearGains) {
+      totalProceeds += gain.proceeds;
+      totalCostBasis += gain.costBasis;
+      
+      if (gain.gain > 0) {
+        totalGains += gain.gain;
+        if (gain.isLongTerm) longTermGains += gain.gain;
+        else shortTermGains += gain.gain;
+      } else {
+        totalLosses += Math.abs(gain.gain);
+      }
+      
+      if (gain.isTaxFree) {
+        taxFreeGains += Math.max(0, gain.gain);
+      } else {
+        taxableGains += gain.gain;
+      }
+      
+      // By asset
+      if (!byAsset[gain.asset]) {
+        byAsset[gain.asset] = { gains: 0, losses: 0, net: 0, taxable: 0 };
+      }
+      if (gain.gain > 0) {
+        byAsset[gain.asset].gains += gain.gain;
+      } else {
+        byAsset[gain.asset].losses += Math.abs(gain.gain);
+      }
+      byAsset[gain.asset].net += gain.gain;
+      byAsset[gain.asset].taxable += gain.taxableGain;
+    }
+    
+    // Calculate fees
+    const totalFees = yearTrades.reduce((sum, t) => sum + t.fee, 0);
+    
+    // Estimate tax
+    const estimatedTax = Math.max(0, taxableGains * this.config.shortTermRate);
+    const effectiveRate = totalGains > 0 ? estimatedTax / totalGains : 0;
+    
+    return {
+      year: taxYear,
+      jurisdiction: this.config.jurisdiction,
+      method: this.config.method,
+      totalProceeds,
+      totalCostBasis,
+      totalGains,
+      totalLosses,
+      netGainLoss: totalGains - totalLosses,
+      longTermGains,
+      shortTermGains,
+      taxFreeGains,
+      taxableGains: Math.max(0, taxableGains),
+      totalFees,
+      estimatedTax,
+      effectiveRate,
+      byAsset,
+      totalTrades: yearTrades.length,
+      buyTrades: yearTrades.filter(t => t.side === 'buy').length,
+      sellTrades: yearTrades.filter(t => t.side === 'sell').length
+    };
+  }
+  
+  // --------------------------------------------------------
+  // Tax-Loss Harvesting
+  // --------------------------------------------------------
+  
+  findTaxLossOpportunities(currentPrices: Record<string, number>): TaxLossHarvestOpportunity[] {
+    const opportunities: TaxLossHarvestOpportunity[] = [];
+    const now = new Date();
+    
+    for (const [asset, lots] of this.lots.entries()) {
+      const availableLots = lots.filter(l => l.remainingAmount > 0);
+      if (availableLots.length === 0) continue;
+      
+      const currentPrice = currentPrices[asset];
+      if (!currentPrice) continue;
+      
+      // Calculate totals for this asset
+      let totalAmount = 0;
+      let totalCost = 0;
+      let weightedHoldingDays = 0;
+      
+      for (const lot of availableLots) {
+        totalAmount += lot.remainingAmount;
+        totalCost += lot.remainingAmount * (lot.totalCost / lot.amount);
+        const days = Math.floor((now.getTime() - lot.acquiredAt.getTime()) / (1000 * 60 * 60 * 24));
+        weightedHoldingDays += days * lot.remainingAmount;
+      }
+      
+      const avgCostBasis = totalCost / totalAmount;
+      const currentValue = totalAmount * currentPrice;
+      const unrealizedPnL = currentValue - totalCost;
+      const avgHoldingDays = Math.floor(weightedHoldingDays / totalAmount);
+      
+      // Only show losses
+      if (unrealizedPnL >= 0) continue;
+      
+      const unrealizedLoss = Math.abs(unrealizedPnL);
+      const potentialTaxSavings = unrealizedLoss * this.config.shortTermRate;
+      
+      // Determine recommendation
+      let recommendation = '';
+      if (unrealizedLoss > 500) {
+        if (avgHoldingDays < this.config.cryptoHoldingPeriod - 30) {
+          recommendation = 'Consider selling to realize loss for tax offset. Can rebuy after wash sale period.';
+        } else if (avgHoldingDays >= this.config.cryptoHoldingPeriod) {
+          recommendation = 'Position is already long-term. Harvesting may not be optimal.';
+        } else {
+          recommendation = `Close to long-term threshold (${this.config.cryptoHoldingPeriod - avgHoldingDays} days). Consider waiting.`;
+        }
+      } else {
+        recommendation = 'Loss too small to justify transaction costs.';
+      }
+      
+      opportunities.push({
+        asset,
+        currentAmount: totalAmount,
+        costBasis: avgCostBasis,
+        currentPrice,
+        currentValue,
+        unrealizedLoss,
+        potentialTaxSavings,
+        holdingDays: avgHoldingDays,
+        recommendation
       });
     }
+    
+    // Sort by potential savings
+    return opportunities.sort((a, b) => b.potentialTaxSavings - a.potentialTaxSavings);
   }
+  
+  // --------------------------------------------------------
+  // Reports
+  // --------------------------------------------------------
+  
+  generateReport(year?: number): string {
+    const summary = this.calculateTaxSummary(year);
+    
+    let report = `
+🧾 ANNUAL TAX REPORT ${summary.year}
+${'='.repeat(60)}
+Jurisdiction: ${summary.jurisdiction}
+Method: ${summary.method}
 
-  /**
-   * Get tax summary for a year
-   */
-  getSummary(year: number): TaxSummary {
-    const yearStart = new Date(year, 0, 1).getTime();
-    const yearEnd = new Date(year + 1, 0, 1).getTime();
+SUMMARY
+${'-'.repeat(60)}
+Total Proceeds:     €${summary.totalProceeds.toLocaleString('de-DE', { minimumFractionDigits: 2 })}
+Total Cost Basis:   €${summary.totalCostBasis.toLocaleString('de-DE', { minimumFractionDigits: 2 })}
+Total Gains:        €${summary.totalGains.toLocaleString('de-DE', { minimumFractionDigits: 2 })}
+Total Losses:       €${summary.totalLosses.toLocaleString('de-DE', { minimumFractionDigits: 2 })}
+Net Gain/Loss:      €${summary.netGainLoss.toLocaleString('de-DE', { minimumFractionDigits: 2 })}
 
-    const yearDisposals = this.disposals.filter(
-      d => d.disposedAt >= yearStart && d.disposedAt < yearEnd
-    );
+TAX BREAKDOWN
+${'-'.repeat(60)}
+Long-Term Gains:    €${summary.longTermGains.toLocaleString('de-DE', { minimumFractionDigits: 2 })}
+Short-Term Gains:   €${summary.shortTermGains.toLocaleString('de-DE', { minimumFractionDigits: 2 })}
+Tax-Free Gains:     €${summary.taxFreeGains.toLocaleString('de-DE', { minimumFractionDigits: 2 })} ✨
+Taxable Gains:      €${summary.taxableGains.toLocaleString('de-DE', { minimumFractionDigits: 2 })}
 
-    let shortTermGains = 0, shortTermLosses = 0;
-    let longTermGains = 0, longTermLosses = 0;
+Estimated Tax:      €${summary.estimatedTax.toLocaleString('de-DE', { minimumFractionDigits: 2 })}
+Effective Rate:     ${(summary.effectiveRate * 100).toFixed(1)}%
 
-    for (const disposal of yearDisposals) {
-      if (disposal.isShortTerm) {
-        if (disposal.gainLoss >= 0) shortTermGains += disposal.gainLoss;
-        else shortTermLosses += Math.abs(disposal.gainLoss);
-      } else {
-        if (disposal.gainLoss >= 0) longTermGains += disposal.gainLoss;
-        else longTermLosses += Math.abs(disposal.gainLoss);
-      }
+TRADING ACTIVITY
+${'-'.repeat(60)}
+Total Trades:       ${summary.totalTrades}
+Buy Orders:         ${summary.buyTrades}
+Sell Orders:        ${summary.sellTrades}
+Total Fees:         €${summary.totalFees.toLocaleString('de-DE', { minimumFractionDigits: 2 })}
+
+BY ASSET
+${'-'.repeat(60)}
+`;
+
+    for (const [asset, data] of Object.entries(summary.byAsset)) {
+      const status = data.net >= 0 ? '📈' : '📉';
+      report += `${status} ${asset.padEnd(6)} | Gains: €${data.gains.toFixed(2).padStart(10)} | Losses: €${data.losses.toFixed(2).padStart(10)} | Taxable: €${data.taxable.toFixed(2).padStart(10)}\n`;
     }
-
-    return {
-      year,
-      shortTermGains,
-      shortTermLosses,
-      longTermGains,
-      longTermLosses,
-      netShortTerm: shortTermGains - shortTermLosses,
-      netLongTerm: longTermGains - longTermLosses,
-      totalGainLoss: (shortTermGains - shortTermLosses) + (longTermGains - longTermLosses),
-      disposalCount: yearDisposals.length,
-      jurisdiction: this.config.jurisdiction,
-    };
+    
+    return report;
   }
-
-  /**
-   * Generate full tax report
-   */
-  generateReport(year: number): TaxReport {
-    const yearStart = new Date(year, 0, 1).getTime();
-    const yearEnd = new Date(year + 1, 0, 1).getTime();
-
-    const yearDisposals = this.disposals.filter(
-      d => d.disposedAt >= yearStart && d.disposedAt < yearEnd
-    );
-
-    // Calculate unrealized gains
-    const unrealizedGains: TaxReport['unrealizedGains'] = [];
-    // Note: Would need current prices - placeholder
-    for (const [symbol, lots] of this.lots) {
-      const totalAmount = lots.reduce((sum, lot) => sum + lot.amount, 0);
-      const totalCostBasis = lots.reduce((sum, lot) => sum + lot.costBasis, 0);
-      
-      if (totalAmount > 0) {
-        unrealizedGains.push({
-          symbol,
-          amount: totalAmount,
-          costBasis: totalCostBasis,
-          unrealized: 0, // Would need current price
-        });
-      }
-    }
-
-    return {
-      period: {
-        start: new Date(yearStart).toISOString().split('T')[0],
-        end: new Date(yearEnd - 1).toISOString().split('T')[0],
-      },
-      summary: this.getSummary(year),
-      disposals: yearDisposals.sort((a, b) => a.disposedAt - b.disposedAt),
-      unrealizedGains,
-      generatedAt: Date.now(),
-    };
-  }
-
-  /**
-   * Export report as CSV
-   */
-  exportCSV(year: number): string {
-    const report = this.generateReport(year);
+  
+  exportToCSV(year?: number): string {
+    const taxYear = year || this.config.taxYear;
+    const yearGains = this.gains.filter(g => g.disposedAt.getFullYear() === taxYear);
     
     const headers = [
-      'Date', 'Symbol', 'Amount', 'Proceeds', 'Cost Basis', 
-      'Gain/Loss', 'Type', 'Acquired Date', 'Holding Days'
+      'Date', 'Asset', 'Amount', 'Proceeds', 'Cost Basis', 'Gain/Loss',
+      'Holding Days', 'Long Term', 'Tax Free', 'Taxable Amount', 'Method'
     ].join(',');
-
-    const rows = report.disposals.map(d => {
-      const disposedDate = new Date(d.disposedAt).toISOString().split('T')[0];
-      const acquiredDate = new Date(d.acquiredAt).toISOString().split('T')[0];
-      const holdingDays = Math.floor((d.disposedAt - d.acquiredAt) / (1000 * 60 * 60 * 24));
-      
-      return [
-        disposedDate,
-        d.symbol,
-        d.amount.toFixed(8),
-        d.proceeds.toFixed(2),
-        d.costBasis.toFixed(2),
-        d.gainLoss.toFixed(2),
-        d.isShortTerm ? 'Short-Term' : 'Long-Term',
-        acquiredDate,
-        holdingDays,
-      ].join(',');
-    });
-
+    
+    const rows = yearGains.map(g => [
+      g.disposedAt.toISOString().split('T')[0],
+      g.asset,
+      g.amount.toFixed(8),
+      g.proceeds.toFixed(2),
+      g.costBasis.toFixed(2),
+      g.gain.toFixed(2),
+      g.holdingDays,
+      g.isLongTerm ? 'Yes' : 'No',
+      g.isTaxFree ? 'Yes' : 'No',
+      g.taxableGain.toFixed(2),
+      g.method
+    ].join(','));
+    
     return [headers, ...rows].join('\n');
   }
-
-  /**
-   * Get current lots for a symbol
-   */
-  getLots(symbol?: string): TaxLot[] {
-    if (symbol) {
-      return this.lots.get(symbol) || [];
-    }
-    return Array.from(this.lots.values()).flat();
-  }
-
-  /**
-   * Get disposal history
-   */
-  getDisposals(year?: number): DisposalEvent[] {
-    if (year) {
-      const yearStart = new Date(year, 0, 1).getTime();
-      const yearEnd = new Date(year + 1, 0, 1).getTime();
-      return this.disposals.filter(d => d.disposedAt >= yearStart && d.disposedAt < yearEnd);
-    }
-    return [...this.disposals];
-  }
-
-  /**
-   * Change cost basis method
-   */
-  setCostBasisMethod(method: CostBasisMethod): void {
-    this.config.costBasisMethod = method;
-    this.emit('methodChanged', method);
-  }
-
-  /**
-   * Get total cost basis across all holdings
-   */
-  getTotalCostBasis(): number {
-    let total = 0;
-    for (const lots of this.lots.values()) {
-      total += lots.reduce((sum, lot) => sum + lot.costBasis, 0);
-    }
-    return total;
-  }
-
-  // Private methods
-
-  private sortLotsByMethod(lots: TaxLot[], specificLotId?: string): TaxLot[] {
-    if (specificLotId) {
-      const specific = lots.find(l => l.id === specificLotId);
-      if (specific) return [specific, ...lots.filter(l => l.id !== specificLotId)];
-    }
-
-    const sortedLots = [...lots];
-
-    switch (this.config.costBasisMethod) {
-      case 'fifo': // First In, First Out
-        return sortedLots.sort((a, b) => a.acquiredAt - b.acquiredAt);
+  
+  // --------------------------------------------------------
+  // Holdings & Lots
+  // --------------------------------------------------------
+  
+  getHoldings(): Record<string, { amount: number; avgCost: number; totalCost: number }> {
+    const holdings: Record<string, { amount: number; avgCost: number; totalCost: number }> = {};
+    
+    for (const [asset, lots] of this.lots.entries()) {
+      let totalAmount = 0;
+      let totalCost = 0;
       
-      case 'lifo': // Last In, First Out
-        return sortedLots.sort((a, b) => b.acquiredAt - a.acquiredAt);
-      
-      case 'hifo': // Highest In, First Out (minimizes gains)
-        return sortedLots.sort((a, b) => b.costPerUnit - a.costPerUnit);
-      
-      default:
-        return sortedLots;
-    }
-  }
-
-  private loadData(): void {
-    if (!this.config.persistPath) return;
-    try {
-      const lotsPath = path.join(this.config.persistPath, 'lots.json');
-      const disposalsPath = path.join(this.config.persistPath, 'disposals.json');
-
-      if (fs.existsSync(lotsPath)) {
-        const lotsData = JSON.parse(fs.readFileSync(lotsPath, 'utf-8'));
-        for (const [symbol, lots] of Object.entries(lotsData)) {
-          this.lots.set(symbol, lots as TaxLot[]);
+      for (const lot of lots) {
+        if (lot.remainingAmount > 0) {
+          totalAmount += lot.remainingAmount;
+          totalCost += lot.remainingAmount * (lot.totalCost / lot.amount);
         }
       }
-
-      if (fs.existsSync(disposalsPath)) {
-        this.disposals = JSON.parse(fs.readFileSync(disposalsPath, 'utf-8'));
+      
+      if (totalAmount > 0) {
+        holdings[asset] = {
+          amount: totalAmount,
+          avgCost: totalCost / totalAmount,
+          totalCost
+        };
       }
-
-      console.log(`Loaded ${this.lots.size} symbols, ${this.disposals.length} disposals`);
-    } catch (e: any) {
-      console.warn('Could not load tax data:', e.message);
+    }
+    
+    return holdings;
+  }
+  
+  getLots(asset?: string): TaxLot[] {
+    if (asset) {
+      return this.lots.get(asset)?.filter(l => l.remainingAmount > 0) || [];
+    }
+    
+    const allLots: TaxLot[] = [];
+    for (const lots of this.lots.values()) {
+      allLots.push(...lots.filter(l => l.remainingAmount > 0));
+    }
+    return allLots;
+  }
+  
+  // --------------------------------------------------------
+  // Persistence
+  // --------------------------------------------------------
+  
+  private ensureDirectory(): void {
+    if (!fs.existsSync(this.config.persistPath)) {
+      fs.mkdirSync(this.config.persistPath, { recursive: true });
     }
   }
-
-  private persistData(): void {
-    if (!this.config.persistPath) return;
+  
+  private getDataFilePath(): string {
+    return path.join(this.config.persistPath, 'tax-data.json');
+  }
+  
+  private saveData(): void {
+    const data = {
+      config: this.config,
+      trades: this.trades,
+      lots: Array.from(this.lots.entries()),
+      gains: this.gains
+    };
+    
+    fs.writeFileSync(this.getDataFilePath(), JSON.stringify(data, null, 2));
+  }
+  
+  private loadData(): void {
+    const filePath = this.getDataFilePath();
+    if (!fs.existsSync(filePath)) return;
+    
     try {
-      if (!fs.existsSync(this.config.persistPath)) {
-        fs.mkdirSync(this.config.persistPath, { recursive: true });
-      }
-
-      const lotsObj: Record<string, TaxLot[]> = {};
-      for (const [symbol, lots] of this.lots) {
-        lotsObj[symbol] = lots;
-      }
-
-      fs.writeFileSync(
-        path.join(this.config.persistPath, 'lots.json'),
-        JSON.stringify(lotsObj, null, 2)
+      const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+      this.trades = data.trades || [];
+      this.lots = new Map(
+        (data.lots || []).map(([asset, lots]: [string, TaxLot[]]) => [
+          asset,
+          lots.map(l => ({ ...l, acquiredAt: new Date(l.acquiredAt) }))
+        ])
       );
-
-      fs.writeFileSync(
-        path.join(this.config.persistPath, 'disposals.json'),
-        JSON.stringify(this.disposals, null, 2)
-      );
-    } catch (e: any) {
-      console.error('Could not persist tax data:', e.message);
+      this.gains = (data.gains || []).map((g: CapitalGain) => ({
+        ...g,
+        disposedAt: new Date(g.disposedAt),
+        acquiredAt: new Date(g.acquiredAt)
+      }));
+    } catch (error) {
+      console.error('Failed to load tax data:', error);
     }
+  }
+  
+  // --------------------------------------------------------
+  // Utilities
+  // --------------------------------------------------------
+  
+  private generateId(prefix: string): string {
+    return `${prefix}_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  }
+  
+  setConfig(updates: Partial<TaxConfig>): void {
+    this.config = { ...this.config, ...updates };
+    this.saveData();
+  }
+  
+  getConfig(): TaxConfig {
+    return { ...this.config };
+  }
+  
+  clearData(): void {
+    this.trades = [];
+    this.lots = new Map();
+    this.gains = [];
+    this.saveData();
   }
 }
 
-export function createTaxTracker(config?: Partial<TaxTrackerConfig>): TaxTracker {
-  return new TaxTracker(config);
+// ============================================================
+// FACTORY & EXPORT
+// ============================================================
+
+let taxTrackerInstance: TaxTracker | null = null;
+
+export function createTaxTracker(config?: Partial<TaxConfig>): TaxTracker {
+  if (!taxTrackerInstance) {
+    taxTrackerInstance = new TaxTracker(config);
+  }
+  return taxTrackerInstance;
+}
+
+export function getTaxTracker(): TaxTracker {
+  if (!taxTrackerInstance) {
+    taxTrackerInstance = new TaxTracker();
+  }
+  return taxTrackerInstance;
 }
 
 export default TaxTracker;

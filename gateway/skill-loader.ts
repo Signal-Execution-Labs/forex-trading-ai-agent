@@ -20,7 +20,7 @@ import { MarketAnalyzer, createMarketAnalyzer } from '../src/tools/market-analys
 import { PortfolioTracker, createPortfolioTracker } from '../src/tools/portfolio-tracker';
 import { AlertSystem, createAlertSystem } from '../src/tools/alert-system';
 import { Backtester, createBacktester } from '../src/tools/backtester';
-import { Scheduler, createScheduler } from '../src/tools/scheduler';
+import { TaskScheduler, createTaskScheduler } from '../src/tools/task-scheduler';
 import { TaxTracker, createTaxTracker } from '../src/tools/tax-tracker';
 import { DeFiConnector, createDeFiConnector } from '../src/tools/defi-connector';
 import type { ExchangeConfig } from '../src/tools/types';
@@ -73,7 +73,7 @@ export class SkillLoader extends EventEmitter {
   private portfolioTracker?: PortfolioTracker;
   private alertSystem?: AlertSystem;
   private backtester?: Backtester;
-  private scheduler?: Scheduler;
+  private taskScheduler?: TaskScheduler;
   private taxTracker?: TaxTracker;
   private defiConnector?: DeFiConnector;
   private toolsInitialized: boolean = false;
@@ -106,11 +106,9 @@ export class SkillLoader extends EventEmitter {
         exchange: this.config.exchange,
       });
 
-      this.backtester = createBacktester({
-        exchange: this.config.exchange,
-      });
+      this.backtester = createBacktester();
 
-      this.scheduler = createScheduler();
+      this.taskScheduler = createTaskScheduler();
 
       this.taxTracker = createTaxTracker();
 
@@ -122,10 +120,9 @@ export class SkillLoader extends EventEmitter {
           this.autoTrader.connect(),
           this.marketAnalyzer.connect(),
           this.portfolioTracker.connect(),
-          this.alertSystem.start(),
-          this.backtester.connect(),
         ]);
-        this.scheduler.start();
+        this.alertSystem.start();
+        this.taskScheduler.start();
       }
 
       this.toolsInitialized = true;
@@ -174,11 +171,11 @@ export class SkillLoader extends EventEmitter {
     return this.backtester!;
   }
 
-  private async getScheduler(): Promise<Scheduler> {
-    if (!this.scheduler) {
+  private async getTaskScheduler(): Promise<TaskScheduler> {
+    if (!this.taskScheduler) {
       await this.initializeTools();
     }
-    return this.scheduler!;
+    return this.taskScheduler!;
   }
 
   private async getTaxTracker(): Promise<TaxTracker> {
@@ -344,6 +341,8 @@ export class SkillLoader extends EventEmitter {
           return this.executeAlertSystem(method, params);
         case 'news-tracker':
           return this.executeNewsTracker(method, params);
+        case 'task-scheduler':
+          return this.executeTaskScheduler(method, params);
         case 'tax-tracker':
           return this.executeTaxTracker(method, params);
         case 'defi-connector':
@@ -484,37 +483,79 @@ export class SkillLoader extends EventEmitter {
     
     switch (method) {
       case 'run':
-        return backtester.run({
+        const config = {
           symbol: params.pair || params.symbol,
-          strategy: params.strategy,
-          startDate: params.start || params.startDate,
-          endDate: params.end || params.endDate,
-          timeframe: params.timeframe,
-          initialCapital: params.capital || params.initialCapital,
-        });
+          timeframe: params.timeframe || '4h',
+          startDate: params.start || params.startDate ? new Date(params.start || params.startDate) : undefined,
+          endDate: params.end || params.endDate ? new Date(params.end || params.endDate) : undefined,
+          initialCapital: params.capital || params.initialCapital || 10000,
+          positionSizePct: params.positionSizePct || 95,
+          commission: params.commission || 0.001,
+          slippage: params.slippage || 0.0005,
+        };
+        const result = await backtester.runBacktest(params.strategy, config);
+        return { result, report: backtester.generateReport(result) };
+      case 'compare':
+        const compareConfig = {
+          symbol: params.pair || params.symbol,
+          timeframe: params.timeframe || '4h',
+          initialCapital: params.capital || 10000,
+          positionSizePct: 95,
+          commission: 0.001,
+          slippage: 0.0005,
+        };
+        const results = await backtester.compareStrategies(compareConfig, params.strategies);
+        return { results, report: backtester.generateComparisonReport(results) };
       case 'strategies':
-        return { strategies: backtester.getAvailableStrategies() };
+        return { strategies: backtester.listStrategies() };
+      case 'report':
+        // Expects a previous result to be passed
+        return { report: backtester.generateReport(params.result) };
       default:
         throw new Error(`Unknown method: ${method}`);
     }
   }
 
   /**
-   * Execute scheduler skill methods
+   * Execute task-scheduler skill methods
    */
-  private async executeScheduler(method: string, params: any): Promise<any> {
-    const scheduler = await this.getScheduler();
+  private async executeTaskScheduler(method: string, params: any): Promise<any> {
+    const scheduler = await this.getTaskScheduler();
     
     switch (method) {
       case 'create':
         return scheduler.createTask({
           name: params.name,
           type: params.type || 'custom',
-          schedule: params.schedule,
-          taskParams: params.params,
+          frequency: params.frequency || 'daily',
+          cronExpression: params.cronExpression,
+          config: params.config || {},
+          startAt: params.startAt ? new Date(params.startAt) : undefined,
+        });
+      case 'createDCA':
+        return scheduler.createDCATask({
+          name: params.name,
+          symbol: params.symbol,
+          amount: params.amount,
+          frequency: params.frequency || 'weekly',
+          startAt: params.startAt ? new Date(params.startAt) : undefined,
+        });
+      case 'createRebalance':
+        return scheduler.createRebalanceTask({
+          name: params.name,
+          targetAllocations: params.targetAllocations,
+          threshold: params.threshold || 5,
+          frequency: params.frequency || 'monthly',
+        });
+      case 'createReport':
+        return scheduler.createReportTask({
+          name: params.name,
+          reportType: params.reportType || 'daily',
+          frequency: params.frequency || 'daily',
+          recipients: params.recipients,
         });
       case 'list':
-        return { tasks: scheduler.listTasks(params?.enabled) };
+        return { tasks: scheduler.listTasks(params) };
       case 'get':
         return scheduler.getTask(params.taskId);
       case 'enable':
@@ -524,11 +565,17 @@ export class SkillLoader extends EventEmitter {
       case 'delete':
         return { success: scheduler.deleteTask(params.taskId) };
       case 'run':
-        return scheduler.runTask(params.taskId);
+        const task = scheduler.getTask(params.taskId);
+        if (!task) throw new Error('Task not found');
+        return scheduler.executeTask(task);
       case 'status':
         return scheduler.getStatus();
-      case 'history':
-        return { history: scheduler.getHistory(params?.taskId) };
+      case 'start':
+        scheduler.start();
+        return { success: true, message: 'Scheduler started' };
+      case 'stop':
+        scheduler.stop();
+        return { success: true, message: 'Scheduler stopped' };
       default:
         throw new Error(`Unknown method: ${method}`);
     }
@@ -541,23 +588,27 @@ export class SkillLoader extends EventEmitter {
     const taxTracker = await this.getTaxTracker();
     
     switch (method) {
-      case 'recordBuy':
-        return taxTracker.recordBuy(params);
-      case 'recordSell':
-        return taxTracker.recordSell(params);
+      case 'importTrade':
+        return taxTracker.importTrade(params);
+      case 'importTrades':
+        return { trades: taxTracker.importTrades(params.trades) };
       case 'summary':
-        return taxTracker.getSummary(params.year || new Date().getFullYear());
+        return taxTracker.calculateTaxSummary(params?.year);
       case 'report':
-        return taxTracker.generateReport(params.year || new Date().getFullYear());
+        return { report: taxTracker.generateReport(params?.year) };
       case 'export':
-        return { csv: taxTracker.exportCSV(params.year || new Date().getFullYear()) };
+        return { csv: taxTracker.exportToCSV(params?.year) };
       case 'lots':
-        return { lots: taxTracker.getLots(params?.symbol) };
-      case 'disposals':
-        return { disposals: taxTracker.getDisposals(params?.year) };
-      case 'setMethod':
-        taxTracker.setCostBasisMethod(params.method);
-        return { success: true, method: params.method };
+        return { lots: taxTracker.getLots(params?.asset) };
+      case 'holdings':
+        return { holdings: taxTracker.getHoldings() };
+      case 'taxLossHarvesting':
+        return { opportunities: taxTracker.findTaxLossOpportunities(params.currentPrices) };
+      case 'setConfig':
+        taxTracker.setConfig(params);
+        return { success: true, config: taxTracker.getConfig() };
+      case 'getConfig':
+        return { config: taxTracker.getConfig() };
       default:
         throw new Error(`Unknown method: ${method}`);
     }
@@ -570,27 +621,42 @@ export class SkillLoader extends EventEmitter {
     const defi = await this.getDeFiConnector();
     
     switch (method) {
-      case 'protocols':
-        return { protocols: defi.getProtocols(params?.network) };
-      case 'quote':
-        return { quotes: await defi.getQuote(params) };
-      case 'yields':
-        return { opportunities: await defi.getYieldOpportunities(params) };
-      case 'pools':
-        return { pools: await defi.getLiquidityPools(params) };
+      case 'stakingOptions':
+        return { options: defi.getStakingOptions() };
+      case 'lendingOptions':
+        return { options: defi.getLendingOptions() };
+      case 'yieldFarms':
+        return { farms: defi.getYieldFarms() };
+      case 'bestYield':
+        return { best: defi.getBestYield(params.type) };
       case 'positions':
-        return { positions: await defi.getLendingPositions(params?.walletAddress) };
-      case 'watchlist':
-        return { watchlist: defi.getWatchlist() };
-      case 'addWatchlist':
-        defi.addToWatchlist(params.opportunity);
-        return { success: true };
-      case 'removeWatchlist':
-        return { success: defi.removeFromWatchlist(params.opportunityId) };
-      case 'impermanentLoss':
-        return { il: defi.calculateImpermanentLoss(params.priceChange) };
-      case 'summary':
-        return defi.getSummary();
+        return { positions: defi.getAllPositions() };
+      case 'position':
+        return defi.getPosition(params.id);
+      case 'positionsByType':
+        return { positions: defi.getPositionsByType(params.type) };
+      case 'positionsByProtocol':
+        return { positions: defi.getPositionsByProtocol(params.protocol) };
+      case 'portfolioSummary':
+        return defi.getPortfolioSummary();
+      case 'healthCheck':
+        return { alerts: defi.checkHealthFactors() };
+      case 'autoCompoundCheck':
+        return defi.checkAutoCompound();
+      case 'autoCompound':
+        return defi.executeAutoCompound();
+      case 'findBetterYield':
+        return defi.findBetterYield(params.asset);
+      case 'stake':
+        return defi.stake(params.protocol, params.asset, params.amount, params.chain);
+      case 'unstake':
+        return { success: await defi.unstake(params.positionId) };
+      case 'supply':
+        return defi.supply(params.protocol, params.asset, params.amount, params.chain);
+      case 'withdraw':
+        return { success: await defi.withdraw(params.positionId, params.amount) };
+      case 'report':
+        return { report: defi.generateReport() };
       default:
         throw new Error(`Unknown method: ${method}`);
     }
@@ -690,8 +756,8 @@ export class SkillLoader extends EventEmitter {
     if (this.alertSystem) {
       this.alertSystem.stop();
     }
-    if (this.scheduler) {
-      this.scheduler.stop();
+    if (this.taskScheduler) {
+      this.taskScheduler.stop();
     }
     
     this.toolsInitialized = false;
@@ -702,7 +768,7 @@ export class SkillLoader extends EventEmitter {
    * Execute scheduler skill methods (for tool-registry integration)
    */
   async executeSchedulerSkill(method: string, params: any): Promise<any> {
-    return this.executeScheduler(method, params);
+    return this.executeTaskScheduler(method, params);
   }
 }
 

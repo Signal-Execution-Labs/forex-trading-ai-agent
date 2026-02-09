@@ -431,6 +431,201 @@ export function createDefaultTools(skillLoader: SkillLoader): ToolDefinition[] {
         return skill.execute('analyze', { symbol: args.pair, ...args });
       },
     },
+    // Issue #6: Task Scheduler
+    {
+      name: 'scheduler',
+      description: 'Manage scheduled trading tasks (DCA, rebalancing, reports)',
+      parameters: {
+        action: {
+          type: 'string',
+          description: 'Scheduler action',
+          enum: ['create', 'createDCA', 'createRebalance', 'createReport', 'list', 'get', 'enable', 'disable', 'delete', 'run', 'status', 'start', 'stop'],
+        },
+        name: {
+          type: 'string',
+          description: 'Task name',
+          optional: true,
+        },
+        taskId: {
+          type: 'string',
+          description: 'Task ID',
+          optional: true,
+        },
+        type: {
+          type: 'string',
+          description: 'Task type',
+          enum: ['dca', 'rebalance', 'report', 'alert-check', 'price-check', 'custom'],
+          optional: true,
+        },
+        frequency: {
+          type: 'string',
+          description: 'Task frequency',
+          enum: ['once', 'hourly', 'daily', 'weekly', 'monthly', 'cron'],
+          optional: true,
+        },
+        symbol: {
+          type: 'string',
+          description: 'Trading symbol for DCA',
+          optional: true,
+        },
+        amount: {
+          type: 'number',
+          description: 'Amount for DCA',
+          optional: true,
+        },
+        targetAllocations: {
+          type: 'object',
+          description: 'Target allocations for rebalancing (symbol -> percentage)',
+          optional: true,
+        },
+        threshold: {
+          type: 'number',
+          description: 'Rebalance threshold percentage',
+          optional: true,
+        },
+        reportType: {
+          type: 'string',
+          description: 'Report type',
+          enum: ['daily', 'weekly', 'monthly', 'performance'],
+          optional: true,
+        },
+      },
+      handler: async (args) => {
+        const skill = skillLoader.getSkill('task-scheduler');
+        if (!skill) throw new Error('task-scheduler skill not loaded');
+        return skill.execute(args.action, args);
+      },
+    },
+    // Issue #7: Tax Tracker
+    {
+      name: 'tax',
+      description: 'Track trades for tax purposes, calculate capital gains, generate reports',
+      parameters: {
+        action: {
+          type: 'string',
+          description: 'Tax tracker action',
+          enum: ['importTrade', 'importTrades', 'summary', 'report', 'export', 'lots', 'holdings', 'taxLossHarvesting', 'setConfig', 'getConfig'],
+        },
+        year: {
+          type: 'number',
+          description: 'Tax year',
+          optional: true,
+        },
+        asset: {
+          type: 'string',
+          description: 'Asset symbol',
+          optional: true,
+        },
+        exchange: {
+          type: 'string',
+          description: 'Exchange name',
+          optional: true,
+        },
+        symbol: {
+          type: 'string',
+          description: 'Trading pair',
+          optional: true,
+        },
+        side: {
+          type: 'string',
+          description: 'Trade side (buy/sell)',
+          enum: ['buy', 'sell'],
+          optional: true,
+        },
+        amount: {
+          type: 'number',
+          description: 'Trade amount',
+          optional: true,
+        },
+        price: {
+          type: 'number',
+          description: 'Trade price',
+          optional: true,
+        },
+        fee: {
+          type: 'number',
+          description: 'Trade fee',
+          optional: true,
+        },
+        currentPrices: {
+          type: 'object',
+          description: 'Current prices for tax-loss harvesting (asset -> price)',
+          optional: true,
+        },
+        method: {
+          type: 'string',
+          description: 'Cost basis method',
+          enum: ['FIFO', 'LIFO', 'HIFO', 'ACB'],
+          optional: true,
+        },
+        jurisdiction: {
+          type: 'string',
+          description: 'Tax jurisdiction',
+          enum: ['DE', 'AT', 'CH', 'US', 'UK'],
+          optional: true,
+        },
+      },
+      handler: async (args) => {
+        const skill = skillLoader.getSkill('tax-tracker');
+        if (!skill) throw new Error('tax-tracker skill not loaded');
+        return skill.execute(args.action, args);
+      },
+    },
+    // Issue #9: DeFi Connector
+    {
+      name: 'defi',
+      description: 'Interact with DeFi protocols for staking, lending, and yield farming',
+      parameters: {
+        action: {
+          type: 'string',
+          description: 'DeFi action',
+          enum: ['stakingOptions', 'lendingOptions', 'yieldFarms', 'bestYield', 'positions', 'position', 'portfolioSummary', 'healthCheck', 'autoCompoundCheck', 'autoCompound', 'findBetterYield', 'stake', 'unstake', 'supply', 'withdraw', 'report'],
+        },
+        protocol: {
+          type: 'string',
+          description: 'DeFi protocol',
+          enum: ['aave', 'compound', 'lido', 'rocketpool', 'uniswap', 'curve', 'convex', 'osmosis', 'yearn'],
+          optional: true,
+        },
+        asset: {
+          type: 'string',
+          description: 'Asset symbol',
+          optional: true,
+        },
+        amount: {
+          type: 'number',
+          description: 'Amount to stake/supply',
+          optional: true,
+        },
+        chain: {
+          type: 'string',
+          description: 'Blockchain network',
+          enum: ['ethereum', 'polygon', 'arbitrum', 'optimism', 'avalanche', 'bsc', 'solana', 'cosmos'],
+          optional: true,
+        },
+        type: {
+          type: 'string',
+          description: 'Position or yield type',
+          enum: ['staking', 'lending', 'farming'],
+          optional: true,
+        },
+        positionId: {
+          type: 'string',
+          description: 'Position ID',
+          optional: true,
+        },
+        id: {
+          type: 'string',
+          description: 'Position ID (alias)',
+          optional: true,
+        },
+      },
+      handler: async (args) => {
+        const skill = skillLoader.getSkill('defi-connector');
+        if (!skill) throw new Error('defi-connector skill not loaded');
+        return skill.execute(args.action, args);
+      },
+    },
   ];
 }
 

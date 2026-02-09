@@ -1,542 +1,752 @@
 /**
- * K.I.T. Backtester Tool
- * 
- * Issue #8: Implement Backtester Tool Integration
- * 
- * Test trading strategies against historical data:
- * - Load OHLCV data from exchanges
- * - Simulate trades with strategy rules
- * - Calculate performance metrics (Sharpe, Drawdown, Win Rate)
- * - Generate detailed reports
+ * K.I.T. Backtester - Strategy Testing Engine
+ * Issue #8: Backtest trading strategies with historical data
  */
 
-import ccxt, { Exchange } from 'ccxt';
-import { EventEmitter } from 'events';
-import { RSI, MACD, SMA, EMA, BollingerBands, ATR } from 'technicalindicators';
-import {
-  OHLCV,
-  ExchangeConfig,
-  BacktestResult,
-  BacktestTrade,
-  OrderSide,
-} from './types';
+import * as ccxt from 'ccxt';
+import { RSI, MACD, BollingerBands, EMA, SMA } from 'technicalindicators';
+import { OHLCV } from './types';
 
-const toNum = (val: number | string | undefined, def: number = 0): number => {
-  if (val === undefined || val === null) return def;
-  return typeof val === 'string' ? parseFloat(val) : val;
-};
+// ============================================================
+// TYPES
+// ============================================================
 
-export interface BacktestParams {
+export type StrategySignal = 'buy' | 'sell' | 'hold';
+
+export interface BacktestConfig {
   symbol: string;
-  strategy: string | StrategyFunction;
-  startDate?: string;
-  endDate?: string;
-  timeframe?: string;
-  initialCapital?: number;
-  commission?: number;
-  slippage?: number;
+  timeframe: string;
+  startDate?: Date;
+  endDate?: Date;
+  initialCapital: number;
+  positionSizePct: number;  // % of capital per trade
+  commission: number;       // Per trade, e.g., 0.001 = 0.1%
+  slippage: number;         // Assumed slippage, e.g., 0.0005 = 0.05%
 }
 
-export interface StrategySignal {
-  action: 'buy' | 'sell' | 'hold';
-  size?: number;
-  stopLoss?: number;
-  takeProfit?: number;
-  reason?: string;
+export interface StrategyConfig {
+  name: string;
+  description?: string;
+  warmupPeriod: number;  // Candles needed before first signal
+  params: Record<string, number | string | boolean>;
+}
+
+export interface BacktestTrade {
+  id: number;
+  type: 'buy' | 'sell';
+  entryPrice: number;
+  exitPrice?: number;
+  amount: number;
+  entryTime: Date;
+  exitTime?: Date;
+  pnl?: number;
+  pnlPercent?: number;
+  commission: number;
+  slippage: number;
+}
+
+export interface BacktestResult {
+  strategy: string;
+  config: BacktestConfig;
+  
+  // Returns
+  totalReturn: number;
+  totalReturnPct: number;
+  buyHoldReturn: number;
+  buyHoldReturnPct: number;
+  alpha: number;  // Strategy return - buy & hold
+  
+  // Risk metrics
+  sharpeRatio: number;
+  sortinoRatio: number;
+  maxDrawdown: number;
+  maxDrawdownPct: number;
+  volatility: number;
+  
+  // Trade stats
+  totalTrades: number;
+  winningTrades: number;
+  losingTrades: number;
+  winRate: number;
+  avgWin: number;
+  avgLoss: number;
+  avgWinPct: number;
+  avgLossPct: number;
+  profitFactor: number;
+  avgHoldingPeriod: number;  // In candles
+  
+  // Capital
+  initialCapital: number;
+  finalCapital: number;
+  peakCapital: number;
+  
+  // Time
+  startDate: Date;
+  endDate: Date;
+  totalCandles: number;
+  
+  // Details
+  trades: BacktestTrade[];
+  equityCurve: number[];
+  drawdownCurve: number[];
 }
 
 export type StrategyFunction = (
-  data: BacktestData,
+  data: OHLCV[],
   index: number,
-  position: Position | null
+  params: Record<string, unknown>
 ) => StrategySignal;
 
-export interface BacktestData {
-  ohlcv: OHLCV[];
-  indicators: Record<string, number[]>;
-}
+// ============================================================
+// BUILT-IN STRATEGIES
+// ============================================================
 
-export interface Position {
-  side: 'long' | 'short';
-  entryPrice: number;
-  entryIndex: number;
-  size: number;
-  stopLoss?: number;
-  takeProfit?: number;
-}
-
-export interface BacktesterConfig {
-  exchange?: ExchangeConfig;
-}
-
-// Built-in strategies
-const STRATEGIES: Record<string, StrategyFunction> = {
-  rsi_reversal: (data, i, position) => {
-    const rsi = data.indicators.rsi?.[i];
-    if (rsi === undefined) return { action: 'hold' };
-    
-    if (!position && rsi < 30) {
-      return { action: 'buy', reason: `RSI oversold (${rsi.toFixed(1)})` };
+export const STRATEGIES: Record<string, { fn: StrategyFunction; config: StrategyConfig }> = {
+  
+  // RSI Mean Reversion
+  rsi: {
+    config: {
+      name: 'RSI Mean Reversion',
+      description: 'Buy when RSI oversold, sell when overbought',
+      warmupPeriod: 14,
+      params: { period: 14, oversold: 30, overbought: 70 }
+    },
+    fn: (data, index, params) => {
+      if (index < 14) return 'hold';
+      
+      const closes = data.slice(Math.max(0, index - 14), index + 1).map(d => d.close);
+      const rsiResult = RSI.calculate({ period: params.period as number || 14, values: closes });
+      const rsi = rsiResult[rsiResult.length - 1];
+      
+      if (rsi === undefined) return 'hold';
+      if (rsi < (params.oversold as number || 30)) return 'buy';
+      if (rsi > (params.overbought as number || 70)) return 'sell';
+      return 'hold';
     }
-    if (position && rsi > 70) {
-      return { action: 'sell', reason: `RSI overbought (${rsi.toFixed(1)})` };
-    }
-    return { action: 'hold' };
   },
-
-  ma_crossover: (data, i, position) => {
-    const ema12 = data.indicators.ema12?.[i];
-    const ema26 = data.indicators.ema26?.[i];
-    const prevEma12 = data.indicators.ema12?.[i - 1];
-    const prevEma26 = data.indicators.ema26?.[i - 1];
-    
-    if (!ema12 || !ema26 || !prevEma12 || !prevEma26) return { action: 'hold' };
-    
-    // Golden cross
-    if (!position && prevEma12 <= prevEma26 && ema12 > ema26) {
-      return { action: 'buy', reason: 'Golden cross (EMA12 > EMA26)' };
+  
+  // EMA Crossover
+  emaCrossover: {
+    config: {
+      name: 'EMA Crossover',
+      description: 'Buy when fast EMA crosses above slow EMA',
+      warmupPeriod: 26,
+      params: { fastPeriod: 12, slowPeriod: 26 }
+    },
+    fn: (data, index, params) => {
+      const fast = params.fastPeriod as number || 12;
+      const slow = params.slowPeriod as number || 26;
+      
+      if (index < slow + 1) return 'hold';
+      
+      const closes = data.slice(0, index + 1).map(d => d.close);
+      const fastEma = EMA.calculate({ period: fast, values: closes });
+      const slowEma = EMA.calculate({ period: slow, values: closes });
+      
+      const currFast = fastEma[fastEma.length - 1];
+      const prevFast = fastEma[fastEma.length - 2];
+      const currSlow = slowEma[slowEma.length - 1];
+      const prevSlow = slowEma[slowEma.length - 2];
+      
+      if (currFast === undefined || currSlow === undefined) return 'hold';
+      
+      // Crossover
+      if (prevFast <= prevSlow && currFast > currSlow) return 'buy';
+      if (prevFast >= prevSlow && currFast < currSlow) return 'sell';
+      
+      return 'hold';
     }
-    // Death cross
-    if (position && prevEma12 >= prevEma26 && ema12 < ema26) {
-      return { action: 'sell', reason: 'Death cross (EMA12 < EMA26)' };
-    }
-    return { action: 'hold' };
   },
-
-  bollinger_bounce: (data, i, position) => {
-    const price = data.ohlcv[i].close;
-    const lower = data.indicators.bbLower?.[i];
-    const upper = data.indicators.bbUpper?.[i];
-    
-    if (!lower || !upper) return { action: 'hold' };
-    
-    if (!position && price <= lower) {
-      return { action: 'buy', reason: `Price at lower BB ($${price.toFixed(2)})` };
+  
+  // Bollinger Bands
+  bollingerBands: {
+    config: {
+      name: 'Bollinger Bands',
+      description: 'Buy at lower band, sell at upper band',
+      warmupPeriod: 20,
+      params: { period: 20, stdDev: 2 }
+    },
+    fn: (data, index, params) => {
+      const period = params.period as number || 20;
+      
+      if (index < period) return 'hold';
+      
+      const closes = data.slice(0, index + 1).map(d => d.close);
+      const bb = BollingerBands.calculate({
+        period,
+        stdDev: params.stdDev as number || 2,
+        values: closes
+      });
+      
+      const current = bb[bb.length - 1];
+      const price = data[index].close;
+      
+      if (!current) return 'hold';
+      
+      if (price <= current.lower) return 'buy';
+      if (price >= current.upper) return 'sell';
+      
+      return 'hold';
     }
-    if (position && price >= upper) {
-      return { action: 'sell', reason: `Price at upper BB ($${price.toFixed(2)})` };
-    }
-    return { action: 'hold' };
   },
-
-  trend_following: (data, i, position) => {
-    const sma50 = data.indicators.sma50?.[i];
-    const sma200 = data.indicators.sma200?.[i];
-    const price = data.ohlcv[i].close;
-    
-    if (!sma50 || !sma200) return { action: 'hold' };
-    
-    const inUptrend = price > sma50 && sma50 > sma200;
-    const inDowntrend = price < sma50 && sma50 < sma200;
-    
-    if (!position && inUptrend) {
-      return { action: 'buy', reason: 'Uptrend confirmed (Price > SMA50 > SMA200)' };
+  
+  // MACD
+  macd: {
+    config: {
+      name: 'MACD',
+      description: 'Buy on bullish MACD crossover, sell on bearish',
+      warmupPeriod: 35,
+      params: { fastPeriod: 12, slowPeriod: 26, signalPeriod: 9 }
+    },
+    fn: (data, index, params) => {
+      if (index < 35) return 'hold';
+      
+      const closes = data.slice(0, index + 1).map(d => d.close);
+      const macdResult = MACD.calculate({
+        fastPeriod: params.fastPeriod as number || 12,
+        slowPeriod: params.slowPeriod as number || 26,
+        signalPeriod: params.signalPeriod as number || 9,
+        SimpleMAOscillator: false,
+        SimpleMASignal: false,
+        values: closes
+      });
+      
+      if (macdResult.length < 2) return 'hold';
+      
+      const curr = macdResult[macdResult.length - 1];
+      const prev = macdResult[macdResult.length - 2];
+      
+      if (!curr.MACD || !curr.signal || !prev.MACD || !prev.signal) return 'hold';
+      
+      // Crossover
+      if (prev.MACD <= prev.signal && curr.MACD > curr.signal) return 'buy';
+      if (prev.MACD >= prev.signal && curr.MACD < curr.signal) return 'sell';
+      
+      return 'hold';
     }
-    if (position && inDowntrend) {
-      return { action: 'sell', reason: 'Downtrend confirmed' };
-    }
-    return { action: 'hold' };
   },
+  
+  // SMA Trend Following
+  smaTrend: {
+    config: {
+      name: 'SMA Trend Following',
+      description: 'Long when price above SMA, exit when below',
+      warmupPeriod: 50,
+      params: { period: 50 }
+    },
+    fn: (data, index, params) => {
+      const period = params.period as number || 50;
+      
+      if (index < period) return 'hold';
+      
+      const closes = data.slice(0, index + 1).map(d => d.close);
+      const sma = SMA.calculate({ period, values: closes });
+      
+      const currentSma = sma[sma.length - 1];
+      const prevSma = sma[sma.length - 2];
+      const price = data[index].close;
+      const prevPrice = data[index - 1].close;
+      
+      if (currentSma === undefined) return 'hold';
+      
+      // Cross above/below SMA
+      if (prevPrice <= prevSma && price > currentSma) return 'buy';
+      if (prevPrice >= prevSma && price < currentSma) return 'sell';
+      
+      return 'hold';
+    }
+  },
+  
+  // Combined: RSI + EMA
+  rsiEma: {
+    config: {
+      name: 'RSI + EMA Combo',
+      description: 'RSI oversold + price above EMA = buy',
+      warmupPeriod: 26,
+      params: { rsiPeriod: 14, emaPeriod: 20, oversold: 35, overbought: 65 }
+    },
+    fn: (data, index, params) => {
+      if (index < 26) return 'hold';
+      
+      const closes = data.slice(0, index + 1).map(d => d.close);
+      const price = data[index].close;
+      
+      // Calculate RSI
+      const rsiResult = RSI.calculate({ period: params.rsiPeriod as number || 14, values: closes });
+      const rsi = rsiResult[rsiResult.length - 1];
+      
+      // Calculate EMA
+      const emaResult = EMA.calculate({ period: params.emaPeriod as number || 20, values: closes });
+      const ema = emaResult[emaResult.length - 1];
+      
+      if (rsi === undefined || ema === undefined) return 'hold';
+      
+      // Buy: RSI oversold AND price above EMA (uptrend)
+      if (rsi < (params.oversold as number || 35) && price > ema) return 'buy';
+      
+      // Sell: RSI overbought OR price below EMA
+      if (rsi > (params.overbought as number || 65) || price < ema * 0.98) return 'sell';
+      
+      return 'hold';
+    }
+  }
 };
 
-export class Backtester extends EventEmitter {
-  private exchange: Exchange | null = null;
-  private config: BacktesterConfig;
+// ============================================================
+// BACKTESTER CLASS
+// ============================================================
 
-  constructor(config?: BacktesterConfig) {
-    super();
-    this.config = config || {};
+export class Backtester {
+  private exchange: ccxt.Exchange;
+  
+  constructor(exchangeId: string = 'binance') {
+    const ExchangeClass = (ccxt as unknown as Record<string, new () => ccxt.Exchange>)[exchangeId];
+    this.exchange = new ExchangeClass();
   }
-
-  async connect(exchangeConfig?: ExchangeConfig): Promise<boolean> {
-    try {
-      const cfg = exchangeConfig || this.config.exchange || { id: 'binance' };
-      const exchangeId = cfg.id.toLowerCase();
-      
-      if (!(exchangeId in ccxt)) {
-        throw new Error(`Exchange ${cfg.id} not supported`);
-      }
-
-      const ExchangeClass = (ccxt as any)[exchangeId];
-      this.exchange = new ExchangeClass({
-        enableRateLimit: true,
-      }) as Exchange;
-
-      await this.exchange.loadMarkets();
-      return true;
-    } catch (error: any) {
-      console.error('Failed to connect:', error.message);
-      return false;
-    }
-  }
-
-  async run(params: BacktestParams): Promise<BacktestResult> {
-    await this.ensureConnected();
-
-    const timeframe = params.timeframe || '1d';
-    const initialCapital = params.initialCapital || 10000;
-    const commission = params.commission || 0.001; // 0.1%
-    const slippage = params.slippage || 0.0005; // 0.05%
-
-    // Fetch historical data
-    const ohlcv = await this.fetchHistoricalData(
-      params.symbol,
-      timeframe,
-      params.startDate,
-      params.endDate
-    );
-
-    if (ohlcv.length < 50) {
-      throw new Error('Insufficient data for backtesting (need at least 50 candles)');
-    }
-
-    // Calculate indicators
-    const data = this.prepareData(ohlcv);
-
-    // Get strategy function
-    const strategy = typeof params.strategy === 'string'
-      ? STRATEGIES[params.strategy]
-      : params.strategy;
-
-    if (!strategy) {
-      throw new Error(`Unknown strategy: ${params.strategy}`);
-    }
-
-    // Run simulation
-    const result = this.simulate(
-      data,
-      strategy,
-      initialCapital,
-      commission,
-      slippage
-    );
-
-    // Build result
-    const startDate = new Date(ohlcv[0].timestamp).toISOString().split('T')[0];
-    const endDate = new Date(ohlcv[ohlcv.length - 1].timestamp).toISOString().split('T')[0];
-
-    return {
-      strategy: typeof params.strategy === 'string' ? params.strategy : 'custom',
-      symbol: params.symbol,
-      timeframe,
-      startDate,
-      endDate,
-      initialCapital,
-      finalCapital: result.finalCapital,
-      totalReturn: result.finalCapital - initialCapital,
-      totalReturnPct: ((result.finalCapital - initialCapital) / initialCapital) * 100,
-      maxDrawdown: result.maxDrawdown,
-      maxDrawdownPct: result.maxDrawdownPct,
-      sharpeRatio: result.sharpeRatio,
-      sortinoRatio: result.sortinoRatio,
-      winRate: result.winRate,
-      totalTrades: result.trades.length,
-      profitFactor: result.profitFactor,
-      avgWin: result.avgWin,
-      avgLoss: result.avgLoss,
-      trades: result.trades,
-    };
-  }
-
-  getAvailableStrategies(): string[] {
-    return Object.keys(STRATEGIES);
-  }
-
-  private async fetchHistoricalData(
+  
+  // --------------------------------------------------------
+  // Data Loading
+  // --------------------------------------------------------
+  
+  async fetchHistoricalData(
     symbol: string,
     timeframe: string,
-    startDate?: string,
-    endDate?: string
+    since?: number,
+    limit: number = 1000
   ): Promise<OHLCV[]> {
-    if (!this.exchange) throw new Error('Exchange not connected');
-
-    const since = startDate
-      ? this.exchange.parse8601(startDate + 'T00:00:00Z')
-      : undefined;
-
-    const allOhlcv: OHLCV[] = [];
-    let fetchSince = since;
-    const limit = 1000;
-
-    // Fetch in batches
-    while (true) {
-      const batch = await this.exchange.fetchOHLCV(symbol, timeframe, fetchSince, limit);
-      
-      if (batch.length === 0) break;
-
-      for (const candle of batch) {
-        const ohlcv: OHLCV = {
-          timestamp: candle[0] as number,
-          open: toNum(candle[1]),
-          high: toNum(candle[2]),
-          low: toNum(candle[3]),
-          close: toNum(candle[4]),
-          volume: toNum(candle[5]),
-        };
-
-        if (endDate && ohlcv.timestamp > this.exchange.parse8601(endDate + 'T23:59:59Z')!) {
-          return allOhlcv;
-        }
-
-        allOhlcv.push(ohlcv);
-      }
-
-      if (batch.length < limit) break;
-      fetchSince = (batch[batch.length - 1][0] as number) + 1;
+    const ohlcv = await this.exchange.fetchOHLCV(symbol, timeframe, since, limit);
+    
+    return ohlcv.map(candle => ({
+      timestamp: candle[0] as number,
+      open: candle[1] as number,
+      high: candle[2] as number,
+      low: candle[3] as number,
+      close: candle[4] as number,
+      volume: candle[5] as number
+    }));
+  }
+  
+  // --------------------------------------------------------
+  // Backtest Engine
+  // --------------------------------------------------------
+  
+  async runBacktest(
+    strategyName: string,
+    config: BacktestConfig,
+    customStrategy?: StrategyFunction,
+    customParams?: Record<string, unknown>
+  ): Promise<BacktestResult> {
+    // Get strategy
+    const strategy = STRATEGIES[strategyName];
+    const strategyFn = customStrategy || strategy?.fn;
+    const strategyConfig = strategy?.config || {
+      name: 'Custom',
+      warmupPeriod: 50,
+      params: customParams || {}
+    };
+    
+    if (!strategyFn) {
+      throw new Error(`Strategy '${strategyName}' not found`);
     }
-
-    return allOhlcv;
-  }
-
-  private prepareData(ohlcv: OHLCV[]): BacktestData {
-    const closes = ohlcv.map(c => c.close);
-    const highs = ohlcv.map(c => c.high);
-    const lows = ohlcv.map(c => c.low);
-
-    const indicators: Record<string, number[]> = {};
-
-    // RSI
-    const rsiValues = RSI.calculate({ period: 14, values: closes });
-    indicators.rsi = new Array(closes.length - rsiValues.length).fill(NaN).concat(rsiValues);
-
-    // EMAs
-    const ema12Values = EMA.calculate({ period: 12, values: closes });
-    indicators.ema12 = new Array(closes.length - ema12Values.length).fill(NaN).concat(ema12Values);
-
-    const ema26Values = EMA.calculate({ period: 26, values: closes });
-    indicators.ema26 = new Array(closes.length - ema26Values.length).fill(NaN).concat(ema26Values);
-
-    // SMAs
-    const sma50Values = SMA.calculate({ period: 50, values: closes });
-    indicators.sma50 = new Array(closes.length - sma50Values.length).fill(NaN).concat(sma50Values);
-
-    const sma200Values = SMA.calculate({ period: 200, values: closes });
-    indicators.sma200 = new Array(closes.length - sma200Values.length).fill(NaN).concat(sma200Values);
-
-    // Bollinger Bands
-    const bbValues = BollingerBands.calculate({ period: 20, values: closes, stdDev: 2 });
-    const bbOffset = closes.length - bbValues.length;
-    indicators.bbUpper = new Array(bbOffset).fill(NaN).concat(bbValues.map(b => b.upper));
-    indicators.bbMiddle = new Array(bbOffset).fill(NaN).concat(bbValues.map(b => b.middle));
-    indicators.bbLower = new Array(bbOffset).fill(NaN).concat(bbValues.map(b => b.lower));
-
-    // ATR
-    const atrValues = ATR.calculate({ period: 14, high: highs, low: lows, close: closes });
-    indicators.atr = new Array(closes.length - atrValues.length).fill(NaN).concat(atrValues);
-
-    return { ohlcv, indicators };
-  }
-
-  private simulate(
-    data: BacktestData,
-    strategy: StrategyFunction,
-    initialCapital: number,
-    commission: number,
-    slippage: number
-  ): {
-    finalCapital: number;
-    trades: BacktestTrade[];
-    maxDrawdown: number;
-    maxDrawdownPct: number;
-    sharpeRatio: number;
-    sortinoRatio: number;
-    winRate: number;
-    profitFactor: number;
-    avgWin: number;
-    avgLoss: number;
-  } {
-    let capital = initialCapital;
-    let position: Position | null = null;
+    
+    // Load data
+    const since = config.startDate ? config.startDate.getTime() : undefined;
+    const data = await this.fetchHistoricalData(config.symbol, config.timeframe, since, 1000);
+    
+    if (data.length < strategyConfig.warmupPeriod + 10) {
+      throw new Error(`Not enough data for backtest. Need at least ${strategyConfig.warmupPeriod + 10} candles`);
+    }
+    
+    // Initialize
+    let capital = config.initialCapital;
+    let position = 0;
+    let entryPrice = 0;
+    let entryTime: Date | null = null;
     const trades: BacktestTrade[] = [];
-    const equityCurve: number[] = [initialCapital];
-    const returns: number[] = [];
-
-    // Start after indicator warmup
-    const startIndex = 50;
-
-    for (let i = startIndex; i < data.ohlcv.length; i++) {
-      const candle = data.ohlcv[i];
-      const signal = strategy(data, i, position);
-
-      // Check stop loss / take profit
-      if (position) {
-        const hitStopLoss = position.stopLoss && candle.low <= position.stopLoss;
-        const hitTakeProfit = position.takeProfit && candle.high >= position.takeProfit;
-
-        if (hitStopLoss || hitTakeProfit) {
-          const exitPrice = hitStopLoss ? position.stopLoss! : position.takeProfit!;
-          const pnl = (exitPrice - position.entryPrice) / position.entryPrice;
-          const grossProfit = position.size * exitPrice;
-          const fee = grossProfit * commission;
-          
-          capital += grossProfit - fee;
-          
-          trades.push({
-            entryDate: new Date(data.ohlcv[position.entryIndex].timestamp).toISOString(),
-            exitDate: new Date(candle.timestamp).toISOString(),
-            side: 'buy',
-            entryPrice: position.entryPrice,
-            exitPrice,
-            amount: position.size,
-            pnl: grossProfit - (position.size * position.entryPrice) - fee,
-            pnlPct: pnl * 100,
-            reason: hitStopLoss ? 'Stop Loss' : 'Take Profit',
-          });
-
-          position = null;
-        }
-      }
-
-      // Process signal
-      if (signal.action === 'buy' && !position) {
-        const entryPrice = candle.close * (1 + slippage);
-        const size = (capital * 0.95) / entryPrice; // Use 95% of capital
-        const fee = size * entryPrice * commission;
+    const equityCurve: number[] = [capital];
+    let peakCapital = capital;
+    let tradeId = 0;
+    
+    const params = customParams || strategyConfig.params;
+    
+    // Run backtest
+    for (let i = strategyConfig.warmupPeriod; i < data.length; i++) {
+      const candle = data[i];
+      const signal = strategyFn(data, i, params);
+      
+      // Calculate commission and slippage
+      const commission = config.commission || 0.001;
+      const slippage = config.slippage || 0.0005;
+      
+      if (signal === 'buy' && position === 0) {
+        // Enter long position
+        const adjustedPrice = candle.close * (1 + slippage);
+        const positionSize = capital * (config.positionSizePct / 100);
+        const commissionCost = positionSize * commission;
         
-        capital -= (size * entryPrice + fee);
-        
-        position = {
-          side: 'long',
-          entryPrice,
-          entryIndex: i,
-          size,
-          stopLoss: signal.stopLoss,
-          takeProfit: signal.takeProfit,
-        };
-      } else if (signal.action === 'sell' && position) {
-        const exitPrice = candle.close * (1 - slippage);
-        const grossProfit = position.size * exitPrice;
-        const fee = grossProfit * commission;
-        const pnl = (exitPrice - position.entryPrice) / position.entryPrice;
-        
-        capital += grossProfit - fee;
+        position = (positionSize - commissionCost) / adjustedPrice;
+        entryPrice = adjustedPrice;
+        entryTime = new Date(candle.timestamp);
+        capital -= positionSize;
         
         trades.push({
-          entryDate: new Date(data.ohlcv[position.entryIndex].timestamp).toISOString(),
-          exitDate: new Date(candle.timestamp).toISOString(),
-          side: 'buy',
-          entryPrice: position.entryPrice,
-          exitPrice,
-          amount: position.size,
-          pnl: grossProfit - (position.size * position.entryPrice) - fee,
-          pnlPct: pnl * 100,
-          reason: signal.reason || 'Signal',
+          id: ++tradeId,
+          type: 'buy',
+          entryPrice: adjustedPrice,
+          amount: position,
+          entryTime: entryTime,
+          commission: commissionCost,
+          slippage: candle.close * slippage * position
         });
-
-        position = null;
+        
+      } else if (signal === 'sell' && position > 0) {
+        // Exit position
+        const adjustedPrice = candle.close * (1 - slippage);
+        const proceeds = position * adjustedPrice;
+        const commissionCost = proceeds * commission;
+        
+        const pnl = proceeds - commissionCost - (position * entryPrice);
+        const pnlPercent = (pnl / (position * entryPrice)) * 100;
+        
+        capital += proceeds - commissionCost;
+        
+        // Update last trade with exit info
+        const lastTrade = trades[trades.length - 1];
+        lastTrade.exitPrice = adjustedPrice;
+        lastTrade.exitTime = new Date(candle.timestamp);
+        lastTrade.pnl = pnl;
+        lastTrade.pnlPercent = pnlPercent;
+        lastTrade.commission += commissionCost;
+        
+        position = 0;
+        entryPrice = 0;
+        entryTime = null;
       }
-
-      // Calculate equity
-      const equity = capital + (position ? position.size * candle.close : 0);
-      const dailyReturn = (equity - equityCurve[equityCurve.length - 1]) / equityCurve[equityCurve.length - 1];
       
+      // Track equity
+      const equity = capital + (position * candle.close);
       equityCurve.push(equity);
-      returns.push(dailyReturn);
+      peakCapital = Math.max(peakCapital, equity);
     }
-
-    // Close final position at last price
-    if (position) {
-      const lastCandle = data.ohlcv[data.ohlcv.length - 1];
-      capital += position.size * lastCandle.close;
+    
+    // Close any open position at end
+    if (position > 0) {
+      const lastCandle = data[data.length - 1];
+      const proceeds = position * lastCandle.close * (1 - config.slippage);
+      capital += proceeds * (1 - config.commission);
+      
+      const lastTrade = trades[trades.length - 1];
+      if (lastTrade && !lastTrade.exitPrice) {
+        lastTrade.exitPrice = lastCandle.close;
+        lastTrade.exitTime = new Date(lastCandle.timestamp);
+        lastTrade.pnl = proceeds - (position * entryPrice);
+        lastTrade.pnlPercent = (lastTrade.pnl / (position * entryPrice)) * 100;
+      }
     }
-
+    
     // Calculate metrics
-    const maxDrawdown = this.calculateMaxDrawdown(equityCurve);
-    const sharpeRatio = this.calculateSharpeRatio(returns);
-    const sortinoRatio = this.calculateSortinoRatio(returns);
+    return this.calculateMetrics(
+      strategyConfig.name,
+      config,
+      data,
+      trades,
+      equityCurve,
+      peakCapital
+    );
+  }
+  
+  // --------------------------------------------------------
+  // Metrics Calculation
+  // --------------------------------------------------------
+  
+  private calculateMetrics(
+    strategyName: string,
+    config: BacktestConfig,
+    data: OHLCV[],
+    trades: BacktestTrade[],
+    equityCurve: number[],
+    peakCapital: number
+  ): BacktestResult {
+    const finalCapital = equityCurve[equityCurve.length - 1];
+    const totalReturn = finalCapital - config.initialCapital;
+    const totalReturnPct = (totalReturn / config.initialCapital) * 100;
     
-    const winningTrades = trades.filter(t => t.pnl > 0);
-    const losingTrades = trades.filter(t => t.pnl <= 0);
+    // Buy & Hold comparison
+    const firstPrice = data[0].close;
+    const lastPrice = data[data.length - 1].close;
+    const buyHoldReturn = ((lastPrice / firstPrice) - 1) * config.initialCapital;
+    const buyHoldReturnPct = ((lastPrice / firstPrice) - 1) * 100;
     
-    const winRate = trades.length > 0 ? (winningTrades.length / trades.length) * 100 : 0;
+    // Trade statistics
+    const completedTrades = trades.filter(t => t.exitPrice !== undefined);
+    const winningTrades = completedTrades.filter(t => (t.pnl || 0) > 0);
+    const losingTrades = completedTrades.filter(t => (t.pnl || 0) <= 0);
+    
     const avgWin = winningTrades.length > 0
-      ? winningTrades.reduce((sum, t) => sum + t.pnlPct, 0) / winningTrades.length
+      ? winningTrades.reduce((sum, t) => sum + (t.pnl || 0), 0) / winningTrades.length
       : 0;
     const avgLoss = losingTrades.length > 0
-      ? losingTrades.reduce((sum, t) => sum + t.pnlPct, 0) / losingTrades.length
+      ? losingTrades.reduce((sum, t) => sum + Math.abs(t.pnl || 0), 0) / losingTrades.length
       : 0;
     
-    const grossProfit = winningTrades.reduce((sum, t) => sum + t.pnl, 0);
-    const grossLoss = Math.abs(losingTrades.reduce((sum, t) => sum + t.pnl, 0));
-    const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? Infinity : 0;
-
-    return {
-      finalCapital: capital,
-      trades,
-      maxDrawdown: maxDrawdown.maxDrawdown,
-      maxDrawdownPct: maxDrawdown.maxDrawdownPct,
-      sharpeRatio,
-      sortinoRatio,
-      winRate,
-      profitFactor,
-      avgWin,
-      avgLoss,
-    };
-  }
-
-  private calculateMaxDrawdown(equity: number[]): { maxDrawdown: number; maxDrawdownPct: number } {
-    let maxDrawdown = 0;
-    let maxDrawdownPct = 0;
-    let peak = equity[0];
-
-    for (const value of equity) {
-      if (value > peak) peak = value;
-      const drawdown = peak - value;
-      const drawdownPct = (drawdown / peak) * 100;
-      
-      if (drawdown > maxDrawdown) {
-        maxDrawdown = drawdown;
-        maxDrawdownPct = drawdownPct;
-      }
+    const avgWinPct = winningTrades.length > 0
+      ? winningTrades.reduce((sum, t) => sum + (t.pnlPercent || 0), 0) / winningTrades.length
+      : 0;
+    const avgLossPct = losingTrades.length > 0
+      ? losingTrades.reduce((sum, t) => sum + Math.abs(t.pnlPercent || 0), 0) / losingTrades.length
+      : 0;
+    
+    // Calculate returns for Sharpe/Sortino
+    const returns: number[] = [];
+    for (let i = 1; i < equityCurve.length; i++) {
+      returns.push((equityCurve[i] - equityCurve[i - 1]) / equityCurve[i - 1]);
     }
-
-    return { maxDrawdown, maxDrawdownPct };
-  }
-
-  private calculateSharpeRatio(returns: number[], riskFreeRate: number = 0): number {
-    if (returns.length === 0) return 0;
     
     const avgReturn = returns.reduce((a, b) => a + b, 0) / returns.length;
     const stdDev = Math.sqrt(
       returns.reduce((sum, r) => sum + Math.pow(r - avgReturn, 2), 0) / returns.length
     );
     
-    if (stdDev === 0) return 0;
-    
-    // Annualize (assuming daily returns)
-    const annualizedReturn = avgReturn * 252;
-    const annualizedStdDev = stdDev * Math.sqrt(252);
-    
-    return (annualizedReturn - riskFreeRate) / annualizedStdDev;
-  }
-
-  private calculateSortinoRatio(returns: number[], riskFreeRate: number = 0): number {
-    if (returns.length === 0) return 0;
-    
-    const avgReturn = returns.reduce((a, b) => a + b, 0) / returns.length;
+    // Downside deviation for Sortino
     const negativeReturns = returns.filter(r => r < 0);
-    
-    if (negativeReturns.length === 0) return Infinity;
-    
-    const downside = Math.sqrt(
-      negativeReturns.reduce((sum, r) => sum + Math.pow(r, 2), 0) / negativeReturns.length
+    const downsideDev = Math.sqrt(
+      negativeReturns.reduce((sum, r) => sum + Math.pow(r, 2), 0) / (negativeReturns.length || 1)
     );
     
-    if (downside === 0) return 0;
+    // Annualization factor (assuming daily timeframe)
+    const annualizationFactor = Math.sqrt(252);
     
-    const annualizedReturn = avgReturn * 252;
-    const annualizedDownside = downside * Math.sqrt(252);
+    const sharpeRatio = stdDev > 0 ? (avgReturn / stdDev) * annualizationFactor : 0;
+    const sortinoRatio = downsideDev > 0 ? (avgReturn / downsideDev) * annualizationFactor : 0;
     
-    return (annualizedReturn - riskFreeRate) / annualizedDownside;
+    // Drawdown
+    const drawdownCurve: number[] = [];
+    let runningMax = equityCurve[0];
+    let maxDrawdown = 0;
+    
+    for (const equity of equityCurve) {
+      runningMax = Math.max(runningMax, equity);
+      const drawdown = runningMax - equity;
+      drawdownCurve.push(drawdown);
+      maxDrawdown = Math.max(maxDrawdown, drawdown);
+    }
+    
+    const maxDrawdownPct = (maxDrawdown / peakCapital) * 100;
+    
+    // Profit factor
+    const totalWins = winningTrades.reduce((sum, t) => sum + (t.pnl || 0), 0);
+    const totalLosses = Math.abs(losingTrades.reduce((sum, t) => sum + (t.pnl || 0), 0));
+    const profitFactor = totalLosses > 0 ? totalWins / totalLosses : totalWins > 0 ? Infinity : 0;
+    
+    // Average holding period
+    const avgHoldingPeriod = completedTrades.length > 0
+      ? completedTrades.reduce((sum, t) => {
+          if (t.exitTime && t.entryTime) {
+            return sum + (t.exitTime.getTime() - t.entryTime.getTime());
+          }
+          return sum;
+        }, 0) / completedTrades.length / (1000 * 60 * 60)  // Convert to hours
+      : 0;
+    
+    return {
+      strategy: strategyName,
+      config,
+      
+      totalReturn,
+      totalReturnPct,
+      buyHoldReturn,
+      buyHoldReturnPct,
+      alpha: totalReturnPct - buyHoldReturnPct,
+      
+      sharpeRatio,
+      sortinoRatio,
+      maxDrawdown,
+      maxDrawdownPct,
+      volatility: stdDev * annualizationFactor * 100,
+      
+      totalTrades: completedTrades.length,
+      winningTrades: winningTrades.length,
+      losingTrades: losingTrades.length,
+      winRate: completedTrades.length > 0 ? (winningTrades.length / completedTrades.length) * 100 : 0,
+      avgWin,
+      avgLoss,
+      avgWinPct,
+      avgLossPct,
+      profitFactor,
+      avgHoldingPeriod,
+      
+      initialCapital: config.initialCapital,
+      finalCapital,
+      peakCapital,
+      
+      startDate: new Date(data[0].timestamp),
+      endDate: new Date(data[data.length - 1].timestamp),
+      totalCandles: data.length,
+      
+      trades,
+      equityCurve,
+      drawdownCurve
+    };
   }
+  
+  // --------------------------------------------------------
+  // Report Generation
+  // --------------------------------------------------------
+  
+  generateReport(result: BacktestResult): string {
+    const r = result;
+    
+    return `
+📊 BACKTEST REPORT: ${r.strategy}
+${'='.repeat(60)}
+Symbol: ${r.config.symbol}
+Timeframe: ${r.config.timeframe}
+Period: ${r.startDate.toISOString().split('T')[0]} to ${r.endDate.toISOString().split('T')[0]}
+Candles: ${r.totalCandles}
 
-  private async ensureConnected(): Promise<void> {
-    if (!this.exchange) await this.connect();
+PERFORMANCE
+${'-'.repeat(60)}
+Initial Capital:    $${r.initialCapital.toLocaleString()}
+Final Capital:      $${r.finalCapital.toLocaleString()}
+Total Return:       ${r.totalReturnPct >= 0 ? '+' : ''}${r.totalReturnPct.toFixed(2)}%
+Buy & Hold:         ${r.buyHoldReturnPct >= 0 ? '+' : ''}${r.buyHoldReturnPct.toFixed(2)}%
+Alpha:              ${r.alpha >= 0 ? '+' : ''}${r.alpha.toFixed(2)}%
+
+RISK METRICS
+${'-'.repeat(60)}
+Sharpe Ratio:       ${r.sharpeRatio.toFixed(2)}
+Sortino Ratio:      ${r.sortinoRatio.toFixed(2)}
+Max Drawdown:       ${r.maxDrawdownPct.toFixed(2)}%
+Volatility:         ${r.volatility.toFixed(2)}%
+
+TRADE STATISTICS
+${'-'.repeat(60)}
+Total Trades:       ${r.totalTrades}
+Winning Trades:     ${r.winningTrades} (${r.winRate.toFixed(1)}%)
+Losing Trades:      ${r.losingTrades}
+Avg Win:            $${r.avgWin.toFixed(2)} (${r.avgWinPct.toFixed(2)}%)
+Avg Loss:           $${r.avgLoss.toFixed(2)} (${r.avgLossPct.toFixed(2)}%)
+Profit Factor:      ${r.profitFactor === Infinity ? '∞' : r.profitFactor.toFixed(2)}
+Avg Hold Time:      ${r.avgHoldingPeriod.toFixed(1)} hours
+
+RATING
+${'-'.repeat(60)}
+${this.getRating(r)}
+`;
+  }
+  
+  private getRating(r: BacktestResult): string {
+    let score = 0;
+    const notes: string[] = [];
+    
+    // Alpha
+    if (r.alpha > 20) { score += 3; notes.push('🌟 Excellent alpha'); }
+    else if (r.alpha > 10) { score += 2; notes.push('✅ Good alpha'); }
+    else if (r.alpha > 0) { score += 1; notes.push('👍 Positive alpha'); }
+    else { notes.push('⚠️ Negative alpha'); }
+    
+    // Sharpe
+    if (r.sharpeRatio > 2) { score += 3; notes.push('🌟 Excellent Sharpe'); }
+    else if (r.sharpeRatio > 1) { score += 2; notes.push('✅ Good Sharpe'); }
+    else if (r.sharpeRatio > 0.5) { score += 1; notes.push('👍 Acceptable Sharpe'); }
+    else { notes.push('⚠️ Low Sharpe'); }
+    
+    // Drawdown
+    if (r.maxDrawdownPct < 10) { score += 2; notes.push('🛡️ Low drawdown'); }
+    else if (r.maxDrawdownPct < 20) { score += 1; notes.push('✅ Moderate drawdown'); }
+    else { notes.push('⚠️ High drawdown'); }
+    
+    // Win rate
+    if (r.winRate > 60) { score += 2; notes.push('🎯 High win rate'); }
+    else if (r.winRate > 50) { score += 1; notes.push('✅ Positive win rate'); }
+    else { notes.push('⚠️ Low win rate'); }
+    
+    // Profit factor
+    if (r.profitFactor > 2) { score += 2; notes.push('💰 Excellent profit factor'); }
+    else if (r.profitFactor > 1.5) { score += 1; notes.push('✅ Good profit factor'); }
+    else { notes.push('⚠️ Low profit factor'); }
+    
+    const rating = score >= 10 ? '⭐⭐⭐⭐⭐ EXCELLENT' :
+                   score >= 8 ? '⭐⭐⭐⭐ VERY GOOD' :
+                   score >= 6 ? '⭐⭐⭐ GOOD' :
+                   score >= 4 ? '⭐⭐ FAIR' :
+                   '⭐ NEEDS IMPROVEMENT';
+    
+    return `${rating}\n${notes.join('\n')}`;
+  }
+  
+  // --------------------------------------------------------
+  // Strategy Comparison
+  // --------------------------------------------------------
+  
+  async compareStrategies(
+    config: BacktestConfig,
+    strategyNames: string[] = Object.keys(STRATEGIES)
+  ): Promise<BacktestResult[]> {
+    const results: BacktestResult[] = [];
+    
+    for (const name of strategyNames) {
+      try {
+        const result = await this.runBacktest(name, config);
+        results.push(result);
+      } catch (error) {
+        console.error(`Failed to backtest ${name}:`, error);
+      }
+    }
+    
+    // Sort by alpha
+    return results.sort((a, b) => b.alpha - a.alpha);
+  }
+  
+  generateComparisonReport(results: BacktestResult[]): string {
+    let report = `
+📊 STRATEGY COMPARISON
+${'='.repeat(70)}
+Symbol: ${results[0]?.config.symbol || 'N/A'}
+Period: ${results[0]?.totalCandles || 0} candles
+
+${'Strategy'.padEnd(20)} ${'Return'.padStart(10)} ${'B&H Δ'.padStart(10)} ${'Sharpe'.padStart(8)} ${'Win%'.padStart(8)} ${'MaxDD'.padStart(8)}
+${'-'.repeat(70)}
+`;
+
+    for (const r of results) {
+      const name = r.strategy.substring(0, 19).padEnd(20);
+      const ret = `${r.totalReturnPct >= 0 ? '+' : ''}${r.totalReturnPct.toFixed(1)}%`.padStart(10);
+      const alpha = `${r.alpha >= 0 ? '+' : ''}${r.alpha.toFixed(1)}%`.padStart(10);
+      const sharpe = r.sharpeRatio.toFixed(2).padStart(8);
+      const winRate = `${r.winRate.toFixed(0)}%`.padStart(8);
+      const maxDD = `${r.maxDrawdownPct.toFixed(1)}%`.padStart(8);
+      
+      report += `${name} ${ret} ${alpha} ${sharpe} ${winRate} ${maxDD}\n`;
+    }
+    
+    if (results.length > 0) {
+      const best = results[0];
+      report += `\n🏆 Best Strategy: ${best.strategy} (Alpha: ${best.alpha >= 0 ? '+' : ''}${best.alpha.toFixed(2)}%)`;
+    }
+    
+    return report;
+  }
+  
+  // --------------------------------------------------------
+  // Available Strategies
+  // --------------------------------------------------------
+  
+  listStrategies(): { name: string; description: string; params: Record<string, unknown> }[] {
+    return Object.entries(STRATEGIES).map(([key, value]) => ({
+      name: key,
+      description: value.config.description || value.config.name,
+      params: value.config.params
+    }));
   }
 }
 
-export function createBacktester(config?: BacktesterConfig): Backtester {
-  return new Backtester(config);
+// ============================================================
+// FACTORY & EXPORT
+// ============================================================
+
+export function createBacktester(exchangeId: string = 'binance'): Backtester {
+  return new Backtester(exchangeId);
 }
 
 export default Backtester;
