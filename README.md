@@ -90,6 +90,38 @@ kit trade buy BTC/USDT 100 --demo
 | 🔔 **Alerts** | Price, indicator, and portfolio alerts |
 | 📰 **News Integration** | Sentiment analysis and event tracking |
 | 💬 **Multi-Channel** | Control via Telegram, Discord, CLI |
+| 🛠️ **Developer SDK** | Build your own trading bots & apps |
+
+---
+
+## 👨‍💻 Build Your Own Bots & Apps
+
+K.I.T. ist nicht nur ein Trading Bot - es ist ein **Framework** wie OpenClaw!
+
+```typescript
+import { createBot, RSIStrategy } from '@binaryfaster/kit';
+
+// Eigenen Bot in 10 Zeilen erstellen
+const bot = createBot({
+  name: 'MeinBot',
+  exchange: 'binance',      // oder: kraken, mt5, roboforex...
+  pair: 'BTC/USDT',
+  strategy: new RSIStrategy(),
+  risk: { stopLoss: 0.02, takeProfit: 0.04 },
+});
+
+bot.start();
+```
+
+**Was du bauen kannst:**
+- 🤖 Trading Bots (Grid, DCA, Arbitrage, Signal Copier)
+- 📱 Telegram/Discord Bots
+- 🌐 Web Dashboards
+- 📊 Portfolio Tracker
+- 🔔 Alert Systems
+- 📡 Signal Services
+
+👉 **[Developer SDK Documentation](docs/developers/sdk.md)**
 
 ---
 
