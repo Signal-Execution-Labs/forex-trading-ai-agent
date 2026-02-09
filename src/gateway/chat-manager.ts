@@ -104,6 +104,90 @@ export interface ToolDefinition {
   parameters: Record<string, unknown>;
 }
 
+// Import LLMClient types for adapter
+import type { LLMClient, LLMMessage as LLMClientMessage } from '../providers/llm-client';
+
+/**
+ * Adapter to use LLMClient as LLMProvider
+ */
+export function createLLMProviderFromClient(client: LLMClient): LLMProvider {
+  return {
+    async chat(params) {
+      const messages: LLMClientMessage[] = params.messages.map(m => ({
+        role: m.role,
+        content: m.content,
+      }));
+      
+      const tools = params.tools?.map(t => ({
+        type: 'function' as const,
+        function: {
+          name: t.name,
+          description: t.description,
+          parameters: t.parameters,
+        },
+      }));
+      
+      if (params.stream && params.onChunk) {
+        // Streaming mode
+        let content = '';
+        const toolCalls: ToolCall[] = [];
+        
+        for await (const chunk of client.chatStream(messages, {
+          model: params.model,
+          tools,
+          systemPrompt: params.systemPrompt,
+          signal: params.signal,
+        })) {
+          if (chunk.type === 'content' && chunk.content) {
+            content += chunk.content;
+            params.onChunk(chunk.content);
+          } else if (chunk.type === 'tool_call' && chunk.toolCall) {
+            toolCalls.push({
+              id: chunk.toolCall.id,
+              name: chunk.toolCall.function.name,
+              arguments: JSON.parse(chunk.toolCall.function.arguments),
+            });
+            
+            if (params.onToolCall) {
+              await params.onToolCall({
+                id: chunk.toolCall.id,
+                name: chunk.toolCall.function.name,
+                arguments: JSON.parse(chunk.toolCall.function.arguments),
+              });
+            }
+          }
+        }
+        
+        return {
+          content,
+          toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+        };
+      } else {
+        // Non-streaming mode
+        const response = await client.chat(messages, {
+          model: params.model,
+          tools,
+          systemPrompt: params.systemPrompt,
+          signal: params.signal,
+        });
+        
+        return {
+          content: response.content,
+          tokens: response.usage ? {
+            input: response.usage.inputTokens,
+            output: response.usage.outputTokens,
+          } : undefined,
+          toolCalls: response.toolCalls?.map(tc => ({
+            id: tc.id,
+            name: tc.function.name,
+            arguments: JSON.parse(tc.function.arguments),
+          })),
+        };
+      }
+    }
+  };
+}
+
 // ============================================================================
 // Chat Manager
 // ============================================================================

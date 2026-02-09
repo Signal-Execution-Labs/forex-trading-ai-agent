@@ -69,6 +69,21 @@ export type {
   AutoCompoundConfig
 } from './defi-connector';
 
+// Trading Tools for AI Agent
+export { 
+  TRADING_TOOLS, 
+  getTradingTools, 
+  getMockHandlers,
+  MOCK_TOOL_HANDLERS
+} from './trading-tools';
+export type { 
+  PortfolioResult, 
+  PositionInfo, 
+  MarketAnalysis, 
+  OrderResult, 
+  BacktestResult as BacktestToolResult 
+} from './trading-tools';
+
 // Factory for creating all tools
 export interface ToolInstances {
   autoTrader: InstanceType<typeof import('./auto-trader').AutoTrader>;
