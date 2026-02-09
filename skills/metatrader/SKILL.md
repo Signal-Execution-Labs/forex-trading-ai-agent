@@ -2,6 +2,18 @@
 
 > 🤖 **DER BESTE TRADING AGENT DER WELT** - Vollständige MT5 Integration mit Enterprise-Features
 
+## 🏦 Unterstützte Broker
+
+| Broker | Server | Empfohlen |
+|--------|--------|-----------|
+| **RoboForex** | RoboForex-Demo, RoboForex-ECN | ⭐ Top-Wahl |
+| IC Markets | ICMarketsSC-Demo | ✅ |
+| Pepperstone | Pepperstone-Demo | ✅ |
+| XM | XMGlobal-Demo | ✅ |
+| OANDA | OANDA-v20 Practice | ✅ |
+
+> 💡 **RoboForex** bietet niedrige Spreads, schnelle Ausführung und ist ideal für K.I.T.!
+
 ## 🔥 WELTKLASSE FEATURES
 
 | Feature | Status | Beschreibung |

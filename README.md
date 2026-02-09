@@ -338,7 +338,7 @@ kit/
 | Market | Exchanges/Brokers | Status |
 |--------|------------------|--------|
 | 🪙 **Crypto** | Binance, Kraken, Coinbase, OKX, Bybit | ✅ Ready |
-| 💱 **Forex** | MetaTrader 4/5, OANDA, IC Markets | ✅ Ready |
+| 💱 **Forex** | MetaTrader 4/5, **RoboForex**, OANDA, IC Markets | ✅ Ready |
 | 📈 **Stocks** | Interactive Brokers, Alpaca | 🚧 Beta |
 | 📊 **ETFs** | Same as Stocks | 🚧 Beta |
 | 🏦 **DeFi** | Uniswap, Aave, Lido | 📋 Planned |
