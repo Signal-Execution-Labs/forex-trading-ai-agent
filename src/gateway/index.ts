@@ -20,3 +20,6 @@ export {
   createRequest,
   generateRequestId
 } from './protocol';
+
+// Agent Runner - The Brain
+export { AgentRunner, createAgentRunner, AgentRunnerConfig, AgentStatus } from './agent-runner';

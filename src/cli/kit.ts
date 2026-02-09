@@ -394,6 +394,74 @@ program
   });
 
 // ═══════════════════════════════════════════════════════════════
+// CHAT
+// ═══════════════════════════════════════════════════════════════
+program
+  .command('chat')
+  .description('Interactive chat with K.I.T.')
+  .option('-m, --model <model>', 'Model to use (provider/model)')
+  .action(async (options) => {
+    console.log('🚀 Starting K.I.T. Chat...\n');
+    
+    // Run the agent-runner CLI
+    const { createAgentRunner } = await import('../gateway/agent-runner');
+    const readline = await import('readline');
+    
+    const agent = createAgentRunner({
+      agentName: 'K.I.T.',
+      model: options.model,
+    });
+    
+    agent.on('chat.chunk', ({ chunk }: { chunk: string }) => {
+      process.stdout.write(chunk);
+    });
+    
+    agent.on('chat.tool_call', ({ toolCall }: { toolCall: { name: string } }) => {
+      console.log(`\n🔧 ${toolCall.name}`);
+    });
+    
+    agent.on('chat.complete', () => {
+      console.log('\n');
+      rl.prompt();
+    });
+    
+    agent.on('chat.error', ({ error }: { error: string }) => {
+      console.error(`\n❌ ${error}`);
+      rl.prompt();
+    });
+    
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+      prompt: '🤖 > ',
+    });
+    
+    await agent.start();
+    rl.prompt();
+    
+    rl.on('line', async (line: string) => {
+      const input = line.trim();
+      if (!input || input === '/quit') {
+        await agent.stop();
+        process.exit(0);
+      }
+      
+      if (input === '/status') {
+        console.log(JSON.stringify(agent.getStatus(), null, 2));
+        rl.prompt();
+        return;
+      }
+      
+      try {
+        await agent.chat(input);
+      } catch (err: any) {
+        console.error(`Error: ${err.message}`);
+        rl.prompt();
+      }
+    });
+  });
+
+// ═══════════════════════════════════════════════════════════════
 // MODELS
 // ═══════════════════════════════════════════════════════════════
 program
