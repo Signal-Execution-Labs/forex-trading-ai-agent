@@ -5,9 +5,18 @@
  * (Dashboard, Telegram, Discord, etc.)
  */
 
-export { GatewayServer, createGatewayServer } from './server';
-export { SessionManager, Session } from './session-manager';
-export { MemoryManager } from './memory-manager';
-export { HeartbeatManager } from './heartbeat';
-export { CronManager } from './cron-manager';
-export { Protocol, RpcRequest, RpcResponse } from './protocol';
+export { GatewayServer, createGatewayServer, GatewayConfig } from './server';
+export { SessionManager, createSessionManager, Session } from './session-manager';
+export { MemoryManager, createMemoryManager } from './memory-manager';
+export { HeartbeatManager, createHeartbeatManager, parseDuration } from './heartbeat';
+export { CronManager, createCronManager, CronJob } from './cron-manager';
+export { ChatManager, createChatManager, ChatMessage, ChatSession } from './chat-manager';
+export { 
+  ProtocolHandler, 
+  ProtocolFrame,
+  PROTOCOL_METHODS,
+  PROTOCOL_EVENTS,
+  ERROR_CODES,
+  createRequest,
+  generateRequestId
+} from './protocol';

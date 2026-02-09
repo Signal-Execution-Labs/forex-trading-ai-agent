@@ -17,6 +17,9 @@
 // Gateway (OpenClaw-inspired infrastructure)
 export * from './gateway';
 
+// Configuration System
+export * from './config';
+
 // Trading Tools
 export * from './tools';
 
@@ -31,21 +34,31 @@ export { createGatewayServer } from './gateway/server';
 
 /**
  * Start K.I.T. with default configuration
+ * Loads config from ~/.kit/config.json and environment variables
  */
-export async function startKit(config?: {
+export async function startKit(overrides?: {
   port?: number;
   agentName?: string;
   model?: string;
 }) {
+  const { loadConfig } = await import('./config');
   const { createGatewayServer } = await import('./gateway/server');
   
+  // Load configuration
+  const config = loadConfig();
+  
   const gateway = createGatewayServer({
-    port: config?.port || 18799,
+    port: overrides?.port || config.gateway.port,
+    host: config.gateway.host,
+    token: config.gateway.token,
     agent: {
-      id: 'kit',
-      name: config?.agentName || 'K.I.T.',
-      model: config?.model,
+      id: config.agent.id,
+      name: overrides?.agentName || config.agent.name,
+      model: overrides?.model || config.agent.model,
     },
+    heartbeat: config.heartbeat,
+    cron: config.cron,
+    memory: config.memory,
   });
   
   await gateway.start();

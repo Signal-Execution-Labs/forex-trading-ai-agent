@@ -1,97 +1,301 @@
 /**
  * K.I.T. Basic Bot Example
  * 
- * A simple example showing how to create a trading bot with K.I.T.
+ * A simple trading bot that:
+ * 1. Connects to the Gateway
+ * 2. Monitors BTC price
+ * 3. Executes trades based on simple conditions
  * 
- * Usage:
- *   npx ts-node examples/basic-bot.ts
+ * Run: npx ts-node examples/basic-bot.ts
  */
 
-import { KitAgent, ExchangeManager, StrategyEngine } from '../src';
+import WebSocket from 'ws';
 
-async function main() {
-  console.log('🚗 K.I.T. Basic Bot Starting...\n');
-
-  // 1. Create the agent
-  const agent = new KitAgent({
-    name: 'MyTradingBot',
-    model: 'claude-opus-4-5-20251101',
-  });
-
-  // 2. Connect to exchanges
-  const exchanges = new ExchangeManager();
-  
-  await exchanges.connect('binance', {
-    apiKey: process.env.BINANCE_API_KEY!,
-    secret: process.env.BINANCE_SECRET!,
-    sandbox: true, // Use testnet
-  });
-
-  console.log('✓ Connected to Binance (testnet)');
-
-  // 3. Define a simple strategy
-  const strategy = {
-    name: 'SimpleMA',
-    symbol: 'BTC/USDT',
-    timeframe: '1h',
-    
-    // Buy when price crosses above 20 MA
-    shouldBuy: async (data: any) => {
-      const prices = data.closes;
-      const ma20 = prices.slice(-20).reduce((a: number, b: number) => a + b, 0) / 20;
-      const currentPrice = prices[prices.length - 1];
-      return currentPrice > ma20;
-    },
-    
-    // Sell when price crosses below 20 MA
-    shouldSell: async (data: any) => {
-      const prices = data.closes;
-      const ma20 = prices.slice(-20).reduce((a: number, b: number) => a + b, 0) / 20;
-      const currentPrice = prices[prices.length - 1];
-      return currentPrice < ma20;
-    },
-    
-    // Risk management
-    riskPerTrade: 0.02, // 2% per trade
-    stopLoss: 0.02,     // 2% stop loss
-    takeProfit: 0.04,   // 4% take profit
-  };
-
-  // 4. Create strategy engine
-  const engine = new StrategyEngine({
-    exchange: exchanges.get('binance'),
-    strategy,
-    paperTrading: true, // Start with paper trading
-  });
-
-  // 5. Handle events
-  engine.on('signal', (signal) => {
-    console.log(`📊 Signal: ${signal.action} ${signal.symbol} @ ${signal.price}`);
-  });
-
-  engine.on('trade', (trade) => {
-    console.log(`⚡ Trade executed: ${trade.side} ${trade.amount} ${trade.symbol}`);
-  });
-
-  engine.on('error', (error) => {
-    console.error('❌ Error:', error.message);
-  });
-
-  // 6. Start the bot
-  console.log('\n🚀 Starting strategy...\n');
-  await engine.start();
-
-  // Keep running
-  console.log('Bot is running. Press Ctrl+C to stop.\n');
-  
-  // Graceful shutdown
-  process.on('SIGINT', async () => {
-    console.log('\n\nShutting down...');
-    await engine.stop();
-    await exchanges.disconnectAll();
-    console.log('Goodbye! 👋');
-    process.exit(0);
-  });
+interface KitConfig {
+  gatewayUrl: string;
+  token?: string;
 }
 
-main().catch(console.error);
+interface TradeParams {
+  action: 'buy' | 'sell';
+  pair: string;
+  amount: number;
+  type: 'market' | 'limit';
+  price?: number;
+}
+
+class BasicBot {
+  private ws: WebSocket | null = null;
+  private requestId = 0;
+  private pending = new Map<string, { resolve: Function; reject: Function }>();
+  private isConnected = false;
+  
+  constructor(private config: KitConfig) {}
+  
+  /**
+   * Connect to K.I.T. Gateway
+   */
+  async connect(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      console.log(`🔌 Connecting to ${this.config.gatewayUrl}...`);
+      
+      this.ws = new WebSocket(this.config.gatewayUrl);
+      
+      this.ws.onopen = async () => {
+        console.log('✅ WebSocket connected');
+        try {
+          await this.handshake();
+          this.isConnected = true;
+          resolve();
+        } catch (err) {
+          reject(err);
+        }
+      };
+      
+      this.ws.onmessage = (event) => {
+        this.handleMessage(event.data.toString());
+      };
+      
+      this.ws.onerror = (error) => {
+        console.error('❌ WebSocket error:', error);
+        reject(error);
+      };
+      
+      this.ws.onclose = () => {
+        console.log('👋 WebSocket closed');
+        this.isConnected = false;
+      };
+    });
+  }
+  
+  /**
+   * Send connect handshake
+   */
+  private async handshake(): Promise<any> {
+    const result = await this.request('connect', {
+      client: {
+        id: 'basic-bot',
+        displayName: 'Basic Trading Bot',
+        version: '1.0.0',
+        platform: 'node'
+      },
+      auth: {
+        token: this.config.token
+      }
+    });
+    
+    console.log('🤝 Handshake complete:', result.clientId);
+    console.log(`   Skills: ${result.skills?.length || 0}`);
+    console.log(`   Tools: ${result.tools?.length || 0}`);
+    
+    return result;
+  }
+  
+  /**
+   * Send a request and wait for response
+   */
+  async request(method: string, params?: any): Promise<any> {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      throw new Error('Not connected');
+    }
+    
+    const id = `req-${++this.requestId}`;
+    
+    return new Promise((resolve, reject) => {
+      this.pending.set(id, { resolve, reject });
+      
+      const message = JSON.stringify({
+        type: 'req',
+        id,
+        method,
+        params
+      });
+      
+      this.ws!.send(message);
+      
+      // Timeout after 30 seconds
+      setTimeout(() => {
+        if (this.pending.has(id)) {
+          this.pending.delete(id);
+          reject(new Error(`Request timeout: ${method}`));
+        }
+      }, 30000);
+    });
+  }
+  
+  /**
+   * Handle incoming messages
+   */
+  private handleMessage(data: string): void {
+    try {
+      const msg = JSON.parse(data);
+      
+      if (msg.type === 'res') {
+        // Handle response
+        const handler = this.pending.get(msg.id);
+        if (handler) {
+          this.pending.delete(msg.id);
+          if (msg.ok) {
+            handler.resolve(msg.payload);
+          } else {
+            handler.reject(new Error(msg.error?.message || 'Request failed'));
+          }
+        }
+      } else if (msg.type === 'event') {
+        // Handle event
+        this.handleEvent(msg.event, msg.payload);
+      }
+    } catch (err) {
+      console.error('Failed to parse message:', err);
+    }
+  }
+  
+  /**
+   * Handle events from Gateway
+   */
+  private handleEvent(event: string, payload: any): void {
+    console.log(`📢 Event: ${event}`, payload);
+    
+    switch (event) {
+      case 'trade:executed':
+        console.log(`✅ Trade executed: ${payload.side} ${payload.amount} ${payload.pair} @ ${payload.price}`);
+        break;
+      case 'market:price':
+        console.log(`📈 ${payload.pair}: $${payload.price} (${payload.change > 0 ? '+' : ''}${payload.change}%)`);
+        break;
+      case 'alert:triggered':
+        console.log(`🔔 Alert: ${payload.message}`);
+        break;
+    }
+  }
+  
+  /**
+   * Get portfolio snapshot
+   */
+  async getPortfolio(): Promise<any> {
+    return this.request('portfolio.snapshot', { action: 'snapshot' });
+  }
+  
+  /**
+   * Get market price
+   */
+  async getPrice(pair: string): Promise<any> {
+    return this.request('market.data', {
+      action: 'price',
+      pair
+    });
+  }
+  
+  /**
+   * Get technical analysis
+   */
+  async analyze(pair: string, timeframe = '1h'): Promise<any> {
+    return this.request('market.data', {
+      action: 'analyze',
+      pair,
+      timeframe
+    });
+  }
+  
+  /**
+   * Execute a trade
+   */
+  async trade(params: TradeParams): Promise<any> {
+    console.log(`🔄 Executing trade: ${params.action} ${params.amount} ${params.pair}`);
+    return this.request('trade.execute', params);
+  }
+  
+  /**
+   * Check gateway health
+   */
+  async health(): Promise<any> {
+    return this.request('health');
+  }
+  
+  /**
+   * Close connection
+   */
+  disconnect(): void {
+    if (this.ws) {
+      this.ws.close();
+      this.ws = null;
+    }
+  }
+}
+
+// =============================================================================
+// MAIN - Example Usage
+// =============================================================================
+
+async function main() {
+  const bot = new BasicBot({
+    gatewayUrl: process.env.KIT_GATEWAY_URL || 'ws://127.0.0.1:18800',
+    token: process.env.KIT_GATEWAY_TOKEN
+  });
+  
+  try {
+    // Connect to Gateway
+    await bot.connect();
+    
+    // Check health
+    const health = await bot.health();
+    console.log('\n📊 Gateway Health:', health);
+    
+    // Get portfolio
+    const portfolio = await bot.getPortfolio();
+    console.log('\n💼 Portfolio:');
+    console.log(`   Total Value: $${portfolio.totalValueUsd?.toLocaleString() || 'N/A'}`);
+    console.log(`   Assets: ${portfolio.assets?.length || 0}`);
+    console.log(`   Positions: ${portfolio.positions?.length || 0}`);
+    
+    // Get BTC price
+    const btcPrice = await bot.getPrice('BTC/USDT');
+    console.log('\n📈 BTC/USDT:', btcPrice);
+    
+    // Get technical analysis
+    const analysis = await bot.analyze('BTC/USDT', '4h');
+    console.log('\n🔍 Analysis:', analysis);
+    
+    // Example: Simple trading logic
+    // WARNING: This is for demonstration only!
+    if (analysis.signal === 'BUY' && analysis.confidence > 70) {
+      console.log('\n🚀 Strong buy signal detected!');
+      
+      // Uncomment to execute real trade:
+      // const order = await bot.trade({
+      //   action: 'buy',
+      //   pair: 'BTC/USDT',
+      //   amount: 50,  // $50
+      //   type: 'market'
+      // });
+      // console.log('Order:', order);
+    }
+    
+    // Keep running for events
+    console.log('\n⏳ Listening for events... (Ctrl+C to exit)');
+    
+    // Periodic health check
+    setInterval(async () => {
+      try {
+        const h = await bot.health();
+        console.log(`💓 Health OK - Uptime: ${Math.floor(h.uptime / 60)}min`);
+      } catch (err) {
+        console.error('💔 Health check failed');
+      }
+    }, 60000);
+    
+  } catch (error) {
+    console.error('❌ Error:', error);
+    bot.disconnect();
+    process.exit(1);
+  }
+}
+
+// Handle shutdown
+process.on('SIGINT', () => {
+  console.log('\n👋 Shutting down...');
+  process.exit(0);
+});
+
+// Run
+main();

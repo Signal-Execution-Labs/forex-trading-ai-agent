@@ -3,1098 +3,474 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>K.I.T. Control</title>
-  <meta name="color-scheme" content="dark light">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚗</text></svg>">
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <title>K.I.T. Dashboard</title>
   <style>
     :root {
-      --bg: #12141a;
-      --bg-accent: #14161d;
-      --bg-elevated: #1a1d25;
-      --bg-hover: #262a35;
-      --card: #181b22;
-      --card-foreground: #f4f4f5;
-      --panel: #12141a;
-      --panel-strong: #1a1d25;
-      --text: #e4e4e7;
-      --text-strong: #fafafa;
-      --muted: #71717a;
-      --border: #27272a;
-      --border-strong: #3f3f46;
-      --accent: #00d4ff;
-      --accent-hover: #00b8e6;
-      --accent-subtle: rgba(0, 212, 255, 0.15);
-      --accent-glow: rgba(0, 212, 255, 0.25);
-      --ok: #22c55e;
-      --ok-subtle: rgba(34, 197, 94, 0.12);
-      --warn: #f59e0b;
-      --warn-subtle: rgba(245, 158, 11, 0.12);
+      --bg-primary: #0a0a0f;
+      --bg-secondary: #14141f;
+      --bg-tertiary: #1e1e2e;
+      --text-primary: #ffffff;
+      --text-secondary: #a0a0b0;
+      --accent: #6366f1;
+      --accent-hover: #818cf8;
+      --success: #22c55e;
+      --warning: #f59e0b;
       --danger: #ef4444;
-      --danger-subtle: rgba(239, 68, 68, 0.12);
-      --mono: 'JetBrains Mono', monospace;
-      --font-body: 'Space Grotesk', sans-serif;
-      --radius-sm: 6px;
-      --radius-md: 8px;
-      --radius-lg: 12px;
-      --radius-full: 9999px;
-      --shadow-sm: 0 1px 2px rgba(0,0,0,0.2);
-      --shadow-md: 0 4px 12px rgba(0,0,0,0.25);
-      color-scheme: dark;
+      --border: #2a2a3a;
     }
-
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
     
     body {
-      font-family: var(--font-body);
-      background: var(--bg);
-      color: var(--text);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
       min-height: 100vh;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    /* Shell Layout (like OpenClaw) */
-    .shell {
-      display: grid;
-      grid-template-columns: 220px 1fr;
-      grid-template-rows: 56px 1fr;
-      grid-template-areas: "topbar topbar" "nav content";
-      height: 100vh;
-      overflow: hidden;
-    }
-
-    /* Topbar */
-    .topbar {
-      grid-area: topbar;
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0 20px;
+      flex-direction: column;
+    }
+    
+    /* Header */
+    header {
+      background: var(--bg-secondary);
       border-bottom: 1px solid var(--border);
-      background: var(--bg);
-    }
-
-    .topbar-left {
+      padding: 1rem 2rem;
       display: flex;
       align-items: center;
-      gap: 12px;
+      justify-content: space-between;
     }
-
-    .brand {
+    
+    .logo {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 0.75rem;
     }
-
-    .brand-logo {
-      width: 32px;
-      height: 32px;
-      background: linear-gradient(135deg, var(--accent), #0088cc);
-      border-radius: 8px;
+    
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+      border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
+      font-weight: bold;
+      font-size: 1.2rem;
+    }
+    
+    .logo-text {
+      font-size: 1.5rem;
       font-weight: 700;
-      font-size: 16px;
     }
-
-    .brand-text h1 {
-      font-size: 16px;
-      font-weight: 700;
-      letter-spacing: -0.03em;
-      color: var(--text-strong);
-    }
-
-    .brand-text span {
-      font-size: 10px;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
-    .topbar-status {
+    
+    .status-indicator {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg-tertiary);
+      border-radius: 20px;
+      font-size: 0.875rem;
     }
-
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 12px;
-      border: 1px solid var(--border);
-      border-radius: var(--radius-full);
-      background: var(--bg-elevated);
-      font-size: 12px;
-      font-weight: 500;
-    }
-
+    
     .status-dot {
-      width: 6px;
-      height: 6px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
       background: var(--danger);
-      box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
     }
-
-    .status-dot.ok {
-      background: var(--ok);
-      box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+    
+    .status-dot.online {
+      background: var(--success);
+      box-shadow: 0 0 10px var(--success);
     }
-
-    /* Navigation */
-    .nav {
-      grid-area: nav;
-      padding: 16px 12px;
-      background: var(--bg);
-      overflow-y: auto;
-      border-right: 1px solid var(--border);
+    
+    /* Main Layout */
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 350px;
+      gap: 1rem;
+      padding: 1rem;
+      max-height: calc(100vh - 80px);
     }
-
-    .nav-group {
-      margin-bottom: 20px;
-    }
-
-    .nav-label {
-      font-size: 11px;
-      font-weight: 500;
-      color: var(--muted);
-      padding: 6px 10px;
-      margin-bottom: 4px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
-    .nav-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 12px;
-      border-radius: var(--radius-md);
-      color: var(--muted);
-      cursor: pointer;
-      transition: all 0.15s ease;
-      font-size: 13px;
-      font-weight: 500;
-    }
-
-    .nav-item:hover {
-      background: var(--bg-hover);
-      color: var(--text);
-    }
-
-    .nav-item.active {
-      background: var(--accent-subtle);
-      color: var(--accent);
-    }
-
-    .nav-item svg {
-      width: 18px;
-      height: 18px;
-      stroke: currentColor;
-      fill: none;
-      stroke-width: 1.5;
-    }
-
-    /* Content */
-    .content {
-      grid-area: content;
+    
+    /* Chat Panel */
+    .chat-panel {
+      background: var(--bg-secondary);
+      border-radius: 12px;
+      border: 1px solid var(--border);
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      background: var(--panel);
     }
-
-    .content-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 16px 24px;
+    
+    .chat-header {
+      padding: 1rem;
       border-bottom: 1px solid var(--border);
+      font-weight: 600;
     }
-
-    .page-title {
-      font-size: 20px;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      color: var(--text-strong);
-    }
-
-    /* Chat Area */
-    .chat {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-
-    .chat-thread {
+    
+    .chat-messages {
       flex: 1;
       overflow-y: auto;
-      padding: 20px 24px;
+      padding: 1rem;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 1rem;
     }
-
-    .chat-group {
-      display: flex;
-      gap: 12px;
-      align-items: flex-start;
-    }
-
-    .chat-group.user {
-      flex-direction: row-reverse;
-    }
-
-    .chat-avatar {
-      width: 36px;
-      height: 36px;
-      border-radius: 8px;
-      background: var(--panel-strong);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 600;
-      font-size: 13px;
-      flex-shrink: 0;
-    }
-
-    .chat-avatar.user {
-      background: var(--accent-subtle);
-      color: var(--accent);
-    }
-
-    .chat-avatar.kit {
-      background: linear-gradient(135deg, var(--accent), #0088cc);
-      color: white;
-    }
-
-    .chat-group-messages {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      max-width: min(700px, 80%);
-    }
-
-    .chat-group.user .chat-group-messages {
-      align-items: flex-end;
-    }
-
-    .chat-bubble {
-      padding: 12px 16px;
-      border-radius: var(--radius-lg);
-      background: var(--card);
-      border: 1px solid transparent;
-      font-size: 14px;
+    
+    .message {
+      max-width: 80%;
+      padding: 0.75rem 1rem;
+      border-radius: 12px;
       line-height: 1.5;
     }
-
-    .chat-group.user .chat-bubble {
-      background: var(--accent-subtle);
-      border-color: rgba(0, 212, 255, 0.2);
-    }
-
-    .chat-bubble.streaming {
-      border-color: var(--accent);
-      animation: pulse-border 1.5s ease-in-out infinite;
-    }
-
-    @keyframes pulse-border {
-      0%, 100% { border-color: var(--border); }
-      50% { border-color: var(--accent); }
-    }
-
-    .chat-bubble pre {
-      background: rgba(0,0,0,0.3);
-      padding: 10px 12px;
-      border-radius: var(--radius-md);
-      margin: 8px 0;
-      overflow-x: auto;
-      font-family: var(--mono);
-      font-size: 13px;
-    }
-
-    .chat-bubble code {
-      font-family: var(--mono);
-      background: rgba(0,0,0,0.2);
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-size: 0.9em;
-    }
-
-    .chat-timestamp {
-      font-size: 11px;
-      color: var(--muted);
-      margin-top: 4px;
-    }
-
-    .chat-group.user .chat-timestamp {
-      text-align: right;
-    }
-
-    /* Thinking/Typing indicator */
-    .chat-thinking {
-      padding: 12px 16px;
-      background: var(--card);
-      border-radius: var(--radius-lg);
-      border: 1px dashed var(--border);
-    }
-
-    .thinking-dots {
-      display: flex;
-      gap: 4px;
-    }
-
-    .thinking-dots span {
-      width: 6px;
-      height: 6px;
-      background: var(--muted);
-      border-radius: 50%;
-      animation: thinking 1.2s ease-in-out infinite;
-    }
-
-    .thinking-dots span:nth-child(2) { animation-delay: 0.15s; }
-    .thinking-dots span:nth-child(3) { animation-delay: 0.3s; }
-
-    @keyframes thinking {
-      0%, 80%, 100% { opacity: 0.4; transform: translateY(0); }
-      40% { opacity: 1; transform: translateY(-3px); }
-    }
-
-    /* Tool cards */
-    .tool-card {
-      margin-top: 8px;
-      padding: 10px 12px;
-      background: var(--bg-elevated);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-md);
-    }
-
-    .tool-card-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 12px;
-      font-weight: 600;
-    }
-
-    .tool-card-icon {
-      color: var(--accent);
-    }
-
-    .tool-card-output {
-      margin-top: 8px;
-      padding: 8px 10px;
-      background: var(--panel);
-      border-radius: var(--radius-sm);
-      font-family: var(--mono);
-      font-size: 11px;
-      max-height: 100px;
-      overflow: auto;
-      white-space: pre-wrap;
-      color: var(--muted);
-    }
-
-    /* Chat Compose */
-    .chat-compose {
-      padding: 16px 24px;
-      border-top: 1px solid var(--border);
-      background: linear-gradient(to top, var(--bg), transparent);
-    }
-
-    .chat-compose-row {
-      display: flex;
-      gap: 12px;
-    }
-
-    .chat-input-wrapper {
-      flex: 1;
-      position: relative;
-    }
-
-    .chat-input {
-      width: 100%;
-      padding: 12px 16px;
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      background: var(--card);
-      color: var(--text);
-      font-family: var(--font-body);
-      font-size: 14px;
-      resize: none;
-      outline: none;
-      transition: border-color 0.15s ease, box-shadow 0.15s ease;
-    }
-
-    .chat-input:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 2px var(--accent-glow);
-    }
-
-    .chat-input::placeholder {
-      color: var(--muted);
-    }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 12px 20px;
-      border: 1px solid var(--border);
-      border-radius: var(--radius-md);
-      background: var(--bg-elevated);
-      color: var(--text);
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.15s ease;
-    }
-
-    .btn:hover {
-      background: var(--bg-hover);
-      border-color: var(--border-strong);
-    }
-
-    .btn.primary {
+    
+    .message.user {
+      align-self: flex-end;
       background: var(--accent);
-      border-color: var(--accent);
-      color: #000;
     }
-
-    .btn.primary:hover {
+    
+    .message.assistant {
+      align-self: flex-start;
+      background: var(--bg-tertiary);
+    }
+    
+    .message.system {
+      align-self: center;
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+      text-align: center;
+    }
+    
+    .message pre {
+      background: var(--bg-primary);
+      padding: 0.75rem;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 0.5rem 0;
+      font-size: 0.875rem;
+    }
+    
+    .chat-input-container {
+      padding: 1rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 0.5rem;
+    }
+    
+    .chat-input {
+      flex: 1;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      color: var(--text-primary);
+      font-size: 1rem;
+      resize: none;
+    }
+    
+    .chat-input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    
+    .send-btn {
+      background: var(--accent);
+      border: none;
+      border-radius: 8px;
+      padding: 0.75rem 1.5rem;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    
+    .send-btn:hover {
       background: var(--accent-hover);
     }
-
-    .btn svg {
-      width: 16px;
-      height: 16px;
+    
+    .send-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
-
+    
+    /* Side Panel */
+    .side-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    
+    .panel-card {
+      background: var(--bg-secondary);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      padding: 1rem;
+    }
+    
+    .panel-card h3 {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 1rem;
+    }
+    
+    .stat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+    
+    .stat-item {
+      text-align: center;
+      padding: 0.5rem;
+    }
+    
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+    
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+    
+    .stat-value.positive { color: var(--success); }
+    .stat-value.negative { color: var(--danger); }
+    
     /* Quick Actions */
     .quick-actions {
       display: flex;
-      gap: 8px;
-      margin-top: 12px;
-      flex-wrap: wrap;
+      flex-direction: column;
+      gap: 0.5rem;
     }
-
-    .quick-action {
-      padding: 8px 14px;
+    
+    .quick-btn {
+      background: var(--bg-tertiary);
       border: 1px solid var(--border);
-      border-radius: var(--radius-full);
-      background: var(--bg-elevated);
-      color: var(--muted);
-      font-size: 12px;
+      border-radius: 8px;
+      padding: 0.75rem;
+      color: var(--text-primary);
+      font-size: 0.875rem;
       cursor: pointer;
-      transition: all 0.15s ease;
+      text-align: left;
+      transition: all 0.2s;
     }
-
-    .quick-action:hover {
+    
+    .quick-btn:hover {
       border-color: var(--accent);
-      color: var(--accent);
-      background: var(--accent-subtle);
+      background: rgba(99, 102, 241, 0.1);
     }
-
-    /* Stats Grid */
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 16px;
-      padding: 20px 24px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .stat-card {
-      padding: 16px;
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-md);
-    }
-
-    .stat-label {
-      font-size: 11px;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
-    .stat-value {
-      font-size: 24px;
-      font-weight: 700;
-      margin-top: 4px;
-      letter-spacing: -0.02em;
-    }
-
-    .stat-value.positive { color: var(--ok); }
-    .stat-value.negative { color: var(--danger); }
-
-    .stat-change {
-      font-size: 12px;
-      margin-top: 4px;
-      color: var(--muted);
-    }
-
+    
     /* Responsive */
     @media (max-width: 900px) {
-      .shell {
+      main {
         grid-template-columns: 1fr;
-        grid-template-rows: auto auto 1fr;
-        grid-template-areas: "topbar" "nav" "content";
       }
-
-      .nav {
-        display: flex;
-        gap: 4px;
-        overflow-x: auto;
-        border-right: none;
-        border-bottom: 1px solid var(--border);
-        padding: 10px 14px;
-      }
-
-      .nav-group { display: contents; }
-      .nav-label { display: none; }
-
-      .nav-item {
-        flex-shrink: 0;
-        white-space: nowrap;
-      }
-
-      .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
+      .side-panel {
+        display: none;
       }
     }
   </style>
 </head>
 <body>
-  <div class="shell">
-    <!-- Topbar -->
-    <header class="topbar">
-      <div class="topbar-left">
-        <div class="brand">
-          <div class="brand-logo">K</div>
-          <div class="brand-text">
-            <h1>K.I.T.</h1>
-            <span>Control UI</span>
+  <header>
+    <div class="logo">
+      <div class="logo-icon">K</div>
+      <span class="logo-text">K.I.T.</span>
+    </div>
+    <div class="status-indicator">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusText">Connecting...</span>
+    </div>
+  </header>
+  
+  <main>
+    <div class="chat-panel">
+      <div class="chat-header">💬 Chat with K.I.T.</div>
+      <div class="chat-messages" id="messages">
+        <div class="message system">
+          Welcome to K.I.T. Dashboard. Type a message to start chatting.
+        </div>
+      </div>
+      <div class="chat-input-container">
+        <textarea 
+          class="chat-input" 
+          id="chatInput" 
+          placeholder="Ask K.I.T. anything..."
+          rows="1"
+        ></textarea>
+        <button class="send-btn" id="sendBtn">Send</button>
+      </div>
+    </div>
+    
+    <div class="side-panel">
+      <div class="panel-card">
+        <h3>📊 Portfolio</h3>
+        <div class="stat-grid">
+          <div class="stat-item">
+            <div class="stat-value" id="totalValue">$0</div>
+            <div class="stat-label">Total Value</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value positive" id="dailyPnl">+0%</div>
+            <div class="stat-label">24h Change</div>
           </div>
         </div>
       </div>
-      <div class="topbar-status">
-        <div class="pill">
-          <div class="status-dot" id="statusDot"></div>
-          <span id="statusText">Connecting...</span>
+      
+      <div class="panel-card">
+        <h3>⚡ Quick Actions</h3>
+        <div class="quick-actions">
+          <button class="quick-btn" onclick="sendQuick('Show my portfolio')">
+            📈 View Portfolio
+          </button>
+          <button class="quick-btn" onclick="sendQuick('Analyze BTC/USDT')">
+            🔍 Analyze BTC
+          </button>
+          <button class="quick-btn" onclick="sendQuick('What are the market trends?')">
+            📊 Market Trends
+          </button>
+          <button class="quick-btn" onclick="sendQuick('Show active signals')">
+            📡 Active Signals
+          </button>
         </div>
       </div>
-    </header>
-
-    <!-- Navigation -->
-    <nav class="nav">
-      <div class="nav-group">
-        <div class="nav-label">Main</div>
-        <div class="nav-item active" data-view="chat">
-          <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-          Chat
-        </div>
-        <div class="nav-item" data-view="dashboard">
-          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-          Dashboard
-        </div>
-        <div class="nav-item" data-view="trades">
-          <svg viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
-          Trades
-        </div>
-        <div class="nav-item" data-view="portfolio">
-          <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-          Portfolio
+      
+      <div class="panel-card">
+        <h3>🤖 Agent Status</h3>
+        <div id="agentStatus" style="color: var(--text-secondary); font-size: 0.875rem;">
+          Loading...
         </div>
       </div>
-      <div class="nav-group">
-        <div class="nav-label">Tools</div>
-        <div class="nav-item" data-view="signals">
-          <svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-          Signals
-        </div>
-        <div class="nav-item" data-view="backtest">
-          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-          Backtest
-        </div>
-        <div class="nav-item" data-view="settings">
-          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-          Settings
-        </div>
-      </div>
-    </nav>
-
-    <!-- Content -->
-    <main class="content">
-      <!-- Stats (hidden in chat view) -->
-      <div class="stats-grid" id="statsGrid">
-        <div class="stat-card">
-          <div class="stat-label">Portfolio</div>
-          <div class="stat-value" id="portfolioValue">$0</div>
-          <div class="stat-change" id="portfolioChange">Loading...</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Today's P&L</div>
-          <div class="stat-value positive" id="todayPnl">$0</div>
-          <div class="stat-change" id="todayTrades">0 trades</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Active Trades</div>
-          <div class="stat-value" id="activeTrades">0</div>
-          <div class="stat-change" id="activeMarkets">-</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Win Rate</div>
-          <div class="stat-value" id="winRate">--%</div>
-          <div class="stat-change" id="winRateChange">-</div>
-        </div>
-      </div>
-
-      <!-- Chat -->
-      <div class="chat">
-        <div class="chat-thread" id="chatThread">
-          <!-- Welcome message -->
-          <div class="chat-group kit">
-            <div class="chat-avatar kit">K</div>
-            <div class="chat-group-messages">
-              <div class="chat-bubble">
-                <div>👋 <strong>Welcome to K.I.T.</strong></div>
-                <p style="margin-top: 8px;">I'm your AI trading assistant. I can help you with:</p>
-                <ul style="margin: 8px 0 0 20px;">
-                  <li>Portfolio tracking & analysis</li>
-                  <li>Copy signals from Telegram channels</li>
-                  <li>Auto-trading across crypto, forex, stocks</li>
-                  <li>Backtesting strategies</li>
-                  <li>Market analysis & alerts</li>
-                </ul>
-              </div>
-              <div class="chat-timestamp">Just now</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="chat-compose">
-          <div class="chat-compose-row">
-            <div class="chat-input-wrapper">
-              <textarea class="chat-input" id="chatInput" placeholder="Ask K.I.T. anything..." rows="1"></textarea>
-            </div>
-            <button class="btn primary" id="sendBtn" onclick="sendMessage()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="22" y1="2" x2="11" y2="13"/>
-                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-              </svg>
-              Send
-            </button>
-          </div>
-          <div class="quick-actions">
-            <button class="quick-action" onclick="sendQuick('Show my portfolio')">📊 Portfolio</button>
-            <button class="quick-action" onclick="sendQuick('What signals today?')">📡 Signals</button>
-            <button class="quick-action" onclick="sendQuick('Analyze BTC/USDT')">📈 Analyze BTC</button>
-            <button class="quick-action" onclick="sendQuick('Show active trades')">⚡ Trades</button>
-            <button class="quick-action" onclick="sendQuick('Copy signals from @CryptoWhale')">🐋 Copy Signals</button>
-          </div>
-        </div>
-      </div>
-    </main>
-  </div>
-
+    </div>
+  </main>
+  
   <script>
-    // K.I.T. Control UI - WebSocket Protocol (like OpenClaw)
-    
+    const WS_URL = `ws://${window.location.hostname}:${window.location.port}`;
     let ws = null;
-    let sessionKey = 'kit:dashboard:' + Date.now();
-    let isConnected = false;
-    let reconnectTimer = null;
+    let reconnectAttempts = 0;
     
-    const gatewayUrl = new URLSearchParams(window.location.search).get('gatewayUrl') 
-      || localStorage.getItem('kitGatewayUrl') 
-      || 'ws://localhost:18799';
-    
-    // WebSocket Protocol (matches OpenClaw's chat.send, chat.history, etc.)
-    const Protocol = {
-      // Send a chat message
-      chatSend: (content) => ({
-        jsonrpc: '2.0',
-        method: 'chat.send',
-        params: {
-          sessionKey,
-          content,
-          idempotencyKey: crypto.randomUUID?.() || Date.now().toString()
-        },
-        id: Date.now()
-      }),
-      
-      // Get chat history
-      chatHistory: (limit = 50) => ({
-        jsonrpc: '2.0',
-        method: 'chat.history',
-        params: { sessionKey, limit },
-        id: Date.now()
-      }),
-      
-      // Abort current run
-      chatAbort: () => ({
-        jsonrpc: '2.0',
-        method: 'chat.abort',
-        params: { sessionKey },
-        id: Date.now()
-      }),
-      
-      // Get status
-      status: () => ({
-        jsonrpc: '2.0',
-        method: 'status',
-        params: {},
-        id: Date.now()
-      })
-    };
+    const messagesDiv = document.getElementById('messages');
+    const chatInput = document.getElementById('chatInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const statusDot = document.getElementById('statusDot');
+    const statusText = document.getElementById('statusText');
     
     function connect() {
-      try {
-        ws = new WebSocket(gatewayUrl);
-        
-        ws.onopen = () => {
-          isConnected = true;
-          updateStatus(true);
-          console.log('Connected to K.I.T. Gateway');
-          
-          // Request initial status
-          ws.send(JSON.stringify(Protocol.status()));
-        };
-        
-        ws.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data);
-            handleMessage(data);
-          } catch (e) {
-            console.error('Parse error:', e);
-          }
-        };
-        
-        ws.onclose = () => {
-          isConnected = false;
-          updateStatus(false);
-          console.log('Disconnected from K.I.T. Gateway');
-          
-          // Reconnect after 3s
-          clearTimeout(reconnectTimer);
-          reconnectTimer = setTimeout(connect, 3000);
-        };
-        
-        ws.onerror = (error) => {
-          console.error('WebSocket error:', error);
-        };
-      } catch (e) {
-        console.error('Connection error:', e);
-        setTimeout(connect, 3000);
-      }
-    }
-    
-    function handleMessage(data) {
-      // Handle different message types
-      if (data.type === 'chat') {
-        // Streaming chat response
-        handleChatEvent(data);
-      } else if (data.result) {
-        // RPC response
-        handleRpcResponse(data);
-      } else if (data.error) {
-        console.error('RPC error:', data.error);
-      }
-    }
-    
-    function handleChatEvent(event) {
-      const { role, content, streaming, toolCall } = event;
+      ws = new WebSocket(WS_URL);
       
-      if (toolCall) {
-        // Tool call event
-        addToolCard(toolCall);
-      } else if (content) {
-        // Chat content
-        if (streaming) {
-          updateStreamingMessage(content);
-        } else {
-          addMessage('kit', content);
+      ws.onopen = () => {
+        statusDot.classList.add('online');
+        statusText.textContent = 'Connected';
+        reconnectAttempts = 0;
+        addMessage('system', '🔗 Connected to K.I.T.');
+      };
+      
+      ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          handleMessage(msg);
+        } catch (e) {
+          console.error('Failed to parse message:', e);
         }
+      };
+      
+      ws.onclose = () => {
+        statusDot.classList.remove('online');
+        statusText.textContent = 'Disconnected';
+        addMessage('system', '⚠️ Disconnected. Reconnecting...');
+        
+        // Reconnect with exponential backoff
+        const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+        reconnectAttempts++;
+        setTimeout(connect, delay);
+      };
+      
+      ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+      };
+    }
+    
+    function handleMessage(msg) {
+      switch (msg.type) {
+        case 'response':
+        case 'message':
+          addMessage('assistant', msg.content);
+          break;
+        case 'status':
+          addMessage('system', msg.content);
+          break;
+        case 'trade':
+          addMessage('system', `⚡ Trade: ${msg.content}`);
+          break;
+        default:
+          console.log('Unknown message type:', msg);
       }
     }
     
-    function handleRpcResponse(data) {
-      // Handle RPC responses (status, history, etc.)
-      if (data.result?.status) {
-        // Status response
-        updateDashboardStats(data.result);
-      }
-    }
-    
-    function updateStatus(connected) {
-      const dot = document.getElementById('statusDot');
-      const text = document.getElementById('statusText');
-      
-      if (connected) {
-        dot.classList.add('ok');
-        text.textContent = 'Online';
-      } else {
-        dot.classList.remove('ok');
-        text.textContent = 'Connecting...';
-      }
-    }
-    
-    function addMessage(role, content) {
-      const thread = document.getElementById('chatThread');
-      
-      // Remove any thinking indicator
-      const thinking = thread.querySelector('.chat-thinking');
-      if (thinking) thinking.parentElement.remove();
-      
-      const isUser = role === 'user';
-      const group = document.createElement('div');
-      group.className = `chat-group ${isUser ? 'user' : 'kit'}`;
-      
-      const avatar = document.createElement('div');
-      avatar.className = `chat-avatar ${isUser ? 'user' : 'kit'}`;
-      avatar.textContent = isUser ? 'U' : 'K';
-      
-      const messages = document.createElement('div');
-      messages.className = 'chat-group-messages';
-      
-      const bubble = document.createElement('div');
-      bubble.className = 'chat-bubble';
-      bubble.innerHTML = formatContent(content);
-      
-      const timestamp = document.createElement('div');
-      timestamp.className = 'chat-timestamp';
-      timestamp.textContent = new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
-      
-      messages.appendChild(bubble);
-      messages.appendChild(timestamp);
-      group.appendChild(avatar);
-      group.appendChild(messages);
-      thread.appendChild(group);
-      
-      thread.scrollTop = thread.scrollHeight;
-    }
-    
-    function addThinkingIndicator() {
-      const thread = document.getElementById('chatThread');
-      
-      const group = document.createElement('div');
-      group.className = 'chat-group kit';
-      
-      const avatar = document.createElement('div');
-      avatar.className = 'chat-avatar kit';
-      avatar.textContent = 'K';
-      
-      const messages = document.createElement('div');
-      messages.className = 'chat-group-messages';
-      
-      const bubble = document.createElement('div');
-      bubble.className = 'chat-bubble chat-thinking';
-      bubble.innerHTML = '<div class="thinking-dots"><span></span><span></span><span></span></div>';
-      
-      messages.appendChild(bubble);
-      group.appendChild(avatar);
-      group.appendChild(messages);
-      thread.appendChild(group);
-      
-      thread.scrollTop = thread.scrollHeight;
-    }
-    
-    function addToolCard(toolCall) {
-      const thread = document.getElementById('chatThread');
-      const lastGroup = thread.querySelector('.chat-group.kit:last-of-type .chat-group-messages');
-      
-      if (lastGroup) {
-        const card = document.createElement('div');
-        card.className = 'tool-card';
-        card.innerHTML = `
-          <div class="tool-card-header">
-            <span class="tool-card-icon">⚡</span>
-            <span>${toolCall.name}</span>
-          </div>
-          ${toolCall.output ? `<div class="tool-card-output">${escapeHtml(toolCall.output)}</div>` : ''}
-        `;
-        lastGroup.appendChild(card);
-      }
-    }
-    
-    let streamingBubble = null;
-    
-    function updateStreamingMessage(content) {
-      const thread = document.getElementById('chatThread');
-      
-      if (!streamingBubble) {
-        // Create new streaming message
-        const group = document.createElement('div');
-        group.className = 'chat-group kit';
-        group.id = 'streaming-group';
-        
-        const avatar = document.createElement('div');
-        avatar.className = 'chat-avatar kit';
-        avatar.textContent = 'K';
-        
-        const messages = document.createElement('div');
-        messages.className = 'chat-group-messages';
-        
-        streamingBubble = document.createElement('div');
-        streamingBubble.className = 'chat-bubble streaming';
-        
-        messages.appendChild(streamingBubble);
-        group.appendChild(avatar);
-        group.appendChild(messages);
-        
-        // Remove thinking indicator
-        const thinking = thread.querySelector('.chat-thinking');
-        if (thinking) thinking.parentElement.parentElement.remove();
-        
-        thread.appendChild(group);
-      }
-      
-      streamingBubble.innerHTML = formatContent(content);
-      thread.scrollTop = thread.scrollHeight;
-    }
-    
-    function finalizeStreaming() {
-      if (streamingBubble) {
-        streamingBubble.classList.remove('streaming');
-        streamingBubble = null;
-      }
-    }
-    
-    function formatContent(content) {
-      // Basic markdown-like formatting
-      return content
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-        .replace(/`([^`]+)`/g, '<code>$1</code>')
-        .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
-        .replace(/\n/g, '<br>');
-    }
-    
-    function escapeHtml(text) {
+    function addMessage(type, content) {
       const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
+      div.className = `message ${type}`;
+      
+      // Simple markdown-ish rendering
+      content = content
+        .replace(/```([\s\S]*?)```/g, '<pre>$1</pre>')
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+        .replace(/\n/g, '<br>');
+      
+      div.innerHTML = content;
+      messagesDiv.appendChild(div);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
     }
     
-    function sendMessage() {
-      const input = document.getElementById('chatInput');
-      const content = input.value.trim();
+    function sendMessage(text) {
+      if (!text.trim() || !ws || ws.readyState !== WebSocket.OPEN) return;
       
-      if (!content) return;
+      addMessage('user', text);
       
-      // Add user message
-      addMessage('user', content);
-      input.value = '';
+      ws.send(JSON.stringify({
+        type: 'message',
+        content: text.trim(),
+        timestamp: Date.now()
+      }));
       
-      // Show thinking
-      addThinkingIndicator();
-      
-      // Send to gateway
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify(Protocol.chatSend(content)));
-      } else {
-        // Offline mode - simulate response
-        setTimeout(() => simulateResponse(content), 1000);
-      }
+      chatInput.value = '';
+      chatInput.style.height = 'auto';
     }
     
-    function sendQuick(message) {
-      document.getElementById('chatInput').value = message;
-      sendMessage();
+    function sendQuick(text) {
+      chatInput.value = text;
+      sendMessage(text);
     }
     
-    function simulateResponse(input) {
-      const lower = input.toLowerCase();
-      let response = '';
-      
-      if (lower.includes('portfolio')) {
-        response = '📊 **Your Portfolio** (Demo)\n\n' +
-          '• BTC: 0.5 ($21,250)\n' +
-          '• ETH: 5.2 ($12,480)\n' +
-          '• USDT: $5,000\n\n' +
-          '**Total:** $38,730\n' +
-          '**24h Change:** +2.4% (+$908)';
-      } else if (lower.includes('signal')) {
-        response = '📡 **Today\'s Signals**\n\n' +
-          '✅ BTC/USDT LONG @ $42,500 → +2.1%\n' +
-          '✅ EUR/USD BUY @ 1.0850 → +45 pips\n' +
-          '⏳ ETH/USDT LONG @ $2,380 (running)\n\n' +
-          '**Win Rate:** 80% (4/5)';
-      } else if (lower.includes('analyze') || lower.includes('btc')) {
-        response = '📈 **BTC/USDT Analysis**\n\n' +
-          '**Trend:** Bullish 🟢\n' +
-          '**RSI (14):** 58 - Neutral\n' +
-          '**MACD:** Bullish crossover\n\n' +
-          '**Support:** $42,000\n' +
-          '**Resistance:** $45,500\n\n' +
-          '**Recommendation:** HOLD or BUY dips to $42.5k';
-      } else if (lower.includes('trade')) {
-        response = '⚡ **Active Trades**\n\n' +
-          '1. **ETH/USDT** LONG @ $2,380\n' +
-          '   TP: $2,450 | SL: $2,340 | P&L: +$180\n\n' +
-          '2. **EUR/USD** LONG @ 1.0852\n' +
-          '   TP: 1.0900 | SL: 1.0820 | P&L: +$65\n\n' +
-          '**Total Floating P&L:** +$245';
-      } else if (lower.includes('copy') && lower.includes('signal')) {
-        response = '🐋 **Signal Copier**\n\n' +
-          'To copy signals from @CryptoWhale:\n\n' +
-          '```\n/signals add @CryptoWhale\n```\n\n' +
-          'Or configure in `signal-copier.yaml`:\n' +
-          '```yaml\nchannels:\n  - id: "@CryptoWhale"\n    markets: [crypto]\n    auto_execute: true\n```';
-      } else {
-        response = `I received: "${input}"\n\n` +
-          'Try asking about:\n' +
-          '• Your **portfolio** balance\n' +
-          '• Today\'s **signals** and performance\n' +
-          '• **Analyze** any trading pair\n' +
-          '• **Active trades** and P&L';
-      }
-      
-      addMessage('kit', response);
-    }
+    // Event listeners
+    sendBtn.addEventListener('click', () => sendMessage(chatInput.value));
     
-    function updateDashboardStats(status) {
-      // Update stats from gateway status
-      if (status.portfolio) {
-        document.getElementById('portfolioValue').textContent = `$${status.portfolio.total.toLocaleString()}`;
-        document.getElementById('portfolioChange').textContent = status.portfolio.change || '-';
-      }
-      if (status.pnl) {
-        const pnlEl = document.getElementById('todayPnl');
-        pnlEl.textContent = `$${status.pnl.today.toLocaleString()}`;
-        pnlEl.className = 'stat-value ' + (status.pnl.today >= 0 ? 'positive' : 'negative');
-      }
-    }
-    
-    // Navigation
-    document.querySelectorAll('.nav-item').forEach(item => {
-      item.addEventListener('click', () => {
-        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-        item.classList.add('active');
-        // View switching would go here
-      });
-    });
-    
-    // Input handling
-    document.getElementById('chatInput').addEventListener('keydown', (e) => {
+    chatInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
-        sendMessage();
+        sendMessage(chatInput.value);
       }
     });
     
     // Auto-resize textarea
-    document.getElementById('chatInput').addEventListener('input', function() {
-      this.style.height = 'auto';
-      this.style.height = Math.min(this.scrollHeight, 150) + 'px';
+    chatInput.addEventListener('input', () => {
+      chatInput.style.height = 'auto';
+      chatInput.style.height = Math.min(chatInput.scrollHeight, 150) + 'px';
     });
     
-    // Initialize
+    // Connect on load
     connect();
   </script>
 </body>
