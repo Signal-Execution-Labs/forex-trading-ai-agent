@@ -19,6 +19,10 @@ import { AutoTrader, createAutoTrader } from '../src/tools/auto-trader';
 import { MarketAnalyzer, createMarketAnalyzer } from '../src/tools/market-analysis';
 import { PortfolioTracker, createPortfolioTracker } from '../src/tools/portfolio-tracker';
 import { AlertSystem, createAlertSystem } from '../src/tools/alert-system';
+import { Backtester, createBacktester } from '../src/tools/backtester';
+import { Scheduler, createScheduler } from '../src/tools/scheduler';
+import { TaxTracker, createTaxTracker } from '../src/tools/tax-tracker';
+import { DeFiConnector, createDeFiConnector } from '../src/tools/defi-connector';
 import type { ExchangeConfig } from '../src/tools/types';
 
 export interface SkillMetadata {
@@ -68,6 +72,10 @@ export class SkillLoader extends EventEmitter {
   private marketAnalyzer?: MarketAnalyzer;
   private portfolioTracker?: PortfolioTracker;
   private alertSystem?: AlertSystem;
+  private backtester?: Backtester;
+  private scheduler?: Scheduler;
+  private taxTracker?: TaxTracker;
+  private defiConnector?: DeFiConnector;
   private toolsInitialized: boolean = false;
 
   constructor(config?: SkillLoaderConfig) {
@@ -98,6 +106,16 @@ export class SkillLoader extends EventEmitter {
         exchange: this.config.exchange,
       });
 
+      this.backtester = createBacktester({
+        exchange: this.config.exchange,
+      });
+
+      this.scheduler = createScheduler();
+
+      this.taxTracker = createTaxTracker();
+
+      this.defiConnector = createDeFiConnector();
+
       // Auto-connect if configured
       if (this.config.autoConnect) {
         await Promise.all([
@@ -105,7 +123,9 @@ export class SkillLoader extends EventEmitter {
           this.marketAnalyzer.connect(),
           this.portfolioTracker.connect(),
           this.alertSystem.start(),
+          this.backtester.connect(),
         ]);
+        this.scheduler.start();
       }
 
       this.toolsInitialized = true;
@@ -145,6 +165,34 @@ export class SkillLoader extends EventEmitter {
       await this.initializeTools();
     }
     return this.alertSystem!;
+  }
+
+  private async getBacktester(): Promise<Backtester> {
+    if (!this.backtester) {
+      await this.initializeTools();
+    }
+    return this.backtester!;
+  }
+
+  private async getScheduler(): Promise<Scheduler> {
+    if (!this.scheduler) {
+      await this.initializeTools();
+    }
+    return this.scheduler!;
+  }
+
+  private async getTaxTracker(): Promise<TaxTracker> {
+    if (!this.taxTracker) {
+      await this.initializeTools();
+    }
+    return this.taxTracker!;
+  }
+
+  private async getDeFiConnector(): Promise<DeFiConnector> {
+    if (!this.defiConnector) {
+      await this.initializeTools();
+    }
+    return this.defiConnector!;
   }
 
   async loadSkills(paths: string[]): Promise<void> {
@@ -296,6 +344,15 @@ export class SkillLoader extends EventEmitter {
           return this.executeAlertSystem(method, params);
         case 'news-tracker':
           return this.executeNewsTracker(method, params);
+        case 'tax-tracker':
+          return this.executeTaxTracker(method, params);
+        case 'defi-connector':
+          return this.executeDeFiConnector(method, params);
+        case 'rebalancer':
+        case 'dividend-manager':
+        case 'multi-asset':
+          // Placeholder for future skills
+          return { status: 'not_implemented', skill: skillName, method };
         default:
           throw new Error(`Skill ${skillName} has no implementation`);
       }
@@ -420,27 +477,120 @@ export class SkillLoader extends EventEmitter {
   }
 
   /**
-   * Execute backtester skill methods (placeholder for future implementation)
+   * Execute backtester skill methods
    */
   private async executeBacktester(method: string, params: any): Promise<any> {
-    // Backtester requires more complex implementation
-    // For now, return structured placeholder
+    const backtester = await this.getBacktester();
+    
     switch (method) {
       case 'run':
-        return {
+        return backtester.run({
+          symbol: params.pair || params.symbol,
           strategy: params.strategy,
-          pair: params.pair || params.symbol,
-          startDate: params.start,
-          endDate: params.end,
-          metrics: {
-            totalReturn: 0,
-            maxDrawdown: 0,
-            sharpeRatio: 0,
-            winRate: 0,
-          },
-          status: 'backtester_not_implemented',
-          message: 'Backtester tool is planned for future release',
-        };
+          startDate: params.start || params.startDate,
+          endDate: params.end || params.endDate,
+          timeframe: params.timeframe,
+          initialCapital: params.capital || params.initialCapital,
+        });
+      case 'strategies':
+        return { strategies: backtester.getAvailableStrategies() };
+      default:
+        throw new Error(`Unknown method: ${method}`);
+    }
+  }
+
+  /**
+   * Execute scheduler skill methods
+   */
+  private async executeScheduler(method: string, params: any): Promise<any> {
+    const scheduler = await this.getScheduler();
+    
+    switch (method) {
+      case 'create':
+        return scheduler.createTask({
+          name: params.name,
+          type: params.type || 'custom',
+          schedule: params.schedule,
+          taskParams: params.params,
+        });
+      case 'list':
+        return { tasks: scheduler.listTasks(params?.enabled) };
+      case 'get':
+        return scheduler.getTask(params.taskId);
+      case 'enable':
+        return { success: scheduler.enableTask(params.taskId) };
+      case 'disable':
+        return { success: scheduler.disableTask(params.taskId) };
+      case 'delete':
+        return { success: scheduler.deleteTask(params.taskId) };
+      case 'run':
+        return scheduler.runTask(params.taskId);
+      case 'status':
+        return scheduler.getStatus();
+      case 'history':
+        return { history: scheduler.getHistory(params?.taskId) };
+      default:
+        throw new Error(`Unknown method: ${method}`);
+    }
+  }
+
+  /**
+   * Execute tax-tracker skill methods
+   */
+  private async executeTaxTracker(method: string, params: any): Promise<any> {
+    const taxTracker = await this.getTaxTracker();
+    
+    switch (method) {
+      case 'recordBuy':
+        return taxTracker.recordBuy(params);
+      case 'recordSell':
+        return taxTracker.recordSell(params);
+      case 'summary':
+        return taxTracker.getSummary(params.year || new Date().getFullYear());
+      case 'report':
+        return taxTracker.generateReport(params.year || new Date().getFullYear());
+      case 'export':
+        return { csv: taxTracker.exportCSV(params.year || new Date().getFullYear()) };
+      case 'lots':
+        return { lots: taxTracker.getLots(params?.symbol) };
+      case 'disposals':
+        return { disposals: taxTracker.getDisposals(params?.year) };
+      case 'setMethod':
+        taxTracker.setCostBasisMethod(params.method);
+        return { success: true, method: params.method };
+      default:
+        throw new Error(`Unknown method: ${method}`);
+    }
+  }
+
+  /**
+   * Execute defi-connector skill methods
+   */
+  private async executeDeFiConnector(method: string, params: any): Promise<any> {
+    const defi = await this.getDeFiConnector();
+    
+    switch (method) {
+      case 'protocols':
+        return { protocols: defi.getProtocols(params?.network) };
+      case 'quote':
+        return { quotes: await defi.getQuote(params) };
+      case 'yields':
+        return { opportunities: await defi.getYieldOpportunities(params) };
+      case 'pools':
+        return { pools: await defi.getLiquidityPools(params) };
+      case 'positions':
+        return { positions: await defi.getLendingPositions(params?.walletAddress) };
+      case 'watchlist':
+        return { watchlist: defi.getWatchlist() };
+      case 'addWatchlist':
+        defi.addToWatchlist(params.opportunity);
+        return { success: true };
+      case 'removeWatchlist':
+        return { success: defi.removeFromWatchlist(params.opportunityId) };
+      case 'impermanentLoss':
+        return { il: defi.calculateImpermanentLoss(params.priceChange) };
+      case 'summary':
+        return defi.getSummary();
       default:
         throw new Error(`Unknown method: ${method}`);
     }
@@ -540,9 +690,19 @@ export class SkillLoader extends EventEmitter {
     if (this.alertSystem) {
       this.alertSystem.stop();
     }
+    if (this.scheduler) {
+      this.scheduler.stop();
+    }
     
     this.toolsInitialized = false;
     console.log('Skills shutdown complete');
+  }
+
+  /**
+   * Execute scheduler skill methods (for tool-registry integration)
+   */
+  async executeSchedulerSkill(method: string, params: any): Promise<any> {
+    return this.executeScheduler(method, params);
   }
 }
 
