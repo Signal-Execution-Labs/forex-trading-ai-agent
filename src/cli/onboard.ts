@@ -66,6 +66,13 @@ class OnboardWizard {
     await this.saveConfig();
     
     this.printComplete();
+    
+    // Open dashboard after setup
+    const openDash = await this.askYesNo(`\n${c.cyan}Open K.I.T. Dashboard now?${c.reset}`, true);
+    if (openDash) {
+      await this.openDashboard();
+    }
+    
     this.rl.close();
   }
 
@@ -383,6 +390,31 @@ ${c.yellow}All API keys are stored locally and never transmitted.${c.reset}
     }
   }
 
+  private async openDashboard(): Promise<void> {
+    console.log(`\n${c.cyan}🌐 Opening K.I.T. Dashboard...${c.reset}\n`);
+    
+    const dashboardUrl = 'http://localhost:3000';
+    
+    // Start dashboard server in background
+    try {
+      const { spawn } = await import('child_process');
+      const isWindows = os.platform() === 'win32';
+      
+      // Open browser
+      const openCmd = isWindows ? 'start' : (os.platform() === 'darwin' ? 'open' : 'xdg-open');
+      
+      if (isWindows) {
+        spawn('cmd', ['/c', 'start', dashboardUrl], { detached: true, stdio: 'ignore' });
+      } else {
+        spawn(openCmd, [dashboardUrl], { detached: true, stdio: 'ignore' });
+      }
+      
+      console.log(`${c.green}✓ Dashboard opened at ${dashboardUrl}${c.reset}`);
+    } catch (e) {
+      console.log(`${c.yellow}→ Open ${dashboardUrl} in your browser${c.reset}`);
+    }
+  }
+
   private printComplete(): void {
     console.log(`
 ${c.green}╔═══════════════════════════════════════════════════════════════╗
@@ -391,22 +423,14 @@ ${c.green}╔══════════════════════�
 ║                                                               ║
 ╚═══════════════════════════════════════════════════════════════╝${c.reset}
 
-${c.bright}Next steps:${c.reset}
+${c.bright}🌐 Dashboard:${c.reset} http://localhost:3000
 
-  ${c.cyan}1.${c.reset} Start K.I.T.:
-     ${c.yellow}kit start${c.reset}
+${c.bright}Quick Commands:${c.reset}
 
-  ${c.cyan}2.${c.reset} Or run in development mode:
-     ${c.yellow}npm run dev${c.reset}
-
-  ${c.cyan}3.${c.reset} Message your bot on Telegram/Discord!
-
-${c.bright}Useful commands:${c.reset}
-
+  ${c.yellow}kit start${c.reset}      - Start K.I.T. gateway + dashboard
   ${c.yellow}kit status${c.reset}     - Check system status
-  ${c.yellow}kit config${c.reset}     - Edit configuration
-  ${c.yellow}kit exchanges${c.reset}  - Manage exchanges
-  ${c.yellow}kit balance${c.reset}    - Check portfolio balance
+  ${c.yellow}kit balance${c.reset}    - Check portfolio
+  ${c.yellow}kit trade${c.reset}      - Execute trades
 
 ${c.magenta}Documentation: https://github.com/kayzaa/k.i.t.-bot${c.reset}
 
