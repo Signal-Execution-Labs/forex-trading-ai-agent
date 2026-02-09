@@ -32,6 +32,7 @@ import { SessionManager, createSessionManager, Session } from './session-manager
 import { MemoryManager, createMemoryManager } from './memory-manager';
 import { HeartbeatManager, createHeartbeatManager, parseDuration } from './heartbeat';
 import { CronManager, createCronManager, CronJob } from './cron-manager';
+import { ChatManager, createChatManager, ChatSendParams, ChatHistoryParams, ChatAbortParams } from './chat-manager';
 
 // ============================================================================
 // Types
@@ -114,6 +115,7 @@ export class GatewayServer extends EventEmitter {
   private memory: MemoryManager;
   private heartbeat: HeartbeatManager;
   private cron: CronManager;
+  private chat: ChatManager;
   
   // State
   private state: GatewayState;
@@ -188,6 +190,8 @@ export class GatewayServer extends EventEmitter {
     this.cron = createCronManager({
       enabled: this.config.cron.enabled,
     });
+    
+    this.chat = createChatManager(this.config.agent.id);
     
     // Setup handlers
     this.setupProtocolHandlers();
@@ -405,6 +409,25 @@ export class GatewayServer extends EventEmitter {
       return { run };
     });
     
+    // Chat handlers
+    this.protocol.registerHandler(PROTOCOL_METHODS.CHAT_SEND, async (params, context) => {
+      const chatParams = params as ChatSendParams;
+      const result = await this.chat.send(chatParams, context.clientId);
+      return result;
+    });
+    
+    this.protocol.registerHandler(PROTOCOL_METHODS.CHAT_HISTORY, async (params) => {
+      const historyParams = params as ChatHistoryParams;
+      const messages = this.chat.getHistory(historyParams);
+      return { messages };
+    });
+    
+    this.protocol.registerHandler(PROTOCOL_METHODS.CHAT_ABORT, async (params) => {
+      const abortParams = params as ChatAbortParams;
+      const aborted = this.chat.abort(abortParams);
+      return { aborted };
+    });
+    
     // Trading handlers (K.I.T. specific)
     this.protocol.registerHandler(PROTOCOL_METHODS.PORTFOLIO_GET, async () => {
       // TODO: Integrate with trading system
@@ -521,6 +544,39 @@ export class GatewayServer extends EventEmitter {
     this.cron.on('job.run.complete', (data) => {
       this.broadcast(PROTOCOL_EVENTS.CRON_RUN_COMPLETE, data);
     });
+    
+    // Chat events
+    this.chat.on('chat.start', (data) => {
+      this.broadcastToClient(data.clientId, PROTOCOL_EVENTS.CHAT_START, data);
+    });
+    
+    this.chat.on('chat.chunk', (data) => {
+      this.broadcastToClient(data.clientId, PROTOCOL_EVENTS.CHAT_CHUNK, { 
+        sessionId: data.sessionId,
+        requestId: data.requestId,
+        chunk: data.chunk 
+      });
+    });
+    
+    this.chat.on('chat.tool_call', (data) => {
+      this.broadcastToClient(data.clientId, PROTOCOL_EVENTS.CHAT_TOOL_CALL, data);
+    });
+    
+    this.chat.on('chat.tool_result', (data) => {
+      this.broadcastToClient(data.clientId, PROTOCOL_EVENTS.CHAT_TOOL_RESULT, data);
+    });
+    
+    this.chat.on('chat.complete', (data) => {
+      this.broadcastToClient(data.clientId, PROTOCOL_EVENTS.CHAT_COMPLETE, data);
+    });
+    
+    this.chat.on('chat.error', (data) => {
+      this.broadcastToClient(data.clientId, PROTOCOL_EVENTS.CHAT_ERROR, data);
+    });
+    
+    this.chat.on('chat.aborted', (data) => {
+      this.broadcast(PROTOCOL_EVENTS.CHAT_ABORTED, data);
+    });
   }
   
   // ==========================================================================
@@ -544,6 +600,24 @@ export class GatewayServer extends EventEmitter {
         client.ws.send(message);
       }
     }
+  }
+  
+  /**
+   * Send an event to a specific client
+   */
+  broadcastToClient(clientId: string, event: string, payload: unknown): void {
+    const client = this.state.clients.get(clientId);
+    if (!client || !client.authenticated || client.ws.readyState !== WebSocket.OPEN) {
+      return;
+    }
+    
+    const frame = this.protocol.createEvent(
+      event,
+      payload,
+      ++this.eventSeq
+    );
+    
+    client.ws.send(JSON.stringify(frame));
   }
   
   // ==========================================================================
