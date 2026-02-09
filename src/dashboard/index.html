@@ -3,760 +3,1004 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>K.I.T. Dashboard</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+  <title>K.I.T. Control</title>
+  <meta name="color-scheme" content="dark light">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚗</text></svg>">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-primary: #0a0a0f;
-      --bg-secondary: #12121a;
-      --bg-tertiary: #1a1a25;
+      --bg: #12141a;
+      --bg-accent: #14161d;
+      --bg-elevated: #1a1d25;
+      --bg-hover: #262a35;
+      --card: #181b22;
+      --card-foreground: #f4f4f5;
+      --panel: #12141a;
+      --panel-strong: #1a1d25;
+      --text: #e4e4e7;
+      --text-strong: #fafafa;
+      --muted: #71717a;
+      --border: #27272a;
+      --border-strong: #3f3f46;
       --accent: #00d4ff;
-      --accent-glow: rgba(0, 212, 255, 0.3);
-      --success: #00ff88;
-      --warning: #ffaa00;
-      --danger: #ff4466;
-      --text-primary: #ffffff;
-      --text-secondary: #888899;
-      --border: #2a2a3a;
+      --accent-hover: #00b8e6;
+      --accent-subtle: rgba(0, 212, 255, 0.15);
+      --accent-glow: rgba(0, 212, 255, 0.25);
+      --ok: #22c55e;
+      --ok-subtle: rgba(34, 197, 94, 0.12);
+      --warn: #f59e0b;
+      --warn-subtle: rgba(245, 158, 11, 0.12);
+      --danger: #ef4444;
+      --danger-subtle: rgba(239, 68, 68, 0.12);
+      --mono: 'JetBrains Mono', monospace;
+      --font-body: 'Space Grotesk', sans-serif;
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-full: 9999px;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.2);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.25);
+      color-scheme: dark;
     }
-    
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
     
     body {
-      font-family: 'Inter', sans-serif;
-      background: var(--bg-primary);
-      color: var(--text-primary);
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--text);
       min-height: 100vh;
-      display: flex;
+      -webkit-font-smoothing: antialiased;
     }
-    
-    /* Sidebar */
-    .sidebar {
-      width: 280px;
-      background: var(--bg-secondary);
-      border-right: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
+
+    /* Shell Layout (like OpenClaw) */
+    .shell {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      grid-template-rows: 56px 1fr;
+      grid-template-areas: "topbar topbar" "nav content";
+      height: 100vh;
+      overflow: hidden;
     }
-    
-    .logo {
-      padding: 24px;
+
+    /* Topbar */
+    .topbar {
+      grid-area: topbar;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px;
       border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+
+    .topbar-left {
       display: flex;
       align-items: center;
       gap: 12px;
     }
-    
-    .logo-icon {
-      width: 48px;
-      height: 48px;
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-logo {
+      width: 32px;
+      height: 32px;
       background: linear-gradient(135deg, var(--accent), #0088cc);
-      border-radius: 12px;
+      border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 24px;
-      font-weight: bold;
-    }
-    
-    .logo-text h1 {
-      font-size: 20px;
       font-weight: 700;
+      font-size: 16px;
     }
-    
-    .logo-text span {
-      font-size: 12px;
-      color: var(--text-secondary);
+
+    .brand-text h1 {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: var(--text-strong);
     }
-    
-    .nav {
-      flex: 1;
-      padding: 16px;
+
+    .brand-text span {
+      font-size: 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
     }
-    
-    .nav-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 12px 16px;
-      border-radius: 8px;
-      color: var(--text-secondary);
-      cursor: pointer;
-      transition: all 0.2s;
-      margin-bottom: 4px;
-    }
-    
-    .nav-item:hover {
-      background: var(--bg-tertiary);
-      color: var(--text-primary);
-    }
-    
-    .nav-item.active {
-      background: var(--accent-glow);
-      color: var(--accent);
-    }
-    
-    .nav-item svg {
-      width: 20px;
-      height: 20px;
-    }
-    
-    /* Main Content */
-    .main {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-    }
-    
-    .header {
-      padding: 16px 24px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    
-    .header h2 {
-      font-size: 18px;
-      font-weight: 600;
-    }
-    
-    .status-badge {
+
+    .topbar-status {
       display: flex;
       align-items: center;
       gap: 8px;
-      padding: 8px 16px;
-      background: var(--bg-tertiary);
-      border-radius: 20px;
-      font-size: 14px;
     }
-    
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-full);
+      background: var(--bg-elevated);
+      font-size: 12px;
+      font-weight: 500;
+    }
+
     .status-dot {
-      width: 8px;
-      height: 8px;
+      width: 6px;
+      height: 6px;
       border-radius: 50%;
-      background: var(--success);
-      animation: pulse 2s infinite;
+      background: var(--danger);
+      box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
     }
-    
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
+
+    .status-dot.ok {
+      background: var(--ok);
+      box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
     }
-    
+
+    /* Navigation */
+    .nav {
+      grid-area: nav;
+      padding: 16px 12px;
+      background: var(--bg);
+      overflow-y: auto;
+      border-right: 1px solid var(--border);
+    }
+
+    .nav-group {
+      margin-bottom: 20px;
+    }
+
+    .nav-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--muted);
+      padding: 6px 10px;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: var(--radius-md);
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .nav-item:hover {
+      background: var(--bg-hover);
+      color: var(--text);
+    }
+
+    .nav-item.active {
+      background: var(--accent-subtle);
+      color: var(--accent);
+    }
+
+    .nav-item svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.5;
+    }
+
+    /* Content */
     .content {
+      grid-area: content;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--panel);
+    }
+
+    .content-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .page-title {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text-strong);
+    }
+
+    /* Chat Area */
+    .chat {
       flex: 1;
-      display: grid;
-      grid-template-columns: 1fr 400px;
+      display: flex;
+      flex-direction: column;
       overflow: hidden;
     }
-    
-    /* Dashboard Panels */
-    .dashboard-main {
-      padding: 24px;
+
+    .chat-thread {
+      flex: 1;
       overflow-y: auto;
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
     }
-    
+
+    .chat-group {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .chat-group.user {
+      flex-direction: row-reverse;
+    }
+
+    .chat-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: var(--panel-strong);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+
+    .chat-avatar.user {
+      background: var(--accent-subtle);
+      color: var(--accent);
+    }
+
+    .chat-avatar.kit {
+      background: linear-gradient(135deg, var(--accent), #0088cc);
+      color: white;
+    }
+
+    .chat-group-messages {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      max-width: min(700px, 80%);
+    }
+
+    .chat-group.user .chat-group-messages {
+      align-items: flex-end;
+    }
+
+    .chat-bubble {
+      padding: 12px 16px;
+      border-radius: var(--radius-lg);
+      background: var(--card);
+      border: 1px solid transparent;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .chat-group.user .chat-bubble {
+      background: var(--accent-subtle);
+      border-color: rgba(0, 212, 255, 0.2);
+    }
+
+    .chat-bubble.streaming {
+      border-color: var(--accent);
+      animation: pulse-border 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse-border {
+      0%, 100% { border-color: var(--border); }
+      50% { border-color: var(--accent); }
+    }
+
+    .chat-bubble pre {
+      background: rgba(0,0,0,0.3);
+      padding: 10px 12px;
+      border-radius: var(--radius-md);
+      margin: 8px 0;
+      overflow-x: auto;
+      font-family: var(--mono);
+      font-size: 13px;
+    }
+
+    .chat-bubble code {
+      font-family: var(--mono);
+      background: rgba(0,0,0,0.2);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.9em;
+    }
+
+    .chat-timestamp {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .chat-group.user .chat-timestamp {
+      text-align: right;
+    }
+
+    /* Thinking/Typing indicator */
+    .chat-thinking {
+      padding: 12px 16px;
+      background: var(--card);
+      border-radius: var(--radius-lg);
+      border: 1px dashed var(--border);
+    }
+
+    .thinking-dots {
+      display: flex;
+      gap: 4px;
+    }
+
+    .thinking-dots span {
+      width: 6px;
+      height: 6px;
+      background: var(--muted);
+      border-radius: 50%;
+      animation: thinking 1.2s ease-in-out infinite;
+    }
+
+    .thinking-dots span:nth-child(2) { animation-delay: 0.15s; }
+    .thinking-dots span:nth-child(3) { animation-delay: 0.3s; }
+
+    @keyframes thinking {
+      0%, 80%, 100% { opacity: 0.4; transform: translateY(0); }
+      40% { opacity: 1; transform: translateY(-3px); }
+    }
+
+    /* Tool cards */
+    .tool-card {
+      margin-top: 8px;
+      padding: 10px 12px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+    }
+
+    .tool-card-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .tool-card-icon {
+      color: var(--accent);
+    }
+
+    .tool-card-output {
+      margin-top: 8px;
+      padding: 8px 10px;
+      background: var(--panel);
+      border-radius: var(--radius-sm);
+      font-family: var(--mono);
+      font-size: 11px;
+      max-height: 100px;
+      overflow: auto;
+      white-space: pre-wrap;
+      color: var(--muted);
+    }
+
+    /* Chat Compose */
+    .chat-compose {
+      padding: 16px 24px;
+      border-top: 1px solid var(--border);
+      background: linear-gradient(to top, var(--bg), transparent);
+    }
+
+    .chat-compose-row {
+      display: flex;
+      gap: 12px;
+    }
+
+    .chat-input-wrapper {
+      flex: 1;
+      position: relative;
+    }
+
+    .chat-input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: var(--card);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 14px;
+      resize: none;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .chat-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-glow);
+    }
+
+    .chat-input::placeholder {
+      color: var(--muted);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 20px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--bg-elevated);
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn:hover {
+      background: var(--bg-hover);
+      border-color: var(--border-strong);
+    }
+
+    .btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #000;
+    }
+
+    .btn.primary:hover {
+      background: var(--accent-hover);
+    }
+
+    .btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* Quick Actions */
+    .quick-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+
+    .quick-action {
+      padding: 8px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-full);
+      background: var(--bg-elevated);
+      color: var(--muted);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .quick-action:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-subtle);
+    }
+
+    /* Stats Grid */
     .stats-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 16px;
-      margin-bottom: 24px;
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
     }
-    
+
     .stat-card {
-      background: var(--bg-secondary);
+      padding: 16px;
+      background: var(--card);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px;
+      border-radius: var(--radius-md);
     }
-    
-    .stat-card label {
-      font-size: 12px;
-      color: var(--text-secondary);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    
-    .stat-card .value {
-      font-size: 28px;
-      font-weight: 700;
-      margin-top: 8px;
-    }
-    
-    .stat-card .change {
-      font-size: 14px;
-      margin-top: 4px;
-    }
-    
-    .stat-card .change.positive { color: var(--success); }
-    .stat-card .change.negative { color: var(--danger); }
-    
-    /* Activity Feed */
-    .activity-section {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px;
-    }
-    
-    .activity-section h3 {
-      font-size: 16px;
-      margin-bottom: 16px;
-    }
-    
-    .activity-item {
-      display: flex;
-      gap: 12px;
-      padding: 12px 0;
-      border-bottom: 1px solid var(--border);
-    }
-    
-    .activity-item:last-child {
-      border-bottom: none;
-    }
-    
-    .activity-icon {
-      width: 36px;
-      height: 36px;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 16px;
-    }
-    
-    .activity-icon.trade { background: rgba(0, 212, 255, 0.2); }
-    .activity-icon.win { background: rgba(0, 255, 136, 0.2); }
-    .activity-icon.loss { background: rgba(255, 68, 102, 0.2); }
-    .activity-icon.signal { background: rgba(255, 170, 0, 0.2); }
-    
-    .activity-content {
-      flex: 1;
-    }
-    
-    .activity-content strong {
-      display: block;
-      margin-bottom: 4px;
-    }
-    
-    .activity-content span {
-      font-size: 13px;
-      color: var(--text-secondary);
-    }
-    
-    .activity-time {
-      font-size: 12px;
-      color: var(--text-secondary);
-    }
-    
-    /* Chat Panel */
-    .chat-panel {
-      border-left: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      background: var(--bg-secondary);
-    }
-    
-    .chat-header {
-      padding: 16px 20px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    
-    .chat-avatar {
-      width: 40px;
-      height: 40px;
-      background: linear-gradient(135deg, var(--accent), #0088cc);
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-    }
-    
-    .chat-info h3 {
-      font-size: 15px;
-    }
-    
-    .chat-info span {
-      font-size: 12px;
-      color: var(--success);
-    }
-    
-    .chat-messages {
-      flex: 1;
-      padding: 20px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-    
-    .message {
-      max-width: 85%;
-      padding: 12px 16px;
-      border-radius: 16px;
-      font-size: 14px;
-      line-height: 1.5;
-    }
-    
-    .message.kit {
-      background: var(--bg-tertiary);
-      border-bottom-left-radius: 4px;
-      align-self: flex-start;
-    }
-    
-    .message.user {
-      background: var(--accent);
-      color: #000;
-      border-bottom-right-radius: 4px;
-      align-self: flex-end;
-    }
-    
-    .message-time {
+
+    .stat-label {
       font-size: 11px;
-      color: var(--text-secondary);
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: 700;
       margin-top: 4px;
+      letter-spacing: -0.02em;
     }
-    
-    .message.user .message-time {
-      color: rgba(0, 0, 0, 0.5);
-    }
-    
-    .chat-input-container {
-      padding: 16px 20px;
-      border-top: 1px solid var(--border);
-    }
-    
-    .chat-input-wrapper {
-      display: flex;
-      gap: 12px;
-      background: var(--bg-tertiary);
-      border-radius: 12px;
-      padding: 12px 16px;
-      align-items: center;
-    }
-    
-    .chat-input {
-      flex: 1;
-      background: none;
-      border: none;
-      color: var(--text-primary);
-      font-size: 14px;
-      font-family: inherit;
-      outline: none;
-    }
-    
-    .chat-input::placeholder {
-      color: var(--text-secondary);
-    }
-    
-    .chat-send {
-      background: var(--accent);
-      border: none;
-      border-radius: 8px;
-      width: 36px;
-      height: 36px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: transform 0.2s;
-    }
-    
-    .chat-send:hover {
-      transform: scale(1.05);
-    }
-    
-    .chat-send svg {
-      width: 18px;
-      height: 18px;
-    }
-    
-    /* Quick Actions */
-    .quick-actions {
-      padding: 12px 20px;
-      border-top: 1px solid var(--border);
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-    
-    .quick-action {
-      padding: 8px 12px;
-      background: var(--bg-tertiary);
-      border: 1px solid var(--border);
-      border-radius: 8px;
+
+    .stat-value.positive { color: var(--ok); }
+    .stat-value.negative { color: var(--danger); }
+
+    .stat-change {
       font-size: 12px;
-      color: var(--text-secondary);
-      cursor: pointer;
-      transition: all 0.2s;
+      margin-top: 4px;
+      color: var(--muted);
     }
-    
-    .quick-action:hover {
-      border-color: var(--accent);
-      color: var(--accent);
-    }
-    
-    /* Typing indicator */
-    .typing-indicator {
-      display: flex;
-      gap: 4px;
-      padding: 12px 16px;
-      background: var(--bg-tertiary);
-      border-radius: 16px;
-      border-bottom-left-radius: 4px;
-      align-self: flex-start;
-      max-width: 60px;
-    }
-    
-    .typing-indicator span {
-      width: 8px;
-      height: 8px;
-      background: var(--text-secondary);
-      border-radius: 50%;
-      animation: typing 1.4s infinite;
-    }
-    
-    .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
-    .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
-    
-    @keyframes typing {
-      0%, 60%, 100% { transform: translateY(0); }
-      30% { transform: translateY(-4px); }
-    }
-    
-    /* Code blocks in chat */
-    .message pre {
-      background: rgba(0, 0, 0, 0.3);
-      padding: 12px;
-      border-radius: 8px;
-      margin-top: 8px;
-      overflow-x: auto;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 13px;
-    }
-    
-    .message code {
-      font-family: 'JetBrains Mono', monospace;
-      background: rgba(0, 0, 0, 0.2);
-      padding: 2px 6px;
-      border-radius: 4px;
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .shell {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto 1fr;
+        grid-template-areas: "topbar" "nav" "content";
+      }
+
+      .nav {
+        display: flex;
+        gap: 4px;
+        overflow-x: auto;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        padding: 10px 14px;
+      }
+
+      .nav-group { display: contents; }
+      .nav-label { display: none; }
+
+      .nav-item {
+        flex-shrink: 0;
+        white-space: nowrap;
+      }
+
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
     }
   </style>
 </head>
 <body>
-  <!-- Sidebar -->
-  <aside class="sidebar">
-    <div class="logo">
-      <div class="logo-icon">K</div>
-      <div class="logo-text">
-        <h1>K.I.T.</h1>
-        <span>Knight Industries Trading</span>
+  <div class="shell">
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="brand">
+          <div class="brand-logo">K</div>
+          <div class="brand-text">
+            <h1>K.I.T.</h1>
+            <span>Control UI</span>
+          </div>
+        </div>
       </div>
-    </div>
-    
-    <nav class="nav">
-      <div class="nav-item active">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="3" y="3" width="7" height="7" rx="1"/>
-          <rect x="14" y="3" width="7" height="7" rx="1"/>
-          <rect x="3" y="14" width="7" height="7" rx="1"/>
-          <rect x="14" y="14" width="7" height="7" rx="1"/>
-        </svg>
-        Dashboard
-      </div>
-      <div class="nav-item">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 2v20M2 12h20"/>
-          <path d="M20 16l-4-4 4-4M4 8l4 4-4 4"/>
-        </svg>
-        Trades
-      </div>
-      <div class="nav-item">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10"/>
-          <path d="M12 6v6l4 2"/>
-        </svg>
-        Portfolio
-      </div>
-      <div class="nav-item">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-        </svg>
-        Signals
-      </div>
-      <div class="nav-item">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M4 19h16M4 15h16M4 11h16M4 7h16"/>
-        </svg>
-        Backtest
-      </div>
-      <div class="nav-item">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="3"/>
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-        </svg>
-        Settings
-      </div>
-    </nav>
-  </aside>
-  
-  <!-- Main Content -->
-  <main class="main">
-    <header class="header">
-      <h2>Dashboard</h2>
-      <div class="status-badge">
-        <div class="status-dot"></div>
-        <span>K.I.T. Online</span>
+      <div class="topbar-status">
+        <div class="pill">
+          <div class="status-dot" id="statusDot"></div>
+          <span id="statusText">Connecting...</span>
+        </div>
       </div>
     </header>
-    
-    <div class="content">
-      <!-- Dashboard Main -->
-      <div class="dashboard-main">
-        <div class="stats-grid">
-          <div class="stat-card">
-            <label>Portfolio Value</label>
-            <div class="value">$124,532</div>
-            <div class="change positive">+2.4% today</div>
-          </div>
-          <div class="stat-card">
-            <label>Today's P&L</label>
-            <div class="value">+$1,245</div>
-            <div class="change positive">8 wins / 2 losses</div>
-          </div>
-          <div class="stat-card">
-            <label>Active Trades</label>
-            <div class="value">5</div>
-            <div class="change">3 crypto, 2 forex</div>
-          </div>
-          <div class="stat-card">
-            <label>Win Rate</label>
-            <div class="value">73%</div>
-            <div class="change positive">+5% this week</div>
-          </div>
+
+    <!-- Navigation -->
+    <nav class="nav">
+      <div class="nav-group">
+        <div class="nav-label">Main</div>
+        <div class="nav-item active" data-view="chat">
+          <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          Chat
         </div>
-        
-        <div class="activity-section">
-          <h3>Recent Activity</h3>
-          <div class="activity-item">
-            <div class="activity-icon win">✓</div>
-            <div class="activity-content">
-              <strong>BTC/USDT Long Closed</strong>
-              <span>+$342 profit (2.1%)</span>
-            </div>
-            <div class="activity-time">2 min ago</div>
-          </div>
-          <div class="activity-item">
-            <div class="activity-icon signal">📡</div>
-            <div class="activity-content">
-              <strong>Signal from @CryptoWhale</strong>
-              <span>ETH/USDT LONG executed</span>
-            </div>
-            <div class="activity-time">15 min ago</div>
-          </div>
-          <div class="activity-item">
-            <div class="activity-icon trade">⚡</div>
-            <div class="activity-content">
-              <strong>EUR/USD Trade Opened</strong>
-              <span>LONG @ 1.0852, TP: 1.0900</span>
-            </div>
-            <div class="activity-time">32 min ago</div>
-          </div>
-          <div class="activity-item">
-            <div class="activity-icon loss">✗</div>
-            <div class="activity-content">
-              <strong>GBP/JPY Short Stopped</strong>
-              <span>-$85 loss (SL hit)</span>
-            </div>
-            <div class="activity-time">1 hour ago</div>
-          </div>
+        <div class="nav-item" data-view="dashboard">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          Dashboard
+        </div>
+        <div class="nav-item" data-view="trades">
+          <svg viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+          Trades
+        </div>
+        <div class="nav-item" data-view="portfolio">
+          <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+          Portfolio
         </div>
       </div>
-      
-      <!-- Chat Panel -->
-      <div class="chat-panel">
-        <div class="chat-header">
-          <div class="chat-avatar">K</div>
-          <div class="chat-info">
-            <h3>K.I.T. Assistant</h3>
-            <span>● Online</span>
-          </div>
+      <div class="nav-group">
+        <div class="nav-label">Tools</div>
+        <div class="nav-item" data-view="signals">
+          <svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          Signals
         </div>
-        
-        <div class="chat-messages" id="chatMessages">
-          <div class="message kit">
-            <div>👋 Hey! I'm K.I.T., your AI trading assistant. I can help you with:</div>
-            <div style="margin-top: 8px;">
-              • Track your portfolio<br>
-              • Copy signals from Telegram channels<br>
-              • Execute trades on any market<br>
-              • Analyze market conditions<br>
-              • Backtest strategies
+        <div class="nav-item" data-view="backtest">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          Backtest
+        </div>
+        <div class="nav-item" data-view="settings">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Settings
+        </div>
+      </div>
+    </nav>
+
+    <!-- Content -->
+    <main class="content">
+      <!-- Stats (hidden in chat view) -->
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-card">
+          <div class="stat-label">Portfolio</div>
+          <div class="stat-value" id="portfolioValue">$0</div>
+          <div class="stat-change" id="portfolioChange">Loading...</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Today's P&L</div>
+          <div class="stat-value positive" id="todayPnl">$0</div>
+          <div class="stat-change" id="todayTrades">0 trades</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Active Trades</div>
+          <div class="stat-value" id="activeTrades">0</div>
+          <div class="stat-change" id="activeMarkets">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Win Rate</div>
+          <div class="stat-value" id="winRate">--%</div>
+          <div class="stat-change" id="winRateChange">-</div>
+        </div>
+      </div>
+
+      <!-- Chat -->
+      <div class="chat">
+        <div class="chat-thread" id="chatThread">
+          <!-- Welcome message -->
+          <div class="chat-group kit">
+            <div class="chat-avatar kit">K</div>
+            <div class="chat-group-messages">
+              <div class="chat-bubble">
+                <div>👋 <strong>Welcome to K.I.T.</strong></div>
+                <p style="margin-top: 8px;">I'm your AI trading assistant. I can help you with:</p>
+                <ul style="margin: 8px 0 0 20px;">
+                  <li>Portfolio tracking & analysis</li>
+                  <li>Copy signals from Telegram channels</li>
+                  <li>Auto-trading across crypto, forex, stocks</li>
+                  <li>Backtesting strategies</li>
+                  <li>Market analysis & alerts</li>
+                </ul>
+              </div>
+              <div class="chat-timestamp">Just now</div>
             </div>
-            <div class="message-time">Just now</div>
           </div>
         </div>
-        
-        <div class="quick-actions">
-          <button class="quick-action" onclick="sendQuick('Show my portfolio')">📊 Portfolio</button>
-          <button class="quick-action" onclick="sendQuick('What signals today?')">📡 Signals</button>
-          <button class="quick-action" onclick="sendQuick('Analyze BTC')">📈 Analyze</button>
-          <button class="quick-action" onclick="sendQuick('Active trades')">⚡ Trades</button>
-        </div>
-        
-        <div class="chat-input-container">
-          <div class="chat-input-wrapper">
-            <input type="text" class="chat-input" id="chatInput" placeholder="Ask K.I.T. anything..." onkeypress="handleKeyPress(event)">
-            <button class="chat-send" onclick="sendMessage()">
+
+        <div class="chat-compose">
+          <div class="chat-compose-row">
+            <div class="chat-input-wrapper">
+              <textarea class="chat-input" id="chatInput" placeholder="Ask K.I.T. anything..." rows="1"></textarea>
+            </div>
+            <button class="btn primary" id="sendBtn" onclick="sendMessage()">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="22" y1="2" x2="11" y2="13"/>
                 <polygon points="22 2 15 22 11 13 2 9 22 2"/>
               </svg>
+              Send
             </button>
+          </div>
+          <div class="quick-actions">
+            <button class="quick-action" onclick="sendQuick('Show my portfolio')">📊 Portfolio</button>
+            <button class="quick-action" onclick="sendQuick('What signals today?')">📡 Signals</button>
+            <button class="quick-action" onclick="sendQuick('Analyze BTC/USDT')">📈 Analyze BTC</button>
+            <button class="quick-action" onclick="sendQuick('Show active trades')">⚡ Trades</button>
+            <button class="quick-action" onclick="sendQuick('Copy signals from @CryptoWhale')">🐋 Copy Signals</button>
           </div>
         </div>
       </div>
-    </div>
-  </main>
-  
+    </main>
+  </div>
+
   <script>
-    // WebSocket connection to K.I.T. Gateway
+    // K.I.T. Control UI - WebSocket Protocol (like OpenClaw)
+    
     let ws = null;
-    const gatewayUrl = 'ws://localhost:18799';
+    let sessionKey = 'kit:dashboard:' + Date.now();
+    let isConnected = false;
+    let reconnectTimer = null;
     
-    function connectWebSocket() {
-      ws = new WebSocket(gatewayUrl);
+    const gatewayUrl = new URLSearchParams(window.location.search).get('gatewayUrl') 
+      || localStorage.getItem('kitGatewayUrl') 
+      || 'ws://localhost:18799';
+    
+    // WebSocket Protocol (matches OpenClaw's chat.send, chat.history, etc.)
+    const Protocol = {
+      // Send a chat message
+      chatSend: (content) => ({
+        jsonrpc: '2.0',
+        method: 'chat.send',
+        params: {
+          sessionKey,
+          content,
+          idempotencyKey: crypto.randomUUID?.() || Date.now().toString()
+        },
+        id: Date.now()
+      }),
       
-      ws.onopen = () => {
-        console.log('Connected to K.I.T. Gateway');
-        addMessage('kit', '🔗 Connected to K.I.T. Gateway');
-      };
+      // Get chat history
+      chatHistory: (limit = 50) => ({
+        jsonrpc: '2.0',
+        method: 'chat.history',
+        params: { sessionKey, limit },
+        id: Date.now()
+      }),
       
-      ws.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        if (data.type === 'response') {
-          removeTypingIndicator();
-          addMessage('kit', data.content);
+      // Abort current run
+      chatAbort: () => ({
+        jsonrpc: '2.0',
+        method: 'chat.abort',
+        params: { sessionKey },
+        id: Date.now()
+      }),
+      
+      // Get status
+      status: () => ({
+        jsonrpc: '2.0',
+        method: 'status',
+        params: {},
+        id: Date.now()
+      })
+    };
+    
+    function connect() {
+      try {
+        ws = new WebSocket(gatewayUrl);
+        
+        ws.onopen = () => {
+          isConnected = true;
+          updateStatus(true);
+          console.log('Connected to K.I.T. Gateway');
+          
+          // Request initial status
+          ws.send(JSON.stringify(Protocol.status()));
+        };
+        
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            handleMessage(data);
+          } catch (e) {
+            console.error('Parse error:', e);
+          }
+        };
+        
+        ws.onclose = () => {
+          isConnected = false;
+          updateStatus(false);
+          console.log('Disconnected from K.I.T. Gateway');
+          
+          // Reconnect after 3s
+          clearTimeout(reconnectTimer);
+          reconnectTimer = setTimeout(connect, 3000);
+        };
+        
+        ws.onerror = (error) => {
+          console.error('WebSocket error:', error);
+        };
+      } catch (e) {
+        console.error('Connection error:', e);
+        setTimeout(connect, 3000);
+      }
+    }
+    
+    function handleMessage(data) {
+      // Handle different message types
+      if (data.type === 'chat') {
+        // Streaming chat response
+        handleChatEvent(data);
+      } else if (data.result) {
+        // RPC response
+        handleRpcResponse(data);
+      } else if (data.error) {
+        console.error('RPC error:', data.error);
+      }
+    }
+    
+    function handleChatEvent(event) {
+      const { role, content, streaming, toolCall } = event;
+      
+      if (toolCall) {
+        // Tool call event
+        addToolCard(toolCall);
+      } else if (content) {
+        // Chat content
+        if (streaming) {
+          updateStreamingMessage(content);
+        } else {
+          addMessage('kit', content);
         }
-      };
-      
-      ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
-      };
-      
-      ws.onclose = () => {
-        console.log('Disconnected from K.I.T. Gateway');
-        // Reconnect after 3 seconds
-        setTimeout(connectWebSocket, 3000);
-      };
+      }
     }
     
-    function addMessage(sender, content) {
-      const messagesContainer = document.getElementById('chatMessages');
-      const messageDiv = document.createElement('div');
-      messageDiv.className = `message ${sender}`;
+    function handleRpcResponse(data) {
+      // Handle RPC responses (status, history, etc.)
+      if (data.result?.status) {
+        // Status response
+        updateDashboardStats(data.result);
+      }
+    }
+    
+    function updateStatus(connected) {
+      const dot = document.getElementById('statusDot');
+      const text = document.getElementById('statusText');
       
-      // Format content (handle markdown-like formatting)
-      let formattedContent = content
+      if (connected) {
+        dot.classList.add('ok');
+        text.textContent = 'Online';
+      } else {
+        dot.classList.remove('ok');
+        text.textContent = 'Connecting...';
+      }
+    }
+    
+    function addMessage(role, content) {
+      const thread = document.getElementById('chatThread');
+      
+      // Remove any thinking indicator
+      const thinking = thread.querySelector('.chat-thinking');
+      if (thinking) thinking.parentElement.remove();
+      
+      const isUser = role === 'user';
+      const group = document.createElement('div');
+      group.className = `chat-group ${isUser ? 'user' : 'kit'}`;
+      
+      const avatar = document.createElement('div');
+      avatar.className = `chat-avatar ${isUser ? 'user' : 'kit'}`;
+      avatar.textContent = isUser ? 'U' : 'K';
+      
+      const messages = document.createElement('div');
+      messages.className = 'chat-group-messages';
+      
+      const bubble = document.createElement('div');
+      bubble.className = 'chat-bubble';
+      bubble.innerHTML = formatContent(content);
+      
+      const timestamp = document.createElement('div');
+      timestamp.className = 'chat-timestamp';
+      timestamp.textContent = new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+      
+      messages.appendChild(bubble);
+      messages.appendChild(timestamp);
+      group.appendChild(avatar);
+      group.appendChild(messages);
+      thread.appendChild(group);
+      
+      thread.scrollTop = thread.scrollHeight;
+    }
+    
+    function addThinkingIndicator() {
+      const thread = document.getElementById('chatThread');
+      
+      const group = document.createElement('div');
+      group.className = 'chat-group kit';
+      
+      const avatar = document.createElement('div');
+      avatar.className = 'chat-avatar kit';
+      avatar.textContent = 'K';
+      
+      const messages = document.createElement('div');
+      messages.className = 'chat-group-messages';
+      
+      const bubble = document.createElement('div');
+      bubble.className = 'chat-bubble chat-thinking';
+      bubble.innerHTML = '<div class="thinking-dots"><span></span><span></span><span></span></div>';
+      
+      messages.appendChild(bubble);
+      group.appendChild(avatar);
+      group.appendChild(messages);
+      thread.appendChild(group);
+      
+      thread.scrollTop = thread.scrollHeight;
+    }
+    
+    function addToolCard(toolCall) {
+      const thread = document.getElementById('chatThread');
+      const lastGroup = thread.querySelector('.chat-group.kit:last-of-type .chat-group-messages');
+      
+      if (lastGroup) {
+        const card = document.createElement('div');
+        card.className = 'tool-card';
+        card.innerHTML = `
+          <div class="tool-card-header">
+            <span class="tool-card-icon">⚡</span>
+            <span>${toolCall.name}</span>
+          </div>
+          ${toolCall.output ? `<div class="tool-card-output">${escapeHtml(toolCall.output)}</div>` : ''}
+        `;
+        lastGroup.appendChild(card);
+      }
+    }
+    
+    let streamingBubble = null;
+    
+    function updateStreamingMessage(content) {
+      const thread = document.getElementById('chatThread');
+      
+      if (!streamingBubble) {
+        // Create new streaming message
+        const group = document.createElement('div');
+        group.className = 'chat-group kit';
+        group.id = 'streaming-group';
+        
+        const avatar = document.createElement('div');
+        avatar.className = 'chat-avatar kit';
+        avatar.textContent = 'K';
+        
+        const messages = document.createElement('div');
+        messages.className = 'chat-group-messages';
+        
+        streamingBubble = document.createElement('div');
+        streamingBubble.className = 'chat-bubble streaming';
+        
+        messages.appendChild(streamingBubble);
+        group.appendChild(avatar);
+        group.appendChild(messages);
+        
+        // Remove thinking indicator
+        const thinking = thread.querySelector('.chat-thinking');
+        if (thinking) thinking.parentElement.parentElement.remove();
+        
+        thread.appendChild(group);
+      }
+      
+      streamingBubble.innerHTML = formatContent(content);
+      thread.scrollTop = thread.scrollHeight;
+    }
+    
+    function finalizeStreaming() {
+      if (streamingBubble) {
+        streamingBubble.classList.remove('streaming');
+        streamingBubble = null;
+      }
+    }
+    
+    function formatContent(content) {
+      // Basic markdown-like formatting
+      return content
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
         .replace(/`([^`]+)`/g, '<code>$1</code>')
-        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+        .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
         .replace(/\n/g, '<br>');
-      
-      messageDiv.innerHTML = `
-        <div>${formattedContent}</div>
-        <div class="message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
-      `;
-      
-      messagesContainer.appendChild(messageDiv);
-      messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
     
-    function addTypingIndicator() {
-      const messagesContainer = document.getElementById('chatMessages');
-      const typingDiv = document.createElement('div');
-      typingDiv.className = 'typing-indicator';
-      typingDiv.id = 'typingIndicator';
-      typingDiv.innerHTML = '<span></span><span></span><span></span>';
-      messagesContainer.appendChild(typingDiv);
-      messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    }
-    
-    function removeTypingIndicator() {
-      const indicator = document.getElementById('typingIndicator');
-      if (indicator) indicator.remove();
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
     }
     
     function sendMessage() {
       const input = document.getElementById('chatInput');
-      const message = input.value.trim();
+      const content = input.value.trim();
       
-      if (!message) return;
+      if (!content) return;
       
       // Add user message
-      addMessage('user', message);
+      addMessage('user', content);
       input.value = '';
       
-      // Show typing indicator
-      addTypingIndicator();
+      // Show thinking
+      addThinkingIndicator();
       
-      // Send to K.I.T. Gateway
+      // Send to gateway
       if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({
-          type: 'message',
-          content: message
-        }));
+        ws.send(JSON.stringify(Protocol.chatSend(content)));
       } else {
-        // Simulate response for demo
-        setTimeout(() => {
-          removeTypingIndicator();
-          simulateResponse(message);
-        }, 1000 + Math.random() * 1000);
+        // Offline mode - simulate response
+        setTimeout(() => simulateResponse(content), 1000);
       }
-    }
-    
-    function simulateResponse(message) {
-      const lowerMessage = message.toLowerCase();
-      let response = '';
-      
-      if (lowerMessage.includes('portfolio')) {
-        response = '📊 **Your Portfolio**\n\n' +
-          '• BTC: 0.5 ($21,250)\n' +
-          '• ETH: 5.2 ($12,480)\n' +
-          '• EUR/USD Position: +$850\n\n' +
-          'Total: **$124,532** (+2.4% today)';
-      } else if (lowerMessage.includes('signal')) {
-        response = '📡 **Today\'s Signals**\n\n' +
-          '✅ @CryptoWhale: BTC LONG +2.1%\n' +
-          '✅ @ForexVIP: EUR/USD +45 pips\n' +
-          '⏳ @BinaryGold: Pending GBP/JPY\n\n' +
-          'Win rate today: **80%**';
-      } else if (lowerMessage.includes('analyze') || lowerMessage.includes('btc')) {
-        response = '📈 **BTC/USDT Analysis**\n\n' +
-          '• Trend: Bullish 🟢\n' +
-          '• RSI: 58 (Neutral)\n' +
-          '• Support: $42,000\n' +
-          '• Resistance: $45,500\n\n' +
-          'Recommendation: **Hold** or add on dips to $42.5k';
-      } else if (lowerMessage.includes('trade')) {
-        response = '⚡ **Active Trades**\n\n' +
-          '1. ETH/USDT LONG @ $2,380 → TP $2,450 (+$180)\n' +
-          '2. EUR/USD LONG @ 1.0852 → TP 1.0900 (+$65)\n' +
-          '3. BTC/USDT LONG @ $43,200 → TP $44,500 (+$420)\n\n' +
-          'Floating P&L: **+$665**';
-      } else {
-        response = `Got it! You said: "${message}"\n\nI'm analyzing the best way to help you with this. What would you like me to do specifically?`;
-      }
-      
-      addMessage('kit', response);
     }
     
     function sendQuick(message) {
@@ -764,17 +1008,94 @@
       sendMessage();
     }
     
-    function handleKeyPress(event) {
-      if (event.key === 'Enter') {
-        sendMessage();
+    function simulateResponse(input) {
+      const lower = input.toLowerCase();
+      let response = '';
+      
+      if (lower.includes('portfolio')) {
+        response = '📊 **Your Portfolio** (Demo)\n\n' +
+          '• BTC: 0.5 ($21,250)\n' +
+          '• ETH: 5.2 ($12,480)\n' +
+          '• USDT: $5,000\n\n' +
+          '**Total:** $38,730\n' +
+          '**24h Change:** +2.4% (+$908)';
+      } else if (lower.includes('signal')) {
+        response = '📡 **Today\'s Signals**\n\n' +
+          '✅ BTC/USDT LONG @ $42,500 → +2.1%\n' +
+          '✅ EUR/USD BUY @ 1.0850 → +45 pips\n' +
+          '⏳ ETH/USDT LONG @ $2,380 (running)\n\n' +
+          '**Win Rate:** 80% (4/5)';
+      } else if (lower.includes('analyze') || lower.includes('btc')) {
+        response = '📈 **BTC/USDT Analysis**\n\n' +
+          '**Trend:** Bullish 🟢\n' +
+          '**RSI (14):** 58 - Neutral\n' +
+          '**MACD:** Bullish crossover\n\n' +
+          '**Support:** $42,000\n' +
+          '**Resistance:** $45,500\n\n' +
+          '**Recommendation:** HOLD or BUY dips to $42.5k';
+      } else if (lower.includes('trade')) {
+        response = '⚡ **Active Trades**\n\n' +
+          '1. **ETH/USDT** LONG @ $2,380\n' +
+          '   TP: $2,450 | SL: $2,340 | P&L: +$180\n\n' +
+          '2. **EUR/USD** LONG @ 1.0852\n' +
+          '   TP: 1.0900 | SL: 1.0820 | P&L: +$65\n\n' +
+          '**Total Floating P&L:** +$245';
+      } else if (lower.includes('copy') && lower.includes('signal')) {
+        response = '🐋 **Signal Copier**\n\n' +
+          'To copy signals from @CryptoWhale:\n\n' +
+          '```\n/signals add @CryptoWhale\n```\n\n' +
+          'Or configure in `signal-copier.yaml`:\n' +
+          '```yaml\nchannels:\n  - id: "@CryptoWhale"\n    markets: [crypto]\n    auto_execute: true\n```';
+      } else {
+        response = `I received: "${input}"\n\n` +
+          'Try asking about:\n' +
+          '• Your **portfolio** balance\n' +
+          '• Today\'s **signals** and performance\n' +
+          '• **Analyze** any trading pair\n' +
+          '• **Active trades** and P&L';
+      }
+      
+      addMessage('kit', response);
+    }
+    
+    function updateDashboardStats(status) {
+      // Update stats from gateway status
+      if (status.portfolio) {
+        document.getElementById('portfolioValue').textContent = `$${status.portfolio.total.toLocaleString()}`;
+        document.getElementById('portfolioChange').textContent = status.portfolio.change || '-';
+      }
+      if (status.pnl) {
+        const pnlEl = document.getElementById('todayPnl');
+        pnlEl.textContent = `$${status.pnl.today.toLocaleString()}`;
+        pnlEl.className = 'stat-value ' + (status.pnl.today >= 0 ? 'positive' : 'negative');
       }
     }
     
-    // Initialize
-    document.addEventListener('DOMContentLoaded', () => {
-      // Try to connect to gateway
-      // connectWebSocket();
+    // Navigation
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', () => {
+        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+        // View switching would go here
+      });
     });
+    
+    // Input handling
+    document.getElementById('chatInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+    
+    // Auto-resize textarea
+    document.getElementById('chatInput').addEventListener('input', function() {
+      this.style.height = 'auto';
+      this.style.height = Math.min(this.scrollHeight, 150) + 'px';
+    });
+    
+    // Initialize
+    connect();
   </script>
 </body>
 </html>
