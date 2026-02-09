@@ -1,0 +1,129 @@
+{
+  "$schema": "../schemas/kit.config.schema.json",
+  "version": "1.0.0",
+  
+  "agent": {
+    "id": "main",
+    "name": "K.I.T.",
+    "description": "Knight Industries Trading AI",
+    "model": "anthropic/claude-sonnet-4-20250514"
+  },
+  
+  "gateway": {
+    "host": "127.0.0.1",
+    "port": 18799
+  },
+  
+  "ai": {
+    "defaultProvider": "anthropic",
+    "defaultModel": "claude-sonnet-4-20250514",
+    "providers": {
+      "anthropic": {
+        "enabled": true
+      },
+      "openai": {
+        "enabled": false
+      },
+      "openrouter": {
+        "enabled": false
+      },
+      "ollama": {
+        "enabled": false,
+        "baseUrl": "http://localhost:11434"
+      }
+    }
+  },
+  
+  "exchanges": {
+    "binance": {
+      "type": "crypto",
+      "enabled": true,
+      "credentials": {
+        "apiKey": "${BINANCE_API_KEY}",
+        "secret": "${BINANCE_SECRET}"
+      },
+      "sandbox": true
+    },
+    "mt5_demo": {
+      "type": "mt5",
+      "enabled": false,
+      "credentials": {
+        "server": "MetaQuotes-Demo",
+        "login": "${MT5_LOGIN}",
+        "password": "${MT5_PASSWORD}"
+      }
+    }
+  },
+  
+  "trading": {
+    "enabled": false,
+    "autoTrade": false,
+    "riskManagement": {
+      "maxPositionSize": 0.1,
+      "maxDailyLoss": 0.02,
+      "maxDrawdown": 0.1,
+      "stopLossPercent": 0.02,
+      "takeProfitPercent": 0.04
+    },
+    "allowedSymbols": ["BTC/USDT", "ETH/USDT", "EURUSD"],
+    "blockedSymbols": []
+  },
+  
+  "heartbeat": {
+    "enabled": true,
+    "every": "30m",
+    "activeHours": {
+      "start": "08:00",
+      "end": "22:00",
+      "timezone": "Europe/Berlin"
+    }
+  },
+  
+  "cron": {
+    "enabled": true,
+    "jobs": [
+      {
+        "name": "morning-briefing",
+        "schedule": "0 9 * * 1-5",
+        "task": "Generate morning market briefing for all watched assets",
+        "enabled": true,
+        "channel": "telegram"
+      },
+      {
+        "name": "daily-report",
+        "schedule": "0 18 * * 1-5",
+        "task": "Generate daily trading report with P&L summary",
+        "enabled": true,
+        "channel": "telegram"
+      }
+    ]
+  },
+  
+  "memory": {
+    "embeddings": {
+      "provider": "none"
+    }
+  },
+  
+  "workspace": {
+    "path": "~/.kit/workspace",
+    "autoSave": true,
+    "gitAutoCommit": false
+  },
+  
+  "channels": {
+    "telegram": {
+      "type": "telegram",
+      "enabled": true,
+      "credentials": {
+        "botToken": "${TELEGRAM_BOT_TOKEN}"
+      },
+      "defaultChannel": "${TELEGRAM_CHAT_ID}"
+    }
+  },
+  
+  "logging": {
+    "level": "info",
+    "console": true
+  }
+}
