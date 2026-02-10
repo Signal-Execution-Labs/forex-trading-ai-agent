@@ -288,20 +288,135 @@ export class BrainCore extends EventEmitter {
     
     this.state.lastAnalysis = new Date();
     
-    // TODO: Fetch market data and generate signals
-    // This is where K.I.T. would:
-    // 1. Fetch prices from exchanges
-    // 2. Run technical analysis
-    // 3. Check news feeds
-    // 4. Analyze sentiment
-    // 5. Generate opportunities
-    // 6. Make decisions
-    
     if (this.config.verbose) {
-      console.log(`⏰ Analysis cycle at ${this.state.lastAnalysis.toISOString()}`);
+      console.log(`⏰ Analysis cycle starting at ${this.state.lastAnalysis.toISOString()}`);
+    }
+    
+    try {
+      // 1. Get watchlist from goals
+      const watchlist = this.getWatchlistFromGoals();
+      
+      // 2. Analyze each asset on the watchlist
+      for (const asset of watchlist) {
+        await this.analyzeAsset(asset);
+      }
+      
+      // 3. Process any pending decisions at autonomy level 3
+      if (this.autonomyManager.getLevel() === 3) {
+        const pending = this.decisionEngine.getPendingDecisions();
+        for (const decision of pending) {
+          // Auto-approve decisions that pass risk checks at level 3
+          if (decision.riskCheckPassed) {
+            this.decisionEngine.approveDecision(decision.id);
+          }
+        }
+      }
+      
+      if (this.config.verbose) {
+        console.log(`✅ Analysis cycle completed`);
+      }
+    } catch (error) {
+      console.error('Analysis cycle error:', error);
+      this.emit('error', { type: 'analysis', error });
     }
     
     this.emit('analysis_complete');
+  }
+  
+  /**
+   * Get watchlist of assets based on current goals
+   */
+  private getWatchlistFromGoals(): Asset[] {
+    const assets: Asset[] = [];
+    
+    for (const goal of this.state.goals) {
+      const allowedMarkets = goal.constraints?.allowedMarkets || ['crypto', 'forex', 'stocks'];
+      
+      // Add default assets for each allowed market
+      if (allowedMarkets.includes('crypto')) {
+        assets.push(
+          { symbol: 'BTC/USDT', name: 'Bitcoin', market: 'crypto' },
+          { symbol: 'ETH/USDT', name: 'Ethereum', market: 'crypto' }
+        );
+      }
+      if (allowedMarkets.includes('forex')) {
+        assets.push(
+          { symbol: 'EUR/USD', name: 'Euro/Dollar', market: 'forex' },
+          { symbol: 'GBP/USD', name: 'Pound/Dollar', market: 'forex' }
+        );
+      }
+      if (allowedMarkets.includes('stocks')) {
+        assets.push(
+          { symbol: 'SPY', name: 'S&P 500 ETF', market: 'stocks' },
+          { symbol: 'AAPL', name: 'Apple Inc', market: 'stocks' }
+        );
+      }
+    }
+    
+    // Remove duplicates based on symbol
+    const seen = new Set<string>();
+    return assets.filter(a => {
+      if (seen.has(a.symbol)) return false;
+      seen.add(a.symbol);
+      return true;
+    });
+  }
+  
+  /**
+   * Analyze a single asset and generate opportunities
+   */
+  private async analyzeAsset(asset: Asset): Promise<void> {
+    try {
+      // Generate mock signals for now (in production, this would use real market data)
+      // The MarketAnalyzer from tools/market-analysis.ts can be integrated here
+      const signals: Signal[] = this.generateMockSignals(asset);
+      
+      if (signals.length > 0) {
+        // Use decision engine to analyze signals and create opportunities
+        const opportunity = this.decisionEngine.analyzeSignals(signals, asset);
+        
+        if (opportunity && this.config.verbose) {
+          console.log(`📊 Opportunity found: ${asset.symbol} - ${opportunity.action} (${opportunity.confidenceScore}% confidence)`);
+        }
+      }
+    } catch (error) {
+      if (this.config.verbose) {
+        console.error(`Error analyzing ${asset.symbol}:`, error);
+      }
+    }
+  }
+  
+  /**
+   * Generate mock signals for testing (replace with real market data in production)
+   */
+  private generateMockSignals(asset: Asset): Signal[] {
+    // In production, this would:
+    // 1. Fetch real-time price data from exchanges
+    // 2. Calculate technical indicators (RSI, MACD, etc.)
+    // 3. Check news sentiment
+    // 4. Analyze whale movements
+    
+    // For now, generate random signals for demonstration
+    const random = Math.random();
+    
+    // Only generate signals 20% of the time to simulate real market conditions
+    if (random > 0.2) {
+      return [];
+    }
+    
+    const direction: 'bullish' | 'bearish' | 'neutral' = 
+      random < 0.07 ? 'bullish' : random < 0.14 ? 'bearish' : 'neutral';
+    
+    const strength = Math.floor(Math.random() * 40) + 40; // 40-80
+    
+    return [{
+      source: 'technical-analysis',
+      type: 'technical',
+      direction,
+      strength,
+      details: `Mock signal for ${asset.symbol}: ${direction} with ${strength}% strength`,
+      timestamp: new Date()
+    }];
   }
   
   // ============================================
