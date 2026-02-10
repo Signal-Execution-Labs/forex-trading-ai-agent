@@ -657,6 +657,15 @@ Set with: kit models --set anthropic/claude-opus-4-5-20251101
   });
 
 // ═══════════════════════════════════════════════════════════════
+// HOOKS (OpenClaw-inspired)
+// ═══════════════════════════════════════════════════════════════
+import('./commands/hooks').then(({ createHooksCommand }) => {
+  program.addCommand(createHooksCommand());
+}).catch(() => {
+  // Hooks module not available
+});
+
+// ═══════════════════════════════════════════════════════════════
 // VERSION (with update check)
 // ═══════════════════════════════════════════════════════════════
 program
