@@ -5,50 +5,192 @@ title: "Windows VPS Installation"
 
 # Windows VPS Installation Guide
 
-Diese Anleitung bringt K.I.T. auf deinem Windows VPS zum Laufen.
+Diese Anleitung bringt K.I.T. auf deinem Windows VPS zum Laufen - speziell optimiert für **RoboForex**!
 
-## ⏱️ Zeitaufwand: ~15 Minuten
+## ⏱️ Zeitaufwand: ~20 Minuten
+
+---
+
+## 🏆 Empfohlener Broker: RoboForex
+
+RoboForex ist unsere Top-Empfehlung für K.I.T.:
+
+| Feature | Details |
+|---------|---------|
+| **Demo Account** | ✅ Unbegrenzt, $100.000 virtuelles Kapital |
+| **MT5 Support** | ✅ Vollständig |
+| **API Trading** | ✅ Erlaubt |
+| **Spreads** | Ab 0.0 Pips |
+| **Leverage** | Bis 1:2000 |
+| **Server** | RoboForex-Demo, RoboForex-ECN |
+
+**Demo Account erstellen:** https://www.roboforex.com/register/
 
 ---
 
 ## Schritt 1: Voraussetzungen installieren
 
-### 1.1 Node.js installieren
+### 1.1 Python installieren (WICHTIG!)
 
-Download: https://nodejs.org/en/download/
+**Download:** https://www.python.org/downloads/
+
+⚠️ **WICHTIG bei Installation:**
+- [x] **"Add Python to PATH"** anhaken!
+- [x] **"Install for all users"** wählen
+
+```powershell
+# Prüfen ob Python installiert ist
+python --version   # Sollte 3.10+ zeigen
+pip --version      # Sollte mitinstalliert sein
+```
+
+Falls `python` nicht erkannt wird:
+```powershell
+# Python zum PATH hinzufügen (manuell)
+$env:Path += ";C:\Users\$env:USERNAME\AppData\Local\Programs\Python\Python311"
+$env:Path += ";C:\Users\$env:USERNAME\AppData\Local\Programs\Python\Python311\Scripts"
+```
+
+### 1.2 Node.js installieren (für K.I.T. Core)
+
+**Download:** https://nodejs.org/en/download/
 - Wähle **Windows Installer (.msi)** - LTS Version
 - Installieren mit Standardoptionen
 
-Prüfen:
 ```powershell
 node --version   # Sollte v20+ zeigen
 npm --version    # Sollte 10+ zeigen
 ```
 
-### 1.2 Git installieren
+### 1.3 Git installieren
 
-Download: https://git-scm.com/download/win
+**Download:** https://git-scm.com/download/win
 - Installieren mit Standardoptionen
 
-Prüfen:
 ```powershell
 git --version
 ```
 
-### 1.3 Python installieren (für MT5)
+---
 
-Download: https://www.python.org/downloads/
-- **WICHTIG:** Haken bei "Add Python to PATH" setzen!
+## Schritt 2: MetaTrader 5 installieren
 
-Prüfen:
+### 2.1 MT5 Terminal downloaden
+
+**Download von RoboForex:** https://www.roboforex.com/trading-platforms/metatrader5/
+
+Oder direkt: https://download.mql5.com/cdn/web/metaquotes.software.corp/mt5/mt5setup.exe
+
+### 2.2 MT5 installieren
+
+1. `mt5setup.exe` ausführen
+2. Standardoptionen beibehalten
+3. Installation abschließen
+
+### 2.3 Demo-Account erstellen
+
+1. MT5 starten
+2. **File → Open an Account**
+3. Server wählen: **RoboForex-Demo**
+   - Falls nicht in Liste: "Add new broker" → `RoboForex` eingeben
+4. **"Open a demo account"** wählen
+5. Daten ausfüllen und Account erstellen
+6. **Login-Daten notieren!** (Account-Nummer & Passwort)
+
+### 2.4 Algo-Trading aktivieren (WICHTIG!)
+
+In MT5:
+1. **Tools → Options**
+2. Tab **"Expert Advisors"**
+3. Aktiviere:
+   - [x] **Allow Algorithmic Trading**
+   - [x] Allow DLL imports
+4. **OK** klicken
+
+**Außerdem im Hauptfenster:**
+- In der Toolbar: **"Algo Trading"** Button muss GRÜN sein!
+- Falls rot: Anklicken zum Aktivieren
+
+---
+
+## Schritt 3: Python MT5 Library installieren
+
 ```powershell
-python --version   # Sollte 3.10+ zeigen
-pip --version
+# MetaTrader5 Library
+pip install MetaTrader5
+
+# Zusätzliche Dependencies
+pip install pandas numpy
+
+# Optional für erweiterte Features
+pip install psutil requests flask
+```
+
+### Prüfen ob Installation geklappt hat:
+
+```python
+python -c "import MetaTrader5 as mt5; print(f'MT5 Library v{mt5.__version__}')"
 ```
 
 ---
 
-## Schritt 2: K.I.T. installieren
+## Schritt 4: Verbindung testen
+
+### Quick Test (MT5 muss laufen und eingeloggt sein!)
+
+Erstelle eine Datei `mt5_test.py`:
+
+```python
+import MetaTrader5 as mt5
+
+print("🚗 K.I.T. MT5 Connection Test")
+print("="*40)
+
+# Initialisieren
+if not mt5.initialize():
+    error = mt5.last_error()
+    print(f"❌ Fehler: {error}")
+    print("\n💡 Tipps:")
+    print("   - Ist MT5 Terminal geöffnet?")
+    print("   - Bist du eingeloggt?")
+    exit(1)
+
+print("✅ MT5 verbunden!")
+
+# Account Info
+account = mt5.account_info()
+print(f"\n📊 Account Info:")
+print(f"   Login:   {account.login}")
+print(f"   Server:  {account.server}")
+print(f"   Balance: {account.balance:,.2f} {account.currency}")
+
+# Trennen
+mt5.shutdown()
+print("\n✅ Test erfolgreich!")
+```
+
+Ausführen:
+```powershell
+python mt5_test.py
+```
+
+### Erwartete Ausgabe:
+```
+🚗 K.I.T. MT5 Connection Test
+========================================
+✅ MT5 verbunden!
+
+📊 Account Info:
+   Login:   12345678
+   Server:  RoboForex-Demo
+   Balance: 100,000.00 USD
+
+✅ Test erfolgreich!
+```
+
+---
+
+## Schritt 5: K.I.T. installieren
 
 ```powershell
 # In ein Verzeichnis deiner Wahl
@@ -67,182 +209,179 @@ npm run build
 
 ---
 
-## Schritt 3: Konfiguration
-
-### 3.1 Workspace erstellen
+## Schritt 6: K.I.T. MT5 Skills testen
 
 ```powershell
-# Workspace-Verzeichnis erstellen
-mkdir $env:USERPROFILE\.kit
-mkdir $env:USERPROFILE\.kit\workspace
+cd C:\k.i.t.-bot\skills\metatrader
 
-# Templates kopieren
-Copy-Item templates\* $env:USERPROFILE\.kit\workspace\ -Recurse
-```
+# Einfacher Connect-Test
+python examples/01_connect.py
 
-### 3.2 API Keys konfigurieren
+# Balance anzeigen
+python examples/02_balance.py
 
-Erstelle `C:\Users\DEINNAME\.kit\config.json`:
+# Demo-Trade ausführen (nur auf Demo!)
+python examples/03_market_order.py
 
-```json
-{
-  "anthropic": {
-    "apiKey": "sk-ant-DEIN-KEY"
-  },
-  "workspace": "C:\\Users\\DEINNAME\\.kit\\workspace"
-}
-```
-
-### 3.3 Exchange API Keys
-
-Erstelle `C:\Users\DEINNAME\.kit\exchanges.json`:
-
-```json
-{
-  "binance": {
-    "apiKey": "DEIN-BINANCE-KEY",
-    "secret": "DEIN-BINANCE-SECRET",
-    "sandbox": true
-  },
-  "roboforex": {
-    "login": "DEIN-MT5-LOGIN",
-    "password": "DEIN-MT5-PASSWORD",
-    "server": "RoboForex-Demo"
-  }
-}
+# Vollständiger Test
+python examples/quick_test.py --trade
 ```
 
 ---
 
-## Schritt 4: MetaTrader 5 Setup
+## 🧪 Schnelltests
 
-### 4.1 MT5 Terminal installieren
-
-1. Download von RoboForex: https://www.roboforex.com/trading-platforms/metatrader5/
-2. Installieren und starten
-3. Demo-Account erstellen oder einloggen
-
-### 4.2 Python MT5 Library
-
+### Test 1: Python + MT5 Library
 ```powershell
-pip install MetaTrader5
-pip install pandas numpy
+python -c "import MetaTrader5; print('OK')"
 ```
 
-### 4.3 MT5 Verbindung testen
-
-```python
-import MetaTrader5 as mt5
-
-# Initialisieren
-if mt5.initialize():
-    print("✅ MT5 verbunden!")
-    print(f"Version: {mt5.version()}")
-    
-    # Account Info
-    account = mt5.account_info()
-    print(f"Balance: {account.balance}")
-    print(f"Server: {account.server}")
-    
-    mt5.shutdown()
-else:
-    print("❌ MT5 Verbindung fehlgeschlagen")
-```
-
----
-
-## Schritt 5: K.I.T. starten
-
-### Development Mode
-
+### Test 2: MT5 Verbindung
 ```powershell
-cd C:\k.i.t.-bot
-npm run dev
+python -c "import MetaTrader5 as mt5; mt5.initialize(); print(mt5.account_info().balance); mt5.shutdown()"
 ```
 
-### Production Mode
-
+### Test 3: Trade auf Demo
 ```powershell
-npm run build
-npm start
-```
-
----
-
-## Schritt 6: Telegram Bot verbinden
-
-1. Erstelle Bot bei @BotFather auf Telegram
-2. Kopiere den Token
-3. Füge zu `config.json` hinzu:
-
-```json
-{
-  "channels": {
-    "telegram": {
-      "enabled": true,
-      "token": "DEIN-BOT-TOKEN",
-      "allowedUsers": [DEINE-USER-ID]
-    }
-  }
-}
-```
-
----
-
-## 🧪 Schnelltest
-
-### Test 1: Node.js
-```powershell
-node -e "console.log('Node OK')"
-```
-
-### Test 2: K.I.T. Build
-```powershell
-cd C:\k.i.t.-bot
-npm run build
-```
-
-### Test 3: MT5 Verbindung
-```powershell
-cd C:\k.i.t.-bot\skills\metatrader\scripts
-python mt5_connector.py --test
+cd C:\k.i.t.-bot\skills\metatrader
+python examples/quick_test.py --trade
 ```
 
 ---
 
 ## 🚨 Troubleshooting
 
-### "npm install" schlägt fehl
+### Problem: "MT5 initialization failed"
+
+**Ursache:** MT5 Terminal läuft nicht oder ist nicht eingeloggt.
+
+**Lösung:**
+1. MT5 Terminal starten
+2. Einloggen (Demo oder Live)
+3. Warten bis "Connecting..." weg ist
+4. Script erneut starten
+
+### Problem: "No module named 'MetaTrader5'"
+
+**Ursache:** Python Library nicht installiert.
+
+**Lösung:**
 ```powershell
-# Als Administrator ausführen
-npm cache clean --force
-npm install --force
+pip install MetaTrader5
 ```
 
-### MT5 startet nicht
-- MT5 Terminal muss laufen bevor Python verbindet
-- "Algo Trading erlauben" in MT5 aktivieren: Tools → Options → Expert Advisors
+Falls mehrere Python-Versionen:
+```powershell
+py -3 -m pip install MetaTrader5
+```
 
-### Permission Errors
-- PowerShell als Administrator starten
-- Execution Policy setzen: `Set-ExecutionPolicy RemoteSigned`
+### Problem: "Trade not allowed" / Error 10010
+
+**Ursache:** Algo-Trading ist deaktiviert.
+
+**Lösung:**
+1. In MT5: **Tools → Options → Expert Advisors**
+2. Aktiviere **"Allow Algorithmic Trading"**
+3. Klicke **OK**
+4. In der Toolbar: **"Algo Trading"** Button auf GRÜN stellen
+
+### Problem: "Invalid stops" / Error 10015
+
+**Ursache:** SL/TP zu nah am aktuellen Preis.
+
+**Lösung:**
+- Erhöhe den Abstand von SL/TP (mind. 10-20 Pips)
+- Oder trade ohne SL/TP
+
+### Problem: "Not enough money" / Error 10019
+
+**Ursache:** Balance zu niedrig für Lot-Größe.
+
+**Lösung:**
+- Reduziere Lot-Size (z.B. 0.01 statt 0.1)
+- Oder erstelle neuen Demo-Account
+
+### Problem: "Connection lost"
+
+**Ursache:** Internetverbindung instabil.
+
+**Lösung:**
+1. Prüfe Internetverbindung
+2. MT5 neu starten
+3. Re-connect
+
+### Problem: Python nicht im PATH
+
+**Ursache:** Python wurde ohne "Add to PATH" installiert.
+
+**Lösung:**
+```powershell
+# Manuell zum PATH hinzufügen (temporär)
+$env:Path += ";C:\Users\$env:USERNAME\AppData\Local\Programs\Python\Python311"
+
+# Permanent (als Admin in PowerShell)
+[Environment]::SetEnvironmentVariable("Path", $env:Path + ";C:\Users\$env:USERNAME\AppData\Local\Programs\Python\Python311", "User")
+```
+
+### Problem: MT5 startet aber kein Login
+
+**Ursache:** Server nicht erreichbar oder falsches Passwort.
+
+**Lösung:**
+1. Server-Namen prüfen: `RoboForex-Demo` (exakt so!)
+2. Login-Daten prüfen
+3. Firewall prüfen (MT5 erlauben)
 
 ---
 
-## 📋 Checkliste für morgen
+## 📋 Checkliste
 
-- [ ] Node.js installiert
-- [ ] Git installiert
-- [ ] Python installiert
-- [ ] K.I.T. geklont und gebaut
+### Basis-Setup
+- [ ] Python 3.10+ installiert mit PATH
+- [ ] `pip install MetaTrader5 pandas` ausgeführt
 - [ ] MT5 Terminal installiert
-- [ ] MT5 Demo-Account erstellt
-- [ ] Python MetaTrader5 Library installiert
-- [ ] Erster MT5 Verbindungstest erfolgreich
+- [ ] MT5 Demo-Account erstellt (RoboForex-Demo)
+- [ ] Algo-Trading in MT5 aktiviert
+
+### Verbindungstest
+- [ ] `python -c "import MetaTrader5"` funktioniert
+- [ ] MT5 Test-Script zeigt Balance an
+- [ ] Quick Test (`quick_test.py`) läuft durch
+
+### Optional für K.I.T.
+- [ ] Node.js v20+ installiert
+- [ ] Git installiert
+- [ ] K.I.T. geklont und gebaut
+- [ ] K.I.T. kann MT5 Skills nutzen
+
+---
+
+## 🔒 Sicherheit
+
+1. **Credentials niemals im Code speichern!**
+   - Nutze Environment Variables
+   - Oder sichere Config-Files (nicht in Git!)
+
+2. **Immer erst auf Demo testen!**
+   - Alle Scripts prüfen auf Demo-Account
+   - Erst nach ausgiebigen Tests auf Live wechseln
+
+3. **Risk Management!**
+   - Immer Stop Loss setzen
+   - Max 1-2% Risiko pro Trade
+   - Niemals mehr riskieren als du verlieren kannst
 
 ---
 
 ## 🆘 Support
 
-Bei Problemen: Erstelle ein Issue auf GitHub
-https://github.com/kayzaa/k.i.t.-bot/issues
+Bei Problemen:
+- GitHub Issues: https://github.com/kayzaa/k.i.t.-bot/issues
+- RoboForex Support: https://www.roboforex.com/support/
+- MT5 Doku: https://www.mql5.com/en/docs/integration/python_metatrader5
+
+---
+
+**Erstellt:** 2026-02-10  
+**Version:** 2.0 (RoboForex Edition)  
+**Autor:** K.I.T. MetaTrader Specialist
