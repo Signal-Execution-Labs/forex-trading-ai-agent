@@ -1,32 +1,32 @@
 ---
-summary: "Telegram Channel Setup für K.I.T."
+summary: "Telegram Channel Setup for K.I.T."
 read_when:
-  - Telegram Bot einrichten
-  - Telegram-Integration
+  - Set up Telegram Bot
+  - Telegram integration
 title: "Telegram"
 ---
 
 # Telegram
 
-Telegram ist der empfohlene Kanal für K.I.T. — schnell, zuverlässig und mit Rich-Features wie Inline-Buttons.
+Telegram is the recommended channel for K.I.T. — fast, reliable, and with rich features like inline buttons.
 
 ## Quick Setup
 
 <Steps>
-  <Step title="Bot erstellen">
-    1. Öffne [@BotFather](https://t.me/BotFather) in Telegram
-    2. Sende `/newbot`
-    3. Wähle einen Namen (z.B. "K.I.T. Trading")
-    4. Wähle einen Username (z.B. "kit_trading_bot")
-    5. Kopiere den Bot-Token
+  <Step title="Create bot">
+    1. Open [@BotFather](https://t.me/BotFather) in Telegram
+    2. Send `/newbot`
+    3. Choose a name (e.g. "K.I.T. Trading")
+    4. Choose a username (e.g. "kit_trading_bot")
+    5. Copy the bot token
   </Step>
   
-  <Step title="Token konfigurieren">
+  <Step title="Configure token">
     ```bash
     kit channels add telegram --token "YOUR_BOT_TOKEN"
     ```
     
-    Oder in `~/.kit/config.json`:
+    Or in `~/.kit/config.json`:
     ```json
     {
       "channels": {
@@ -38,20 +38,20 @@ Telegram ist der empfohlene Kanal für K.I.T. — schnell, zuverlässig und mit 
     ```
   </Step>
   
-  <Step title="Bot starten">
+  <Step title="Start bot">
     ```bash
     kit channels start telegram
     ```
   </Step>
   
-  <Step title="Mit Bot chatten">
-    Öffne deinen Bot in Telegram und sende `/start`.
+  <Step title="Chat with bot">
+    Open your bot in Telegram and send `/start`.
   </Step>
 </Steps>
 
-## Konfiguration
+## Configuration
 
-### Basis-Konfiguration
+### Basic Configuration
 
 ```json
 {
@@ -61,13 +61,13 @@ Telegram ist der empfohlene Kanal für K.I.T. — schnell, zuverlässig und mit 
       "botToken": "YOUR_BOT_TOKEN",
       "allowFrom": ["@your_username"],
       "adminUsers": ["@your_username"],
-      "language": "de"
+      "language": "en"
     }
   }
 }
 ```
 
-### Zugriffssteuerung
+### Access Control
 
 ```json
 {
@@ -82,9 +82,9 @@ Telegram ist der empfohlene Kanal für K.I.T. — schnell, zuverlässig und mit 
 }
 ```
 
-### Alert-Channel
+### Alert Channel
 
-Alerts an einen separaten Kanal/Gruppe senden:
+Send alerts to a separate channel/group:
 
 ```json
 {
@@ -96,27 +96,27 @@ Alerts an einen separaten Kanal/Gruppe senden:
 }
 ```
 
-So findest du die Channel-ID:
-1. Füge [@userinfobot](https://t.me/userinfobot) zum Channel hinzu
-2. Der Bot zeigt die Channel-ID
+How to find the channel ID:
+1. Add [@userinfobot](https://t.me/userinfobot) to the channel
+2. The bot shows the channel ID
 
 ## Features
 
-### Inline-Buttons
+### Inline Buttons
 
-K.I.T. nutzt Telegram-Buttons für Bestätigungen:
+K.I.T. uses Telegram buttons for confirmations:
 
 ```
-⚠️ Trade-Bestätigung
+⚠️ Trade Confirmation
 ──────────────────────
-KAUFEN BTC/USDT
+BUY BTC/USDT
 $100 @ Market
 Stop-Loss: $65,000
 
-[✅ Bestätigen] [❌ Abbrechen]
+[✅ Confirm] [❌ Cancel]
 ```
 
-### Trade-Bestätigung
+### Trade Confirmation
 
 ```json
 {
@@ -129,9 +129,9 @@ Stop-Loss: $65,000
 }
 ```
 
-### Reply-Keyboard
+### Reply Keyboard
 
-Quick-Actions per Tastatur:
+Quick actions via keyboard:
 
 ```json
 {
@@ -139,8 +139,8 @@ Quick-Actions per Tastatur:
     "telegram": {
       "quickKeyboard": true,
       "keyboardButtons": [
-        ["📊 Portfolio", "📈 Analyse"],
-        ["🔔 Alerts", "📋 Positionen"],
+        ["📊 Portfolio", "📈 Analysis"],
+        ["🔔 Alerts", "📋 Positions"],
         ["⚙️ Settings"]
       ]
     }
@@ -148,54 +148,54 @@ Quick-Actions per Tastatur:
 }
 ```
 
-## Befehle
+## Commands
 
-### Standard-Befehle
+### Standard Commands
 
-| Befehl | Beschreibung |
-|--------|--------------|
-| `/start` | Bot starten |
-| `/help` | Hilfe anzeigen |
-| `/portfolio` | Portfolio-Übersicht |
-| `/buy` | Kaufen |
-| `/sell` | Verkaufen |
-| `/analyze` | Marktanalyse |
-| `/alerts` | Alerts verwalten |
-| `/settings` | Einstellungen |
+| Command | Description |
+|---------|-------------|
+| `/start` | Start bot |
+| `/help` | Show help |
+| `/portfolio` | Portfolio overview |
+| `/buy` | Buy |
+| `/sell` | Sell |
+| `/analyze` | Market analysis |
+| `/alerts` | Manage alerts |
+| `/settings` | Settings |
 
-### Befehle registrieren
+### Register Commands
 
 ```bash
 kit telegram set-commands
 ```
 
-Oder manuell bei @BotFather:
+Or manually at @BotFather:
 ```
 /setcommands
 ```
 
-## Natürliche Sprache
+## Natural Language
 
-Neben Befehlen versteht K.I.T. auch natürliche Sprache:
+In addition to commands, K.I.T. also understands natural language:
 
 ```
-Du: "Wie sieht BTC aus?"
-K.I.T.: 📊 BTC/USDT Analyse...
+You: "How does BTC look?"
+K.I.T.: 📊 BTC/USDT Analysis...
 
-Du: "Kaufe ETH für 200$"
-K.I.T.: ⚠️ Trade-Bestätigung...
+You: "Buy ETH for $200"
+K.I.T.: ⚠️ Trade Confirmation...
 
-Du: "Zeig mein Portfolio"
-K.I.T.: 💰 Portfolio Übersicht...
+You: "Show my portfolio"
+K.I.T.: 💰 Portfolio Overview...
 ```
 
-## Gruppen-Support
+## Group Support
 
-### Bot zu Gruppe hinzufügen
+### Add Bot to Group
 
-1. Bot zur Gruppe hinzufügen
-2. Bot als Admin setzen (für Nachrichten-Zugriff)
-3. Gruppe in Config erlauben:
+1. Add bot to the group
+2. Set bot as admin (for message access)
+3. Allow group in config:
 
 ```json
 {
@@ -213,9 +213,9 @@ K.I.T.: 💰 Portfolio Übersicht...
 }
 ```
 
-### Mention-Requirement
+### Mention Requirement
 
-In Gruppen nur auf Mentions reagieren:
+Only respond to mentions in groups:
 
 ```json
 {
@@ -230,9 +230,9 @@ In Gruppen nur auf Mentions reagieren:
 }
 ```
 
-## Benachrichtigungen
+## Notifications
 
-### Alert-Format
+### Alert Format
 
 ```json
 {
@@ -246,7 +246,7 @@ In Gruppen nur auf Mentions reagieren:
 }
 ```
 
-### Stille Benachrichtigungen
+### Silent Notifications
 
 ```json
 {
@@ -261,33 +261,33 @@ In Gruppen nur auf Mentions reagieren:
 }
 ```
 
-## Media-Support
+## Media Support
 
-### Charts senden
+### Send Charts
 
 ```bash
 kit chart BTC/USDT --telegram
 ```
 
-K.I.T. kann Charts als Bilder senden:
+K.I.T. can send charts as images:
 
 ```
 📈 BTC/USDT 4h Chart
-[Chart-Bild]
+[Chart image]
 RSI: 58 | MACD: Bullish
 ```
 
-### Dokumente
+### Documents
 
-Portfolio-Reports als Datei:
+Portfolio reports as file:
 
 ```bash
 kit portfolio export --telegram
 ```
 
-## Webhook-Modus (Optional)
+## Webhook Mode (Optional)
 
-Für bessere Performance bei hohem Traffic:
+For better performance with high traffic:
 
 ```json
 {
@@ -299,58 +299,58 @@ Für bessere Performance bei hohem Traffic:
 }
 ```
 
-## Fehlerbehebung
+## Troubleshooting
 
 <AccordionGroup>
-  <Accordion title="Bot antwortet nicht">
-    1. Token korrekt?
+  <Accordion title="Bot not responding">
+    1. Token correct?
     ```bash
     kit channels test telegram
     ```
     
     2. User in `allowFrom`?
     
-    3. Bot-Status prüfen:
+    3. Check bot status:
     ```bash
     kit channels status telegram
     ```
   </Accordion>
   
-  <Accordion title="Keine Benachrichtigungen">
-    1. Alert-Channel konfiguriert?
-    2. Bot ist Admin im Channel?
-    3. Notifications nicht stumm?
+  <Accordion title="No notifications">
+    1. Alert channel configured?
+    2. Bot is admin in channel?
+    3. Notifications not muted?
   </Accordion>
   
-  <Accordion title="Buttons funktionieren nicht">
-    Telegram-Version aktuell?
-    Bot neu starten:
+  <Accordion title="Buttons not working">
+    Telegram version up to date?
+    Restart bot:
     ```bash
     kit channels restart telegram
     ```
   </Accordion>
 </AccordionGroup>
 
-## Sicherheit
+## Security
 
 <Tip>
 **Best Practices:**
-1. `allowFrom` immer setzen
-2. Keine sensiblen Daten in Gruppen
-3. Trade-Bestätigung aktivieren
-4. Bot-Token geheim halten
+1. Always set `allowFrom`
+2. No sensitive data in groups
+3. Enable trade confirmation
+4. Keep bot token secret
 </Tip>
 
-## Nächste Schritte
+## Next Steps
 
 <Columns>
   <Card title="Discord" href="/channels/discord" icon="message-circle">
-    Discord-Integration einrichten.
+    Set up Discord integration.
   </Card>
   <Card title="Alert System" href="/skills/alert-system" icon="bell">
-    Intelligente Alerts konfigurieren.
+    Configure intelligent alerts.
   </Card>
-  <Card title="Erster Trade" href="/start/first-trade" icon="trending-up">
-    Ersten Trade durchführen.
+  <Card title="First Trade" href="/start/first-trade" icon="trending-up">
+    Execute your first trade.
   </Card>
 </Columns>

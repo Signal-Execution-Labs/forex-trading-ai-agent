@@ -1,7 +1,7 @@
 ---
-summary: "K.I.T. ist ein KI-gesteuerter Trading-Assistent für Crypto und Forex."
+summary: "K.I.T. is an AI-powered trading assistant for Crypto and Forex."
 read_when:
-  - Einführung in K.I.T. für neue Nutzer
+  - Introduction to K.I.T. for new users
 title: "K.I.T. - Knight Industries Trading"
 ---
 
@@ -11,45 +11,45 @@ title: "K.I.T. - Knight Industries Trading"
   <strong>Knight Industries Trading</strong>
 </p>
 
-> _"Ich bin K.I.T.T., aber für dein Portfolio."_ — K.I.T.
+> _"I'm K.I.T.T., but for your portfolio."_ — K.I.T.
 
 <p align="center">
-  <strong>KI-gesteuerter Trading-Assistent für Crypto, Forex und traditionelle Märkte.</strong><br />
-  Sende eine Nachricht, erhalte Marktanalysen, Alerts und automatische Trades.
+  <strong>AI-powered trading assistant for Crypto, Forex, and traditional markets.</strong><br />
+  Send a message, receive market analysis, alerts, and automatic trades.
 </p>
 
 <Columns>
-  <Card title="Schnellstart" href="/start/installation" icon="rocket">
-    Installiere K.I.T. und starte in wenigen Minuten.
+  <Card title="Quickstart" href="/start/installation" icon="rocket">
+    Install K.I.T. and get started in minutes.
   </Card>
-  <Card title="Erster Trade" href="/start/first-trade" icon="trending-up">
-    Führe deinen ersten Trade mit K.I.T. durch.
+  <Card title="First Trade" href="/start/first-trade" icon="trending-up">
+    Execute your first trade with K.I.T.
   </Card>
-  <Card title="Exchanges verbinden" href="/start/exchanges" icon="link">
-    Verbinde deine Börsen-Accounts sicher.
+  <Card title="Connect Exchanges" href="/start/exchanges" icon="link">
+    Securely connect your exchange accounts.
   </Card>
 </Columns>
 
-## Was ist K.I.T.?
+## What is K.I.T.?
 
-K.I.T. ist ein **KI-gesteuerter Trading-Assistent**, der auf OpenClaw basiert. Er verbindet sich mit deinen bevorzugten Messaging-Apps (Telegram, Discord, Signal) und bietet dir:
+K.I.T. is an **AI-powered trading assistant** built on OpenClaw. It connects to your favorite messaging apps (Telegram, Discord, Signal) and provides:
 
-- **Echtzeit-Marktanalysen** mit KI-gestützter Interpretation
-- **Automatische Trading-Signale** basierend auf technischer und fundamentaler Analyse
-- **Portfolio-Tracking** über alle verbundenen Exchanges
-- **Risiko-Management** mit automatischen Stop-Loss und Take-Profit Orders
-- **Backtesting** für deine Trading-Strategien
+- **Real-time market analysis** with AI-powered interpretation
+- **Automatic trading signals** based on technical and fundamental analysis
+- **Portfolio tracking** across all connected exchanges
+- **Risk management** with automatic stop-loss and take-profit orders
+- **Backtesting** for your trading strategies
 
-**Für wen ist K.I.T.?** Trader und Investoren, die einen intelligenten Assistenten wollen, der 24/7 die Märkte überwacht — ohne ständig auf Charts starren zu müssen.
+**Who is K.I.T. for?** Traders and investors who want an intelligent assistant that monitors markets 24/7 — without having to constantly stare at charts.
 
-**Was macht K.I.T. besonders?**
+**What makes K.I.T. special?**
 
-- **Multi-Exchange**: Binance, Kraken, Coinbase, MetaTrader und mehr
-- **Multi-Channel**: Telegram, Discord, Signal als Kommunikationskanäle
-- **KI-Native**: Natürliche Sprachverarbeitung für Trading-Befehle
-- **Open Source**: MIT-lizenziert, Community-getrieben
+- **Multi-Exchange**: Binance, Kraken, Coinbase, MetaTrader and more
+- **Multi-Channel**: Telegram, Discord, Signal as communication channels
+- **AI-Native**: Natural language processing for trading commands
+- **Open Source**: MIT-licensed, community-driven
 
-## So funktioniert K.I.T.
+## How K.I.T. Works
 
 ```mermaid
 flowchart LR
@@ -61,78 +61,78 @@ flowchart LR
   D --> G["Data Feeds"]
 ```
 
-K.I.T. ist das zentrale Gehirn, das alle deine Trading-Aktivitäten koordiniert.
+K.I.T. is the central brain that coordinates all your trading activities.
 
-## Kernfunktionen
+## Core Features
 
 <Columns>
   <Card title="Multi-Exchange Support" icon="building">
-    Binance, Kraken, Coinbase, MetaTrader mit einer einzigen Konfiguration.
+    Binance, Kraken, Coinbase, MetaTrader with a single configuration.
   </Card>
-  <Card title="Intelligente Alerts" icon="bell">
-    Preis-Alerts, Volumen-Spikes, Trend-Änderungen automatisch erkennen.
+  <Card title="Intelligent Alerts" icon="bell">
+    Automatically detect price alerts, volume spikes, and trend changes.
   </Card>
   <Card title="Auto-Trading" icon="bot">
-    Definiere Strategien und lass K.I.T. automatisch handeln.
+    Define strategies and let K.I.T. trade automatically.
   </Card>
-  <Card title="Portfolio-Tracking" icon="pie-chart">
-    Echtzeit-Übersicht über alle deine Assets.
+  <Card title="Portfolio Tracking" icon="pie-chart">
+    Real-time overview of all your assets.
   </Card>
   <Card title="Backtesting" icon="history">
-    Teste Strategien mit historischen Daten.
+    Test strategies with historical data.
   </Card>
-  <Card title="Risiko-Management" icon="shield">
-    Automatische Stop-Loss, Position-Sizing, Drawdown-Limits.
+  <Card title="Risk Management" icon="shield">
+    Automatic stop-loss, position sizing, drawdown limits.
   </Card>
 </Columns>
 
-## Schnellstart
+## Quickstart
 
 <Steps>
-  <Step title="K.I.T. installieren">
+  <Step title="Install K.I.T.">
     ```bash
     npm install -g kit-trading@latest
     ```
   </Step>
-  <Step title="Konfiguration erstellen">
+  <Step title="Create configuration">
     ```bash
     kit init
     kit configure --exchange binance
     ```
   </Step>
-  <Step title="Exchange verbinden">
+  <Step title="Connect exchange">
     ```bash
     kit exchanges add binance --api-key YOUR_KEY --secret YOUR_SECRET
     ```
   </Step>
-  <Step title="Telegram verbinden">
+  <Step title="Connect Telegram">
     ```bash
     kit channels login telegram
     ```
   </Step>
 </Steps>
 
-Detaillierte Anleitung: [Installation](/start/installation)
+Detailed guide: [Installation](/start/installation)
 
-## Beispiel-Befehle
+## Example Commands
 
 ```
-📊 Portfolio anzeigen
-> "Zeig mir mein Portfolio"
+📊 Show portfolio
+> "Show me my portfolio"
 
-📈 Marktanalyse
-> "Analysiere BTC/USDT"
+📈 Market analysis
+> "Analyze BTC/USDT"
 
-🚨 Alert setzen
-> "Alert wenn ETH über 3000$"
+🚨 Set alert
+> "Alert when ETH above $3000"
 
-🤖 Auto-Trade aktivieren
-> "Kaufe 0.1 BTC wenn RSI unter 30"
+🤖 Activate auto-trade
+> "Buy 0.1 BTC when RSI below 30"
 ```
 
-## Konfiguration
+## Configuration
 
-Die Konfiguration liegt in `~/.kit/config.json`:
+The configuration is located in `~/.kit/config.json`:
 
 ```json5
 {
@@ -144,9 +144,9 @@ Die Konfiguration liegt in `~/.kit/config.json`:
     }
   },
   risk: {
-    maxPositionSize: 0.1,  // 10% des Portfolios
-    maxDailyLoss: 0.05,    // 5% max Tagesverlust
-    stopLossDefault: 0.02  // 2% Stop-Loss
+    maxPositionSize: 0.1,  // 10% of portfolio
+    maxDailyLoss: 0.05,    // 5% max daily loss
+    stopLossDefault: 0.02  // 2% stop-loss
   },
   channels: {
     telegram: {
@@ -160,50 +160,50 @@ Die Konfiguration liegt in `~/.kit/config.json`:
 
 <Columns>
   <Card title="Getting Started" href="/start/installation" icon="book-open">
-    Installation, Konfiguration und erster Trade.
+    Installation, configuration, and first trade.
   </Card>
   <Card title="Windows Installation" href="/start/windows-installation" icon="windows">
-    Detaillierte Windows 10/11 Anleitung.
+    Detailed Windows 10/11 guide.
   </Card>
   <Card title="API Reference" href="/api/api-reference" icon="code">
-    Vollständige API Dokumentation.
+    Complete API documentation.
   </Card>
   <Card title="Core Concepts" href="/concepts/architecture" icon="cpu">
-    Architektur, Skills und Trading-Tools verstehen.
+    Understand architecture, skills, and trading tools.
   </Card>
   <Card title="Skills" href="/skills/exchange-connector" icon="plug">
-    Exchange-Connector, Portfolio-Tracker, Auto-Trader.
+    Exchange connector, portfolio tracker, auto-trader.
   </Card>
   <Card title="Exchanges" href="/exchanges/binance" icon="building">
-    Binance, Kraken, Coinbase, MetaTrader Setup.
+    Binance, Kraken, Coinbase, MetaTrader setup.
   </Card>
   <Card title="Channels" href="/channels/telegram" icon="message-square">
-    Telegram, Discord, Signal Konfiguration.
+    Telegram, Discord, Signal configuration.
   </Card>
   <Card title="Security" href="/security/api-keys" icon="shield">
-    API-Keys, Berechtigungen, Best Practices.
+    API keys, permissions, best practices.
   </Card>
 </Columns>
 
-## Weiterführend
+## Learn More
 
 <Columns>
-  <Card title="Risiko-Management" href="/concepts/risk-management" icon="alert-triangle">
-    Stop-Loss, Position-Sizing, Drawdown-Schutz.
+  <Card title="Risk Management" href="/concepts/risk-management" icon="alert-triangle">
+    Stop-loss, position sizing, drawdown protection.
   </Card>
   <Card title="Backtesting" href="/skills/backtester" icon="history">
-    Strategien mit historischen Daten testen.
+    Test strategies with historical data.
   </Card>
   <Card title="Market Analysis" href="/skills/market-analysis" icon="bar-chart">
-    Technische und fundamentale Analyse.
+    Technical and fundamental analysis.
   </Card>
   <Card title="Auto-Trader" href="/skills/auto-trader" icon="bot">
-    Automatische Trading-Strategien.
+    Automatic trading strategies.
   </Card>
 </Columns>
 
 ---
 
 <Warning>
-**Risiko-Hinweis:** Trading birgt erhebliche Risiken. K.I.T. ist ein Tool, keine Finanzberatung. Investiere nur Geld, das du bereit bist zu verlieren.
+**Risk Disclaimer:** Trading involves significant risks. K.I.T. is a tool, not financial advice. Only invest money you are prepared to lose.
 </Warning>

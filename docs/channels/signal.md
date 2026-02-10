@@ -1,33 +1,33 @@
 ---
-summary: "Signal Channel Setup für K.I.T."
+summary: "Signal Channel Setup for K.I.T."
 read_when:
-  - Signal-Integration einrichten
-  - Sichere Kommunikation
+  - Set up Signal integration
+  - Secure communication
 title: "Signal"
 ---
 
 # Signal
 
-Signal bietet Ende-zu-Ende-verschlüsselte Kommunikation mit K.I.T. — ideal für maximale Privatsphäre.
+Signal provides end-to-end encrypted communication with K.I.T. — ideal for maximum privacy.
 
 <Info>
-Signal-Integration nutzt signal-cli oder eine lokale Signal-Instanz. Kein offizieller Bot-API verfügbar.
+Signal integration uses signal-cli or a local Signal instance. No official bot API available.
 </Info>
 
-## Voraussetzungen
+## Prerequisites
 
-- Dedizierte Telefonnummer für K.I.T.
-- [signal-cli](https://github.com/AsamK/signal-cli) installiert
+- Dedicated phone number for K.I.T.
+- [signal-cli](https://github.com/AsamK/signal-cli) installed
 - Java Runtime
 
 ## Installation
 
-### signal-cli installieren
+### Install signal-cli
 
 <Tabs>
   <Tab title="Linux">
     ```bash
-    # Aktuellste Version herunterladen
+    # Download latest version
     wget https://github.com/AsamK/signal-cli/releases/download/v0.12.0/signal-cli-0.12.0-Linux.tar.gz
     tar -xzf signal-cli-0.12.0-Linux.tar.gz
     sudo mv signal-cli-0.12.0/bin/signal-cli /usr/local/bin/
@@ -42,46 +42,46 @@ Signal-Integration nutzt signal-cli oder eine lokale Signal-Instanz. Kein offizi
   
   <Tab title="Windows">
     ```powershell
-    # Manuell herunterladen und in PATH
+    # Download manually and add to PATH
     # https://github.com/AsamK/signal-cli/releases
     ```
   </Tab>
 </Tabs>
 
-### Signal-Nummer registrieren
+### Register Signal Number
 
 ```bash
-# Captcha-Token holen (falls nötig)
+# Get captcha token (if needed)
 # https://signalcaptchas.org/registration/generate.html
 
-# Nummer registrieren
-signal-cli -u +491234567890 register --captcha "captcha-token"
+# Register number
+signal-cli -u +11234567890 register --captcha "captcha-token"
 
-# Verifizieren
-signal-cli -u +491234567890 verify CODE
+# Verify
+signal-cli -u +11234567890 verify CODE
 ```
 
 ## Setup
 
 <Steps>
-  <Step title="Signal-CLI prüfen">
+  <Step title="Check Signal-CLI">
     ```bash
-    signal-cli -u +491234567890 receive
+    signal-cli -u +11234567890 receive
     ```
   </Step>
   
-  <Step title="K.I.T. konfigurieren">
+  <Step title="Configure K.I.T.">
     ```bash
-    kit channels add signal --number "+491234567890"
+    kit channels add signal --number "+11234567890"
     ```
     
-    Oder in Config:
+    Or in config:
     ```json
     {
       "channels": {
         "signal": {
           "enabled": true,
-          "number": "+491234567890",
+          "number": "+11234567890",
           "signalCliPath": "/usr/local/bin/signal-cli"
         }
       }
@@ -89,33 +89,33 @@ signal-cli -u +491234567890 verify CODE
     ```
   </Step>
   
-  <Step title="Kanal starten">
+  <Step title="Start channel">
     ```bash
     kit channels start signal
     ```
   </Step>
 </Steps>
 
-## Konfiguration
+## Configuration
 
-### Basis-Konfiguration
+### Basic Configuration
 
 ```json
 {
   "channels": {
     "signal": {
       "enabled": true,
-      "number": "+491234567890",
+      "number": "+11234567890",
       "signalCliPath": "/usr/local/bin/signal-cli",
       "configPath": "~/.local/share/signal-cli",
-      "allowFrom": ["+491111111111", "+492222222222"],
+      "allowFrom": ["+11111111111", "+12222222222"],
       "trustAllKeys": false
     }
   }
 }
 ```
 
-### Gruppen-Support
+### Group Support
 
 ```json
 {
@@ -134,9 +134,9 @@ signal-cli -u +491234567890 verify CODE
 
 ## Features
 
-### Ende-zu-Ende-Verschlüsselung
+### End-to-End Encryption
 
-Alle Nachrichten sind standardmäßig verschlüsselt. K.I.T. speichert keine entschlüsselten Nachrichten permanent.
+All messages are encrypted by default. K.I.T. does not permanently store decrypted messages.
 
 ### Disappearing Messages
 
@@ -145,7 +145,7 @@ Alle Nachrichten sind standardmäßig verschlüsselt. K.I.T. speichert keine ent
   "signal": {
     "disappearingMessages": {
       "enabled": true,
-      "timeout": 86400  // 24 Stunden
+      "timeout": 86400  // 24 hours
     }
   }
 }
@@ -153,7 +153,7 @@ Alle Nachrichten sind standardmäßig verschlüsselt. K.I.T. speichert keine ent
 
 ### Reactions
 
-K.I.T. kann auf Nachrichten reagieren:
+K.I.T. can react to messages:
 
 ```json
 {
@@ -165,9 +165,9 @@ K.I.T. kann auf Nachrichten reagieren:
 }
 ```
 
-## Befehle
+## Commands
 
-Gleiche Befehle wie bei anderen Channels:
+Same commands as other channels:
 
 ```
 portfolio
@@ -179,7 +179,7 @@ alert BTC > 70000
 
 ## Attachments
 
-K.I.T. kann Bilder und Dokumente senden:
+K.I.T. can send images and documents:
 
 ```json
 {
@@ -193,15 +193,15 @@ K.I.T. kann Bilder und Dokumente senden:
 }
 ```
 
-## Daemon-Modus
+## Daemon Mode
 
-Für permanenten Betrieb:
+For permanent operation:
 
 ```bash
-# signal-cli als Daemon
-signal-cli -u +491234567890 daemon --socket /tmp/signal-cli.socket
+# signal-cli as daemon
+signal-cli -u +11234567890 daemon --socket /tmp/signal-cli.socket
 
-# K.I.T. mit Socket
+# K.I.T. with socket
 kit channels start signal --socket /tmp/signal-cli.socket
 ```
 
@@ -214,22 +214,22 @@ kit channels start signal --socket /tmp/signal-cli.socket
 }
 ```
 
-## Sicherheit
+## Security
 
-### Key-Verification
+### Key Verification
 
 ```json
 {
   "signal": {
     "trustAllKeys": false,
     "trustedKeys": {
-      "+491111111111": "safety-number-or-fingerprint"
+      "+11111111111": "safety-number-or-fingerprint"
     }
   }
 }
 ```
 
-### Nur verifizierte Kontakte
+### Verified Contacts Only
 
 ```json
 {
@@ -239,23 +239,23 @@ kit channels start signal --socket /tmp/signal-cli.socket
 }
 ```
 
-## Fehlerbehebung
+## Troubleshooting
 
 <AccordionGroup>
-  <Accordion title="signal-cli Fehler">
+  <Accordion title="signal-cli error">
     ```bash
-    # Logs prüfen
-    signal-cli -u +491234567890 --verbose receive
+    # Check logs
+    signal-cli -u +11234567890 --verbose receive
     
-    # Datenbank reparieren
-    signal-cli -u +491234567890 updateAccount
+    # Repair database
+    signal-cli -u +11234567890 updateAccount
     ```
   </Accordion>
   
-  <Accordion title="Keine Nachrichten empfangen">
-    1. Nummer verifiziert?
-    2. signal-cli Daemon läuft?
-    3. Absender in `allowFrom`?
+  <Accordion title="Not receiving messages">
+    1. Number verified?
+    2. signal-cli daemon running?
+    3. Sender in `allowFrom`?
     
     ```bash
     kit channels test signal
@@ -263,7 +263,7 @@ kit channels start signal --socket /tmp/signal-cli.socket
   </Accordion>
   
   <Accordion title="Rate Limiting">
-    Signal hat Rate-Limits. Bei zu vielen Nachrichten:
+    Signal has rate limits. If too many messages:
     ```json
     {
       "signal": {
@@ -277,34 +277,34 @@ kit channels start signal --socket /tmp/signal-cli.socket
   </Accordion>
 </AccordionGroup>
 
-## Einschränkungen
+## Limitations
 
 <Warning>
-**Signal-Einschränkungen:**
-- Keine Inline-Buttons (nur Text)
-- Keine Rich-Embeds
-- Rate-Limiting
-- Benötigt dedizierte Nummer
-- signal-cli manchmal instabil
+**Signal Limitations:**
+- No inline buttons (text only)
+- No rich embeds
+- Rate limiting
+- Requires dedicated number
+- signal-cli sometimes unstable
 </Warning>
 
-## Alternativen
+## Alternatives
 
-Wenn Signal zu komplex:
-- **Telegram**: Einfacherer Bot-API, mehr Features
-- **Discord**: Für Communities
-- **Matrix**: Open Source, selbst-gehostet
+If Signal is too complex:
+- **Telegram**: Easier bot API, more features
+- **Discord**: For communities
+- **Matrix**: Open source, self-hosted
 
-## Nächste Schritte
+## Next Steps
 
 <Columns>
   <Card title="Telegram" href="/channels/telegram" icon="send">
-    Einfachere Alternative.
+    Easier alternative.
   </Card>
-  <Card title="Sicherheit" href="/security/api-keys" icon="shield">
-    Security Best Practices.
+  <Card title="Security" href="/security/api-keys" icon="shield">
+    Security best practices.
   </Card>
   <Card title="Alert System" href="/skills/alert-system" icon="bell">
-    Alerts konfigurieren.
+    Configure alerts.
   </Card>
 </Columns>

@@ -1,57 +1,57 @@
 ---
-summary: "Discord Channel Setup für K.I.T."
+summary: "Discord Channel Setup for K.I.T."
 read_when:
-  - Discord Bot einrichten
-  - Discord-Integration
+  - Set up Discord Bot
+  - Discord integration
 title: "Discord"
 ---
 
 # Discord
 
-Discord-Integration für K.I.T. mit Server-Support, Slash-Commands und Rich-Embeds.
+Discord integration for K.I.T. with server support, slash commands, and rich embeds.
 
 ## Quick Setup
 
 <Steps>
-  <Step title="Discord Application erstellen">
-    1. Gehe zu [Discord Developer Portal](https://discord.com/developers/applications)
-    2. Klicke "New Application"
-    3. Gib einen Namen ein (z.B. "K.I.T. Trading")
-    4. Gehe zu "Bot" → "Add Bot"
-    5. Kopiere den Bot-Token
+  <Step title="Create Discord Application">
+    1. Go to [Discord Developer Portal](https://discord.com/developers/applications)
+    2. Click "New Application"
+    3. Enter a name (e.g. "K.I.T. Trading")
+    4. Go to "Bot" → "Add Bot"
+    5. Copy the bot token
   </Step>
   
-  <Step title="Bot-Berechtigungen setzen">
-    Unter "Bot" aktivieren:
+  <Step title="Set bot permissions">
+    Under "Bot" enable:
     - ✅ Message Content Intent
     - ✅ Server Members Intent (optional)
     
-    Unter "OAuth2" → "URL Generator":
+    Under "OAuth2" → "URL Generator":
     - Scopes: `bot`, `applications.commands`
     - Bot Permissions: `Send Messages`, `Embed Links`, `Read Messages`
   </Step>
   
-  <Step title="Bot zum Server hinzufügen">
-    Kopiere die generierte OAuth2-URL und öffne sie im Browser.
-    Wähle deinen Server aus.
+  <Step title="Add bot to server">
+    Copy the generated OAuth2 URL and open it in your browser.
+    Select your server.
   </Step>
   
-  <Step title="Token konfigurieren">
+  <Step title="Configure token">
     ```bash
     kit channels add discord --token "YOUR_BOT_TOKEN"
     ```
   </Step>
   
-  <Step title="Bot starten">
+  <Step title="Start bot">
     ```bash
     kit channels start discord
     ```
   </Step>
 </Steps>
 
-## Konfiguration
+## Configuration
 
-### Basis-Konfiguration
+### Basic Configuration
 
 ```json
 {
@@ -67,7 +67,7 @@ Discord-Integration für K.I.T. mit Server-Support, Slash-Commands und Rich-Embe
 }
 ```
 
-### Channel-Konfiguration
+### Channel Configuration
 
 ```json
 {
@@ -83,7 +83,7 @@ Discord-Integration für K.I.T. mit Server-Support, Slash-Commands und Rich-Embe
 }
 ```
 
-### Rollen-basierte Berechtigungen
+### Role-based Permissions
 
 ```json
 {
@@ -99,19 +99,19 @@ Discord-Integration für K.I.T. mit Server-Support, Slash-Commands und Rich-Embe
 
 ## Slash Commands
 
-K.I.T. registriert automatisch Slash-Commands:
+K.I.T. automatically registers slash commands:
 
-| Command | Beschreibung |
-|---------|--------------|
-| `/portfolio` | Portfolio anzeigen |
-| `/buy <pair> <amount>` | Kaufen |
-| `/sell <pair> <amount>` | Verkaufen |
-| `/analyze <pair>` | Marktanalyse |
-| `/alert <pair> <condition>` | Alert setzen |
-| `/positions` | Offene Positionen |
-| `/balance` | Guthaben |
+| Command | Description |
+|---------|-------------|
+| `/portfolio` | Show portfolio |
+| `/buy <pair> <amount>` | Buy |
+| `/sell <pair> <amount>` | Sell |
+| `/analyze <pair>` | Market analysis |
+| `/alert <pair> <condition>` | Set alert |
+| `/positions` | Open positions |
+| `/balance` | Balance |
 
-### Commands registrieren
+### Register Commands
 
 ```bash
 kit discord register-commands
@@ -120,15 +120,15 @@ kit discord register-commands --guild YOUR_GUILD_ID
 
 ## Rich Embeds
 
-K.I.T. nutzt Discord-Embeds für übersichtliche Darstellung:
+K.I.T. uses Discord embeds for clear display:
 
 ```
 ┌─────────────────────────────────────┐
-│ 📊 BTC/USDT Analyse                 │
+│ 📊 BTC/USDT Analysis                │
 ├─────────────────────────────────────┤
-│ Preis: $67,432.50 (+1.2%)          │
+│ Price: $67,432.50 (+1.2%)          │
 │                                     │
-│ Indikatoren                         │
+│ Indicators                          │
 │ RSI: 58 | MACD: Bullish | ADX: 28  │
 │                                     │
 │ Support: $65,000                    │
@@ -136,11 +136,11 @@ K.I.T. nutzt Discord-Embeds für übersichtliche Darstellung:
 │                                     │
 │ 🟢 Bullish Bias                     │
 ├─────────────────────────────────────┤
-│ [📈 Chart] [🛒 Kaufen] [🔔 Alert]   │
+│ [📈 Chart] [🛒 Buy] [🔔 Alert]      │
 └─────────────────────────────────────┘
 ```
 
-## Button-Interaktionen
+## Button Interactions
 
 ```json
 {
@@ -154,9 +154,9 @@ K.I.T. nutzt Discord-Embeds für übersichtliche Darstellung:
 }
 ```
 
-## Thread-Support
+## Thread Support
 
-K.I.T. kann in Threads arbeiten:
+K.I.T. can work in threads:
 
 ```json
 {
@@ -170,9 +170,9 @@ K.I.T. kann in Threads arbeiten:
 }
 ```
 
-## Alert-Kanal
+## Alert Channel
 
-Dedizierter Kanal für Alerts:
+Dedicated channel for alerts:
 
 ```json
 {
@@ -184,18 +184,18 @@ Dedizierter Kanal für Alerts:
 }
 ```
 
-Alert-Beispiel:
+Alert example:
 ```
 @Trading Alerts
 🔔 ALERT: BTC/USDT
 ━━━━━━━━━━━━━━━━━━━
-Bedingung: Preis > $70,000
-Aktuell: $70,150
+Condition: Price > $70,000
+Current: $70,150
 
-[📊 Analyse] [💰 Kaufen]
+[📊 Analysis] [💰 Buy]
 ```
 
-## Mehrere Server
+## Multiple Servers
 
 ```json
 {
@@ -216,9 +216,9 @@ Aktuell: $70,150
 }
 ```
 
-## Voice-Channel Status
+## Voice Channel Status
 
-K.I.T. kann seinen Status anzeigen:
+K.I.T. can display its status:
 
 ```json
 {
@@ -236,9 +236,9 @@ K.I.T. kann seinen Status anzeigen:
 }
 ```
 
-## DM-Support
+## DM Support
 
-Direkte Nachrichten für private Trading-Infos:
+Direct messages for private trading info:
 
 ```json
 {
@@ -250,9 +250,9 @@ Direkte Nachrichten für private Trading-Infos:
 }
 ```
 
-## Webhook-Integration
+## Webhook Integration
 
-Für Alerts von externen Systemen:
+For alerts from external systems:
 
 ```bash
 kit discord create-webhook --channel alerts
@@ -260,7 +260,7 @@ kit discord create-webhook --channel alerts
 
 ## Logging
 
-Alle Aktivitäten in einen Log-Channel:
+All activities to a log channel:
 
 ```json
 {
@@ -274,57 +274,57 @@ Alle Aktivitäten in einen Log-Channel:
 }
 ```
 
-## Fehlerbehebung
+## Troubleshooting
 
 <AccordionGroup>
   <Accordion title="Bot offline">
-    1. Token korrekt?
-    2. Intents aktiviert?
-    3. Bot hat Server-Berechtigung?
+    1. Token correct?
+    2. Intents enabled?
+    3. Bot has server permission?
     
     ```bash
     kit channels test discord
     ```
   </Accordion>
   
-  <Accordion title="Slash Commands fehlen">
+  <Accordion title="Slash Commands missing">
     ```bash
-    # Commands neu registrieren
+    # Re-register commands
     kit discord register-commands --force
     
-    # Guild-spezifisch (schneller)
+    # Guild-specific (faster)
     kit discord register-commands --guild YOUR_GUILD_ID
     ```
   </Accordion>
   
-  <Accordion title="Keine Berechtigung">
-    - Bot-Rolle hat Nachrichten-Rechte?
-    - Channel-spezifische Berechtigungen?
-    - User-Rolle erlaubt?
+  <Accordion title="No permission">
+    - Bot role has message permissions?
+    - Channel-specific permissions?
+    - User role allowed?
   </Accordion>
 </AccordionGroup>
 
 ## Best Practices
 
 <Tip>
-**Discord-Setup:**
-1. Separate Channels für Commands/Alerts/Logs
-2. Rollen-basierte Berechtigungen nutzen
-3. Private Trades in DMs
-4. Alert-Rolle für wichtige Notifications
-5. Threads für Trade-Diskussionen
+**Discord Setup:**
+1. Separate channels for commands/alerts/logs
+2. Use role-based permissions
+3. Private trades in DMs
+4. Alert role for important notifications
+5. Threads for trade discussions
 </Tip>
 
-## Nächste Schritte
+## Next Steps
 
 <Columns>
   <Card title="Telegram" href="/channels/telegram" icon="send">
-    Telegram-Integration.
+    Telegram integration.
   </Card>
   <Card title="Signal" href="/channels/signal" icon="shield">
-    Signal-Integration.
+    Signal integration.
   </Card>
   <Card title="Alert System" href="/skills/alert-system" icon="bell">
-    Alerts konfigurieren.
+    Configure alerts.
   </Card>
 </Columns>

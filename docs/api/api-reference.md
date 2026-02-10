@@ -1,11 +1,11 @@
 ---
-summary: "Vollständige K.I.T. API Reference"
+summary: "Complete K.I.T. API Reference"
 title: "API Reference"
 ---
 
 # K.I.T. API Reference 📖
 
-Vollständige Referenz aller API-Methoden mit Beispielen.
+Complete reference of all API methods with examples.
 
 ---
 
@@ -21,12 +21,12 @@ HTTP:      http://localhost:18799
 ### Authentication
 
 ```javascript
-// Token-basierte Auth (Header)
+// Token-based auth (Header)
 const ws = new WebSocket('ws://localhost:18799', {
   headers: { 'Authorization': 'Bearer YOUR_TOKEN' }
 });
 
-// Oder in connect params
+// Or in connect params
 ws.send(JSON.stringify({
   type: 'req',
   id: '1',
@@ -43,7 +43,7 @@ ws.send(JSON.stringify({
 
 ### `connect`
 
-Verbindung zum Gateway herstellen.
+Establish connection to the gateway.
 
 **Request:**
 ```json
@@ -79,7 +79,7 @@ Verbindung zum Gateway herstellen.
 
 ### `disconnect`
 
-Verbindung sauber trennen.
+Cleanly disconnect.
 
 ```json
 {
@@ -91,7 +91,7 @@ Verbindung sauber trennen.
 
 ### `ping`
 
-Keep-alive Ping.
+Keep-alive ping.
 
 ```json
 {
@@ -117,7 +117,7 @@ Keep-alive Ping.
 
 ### `chat.send`
 
-Nachricht an den AI Agent senden.
+Send message to the AI agent.
 
 **Request:**
 ```json
@@ -126,7 +126,7 @@ Nachricht an den AI Agent senden.
   "id": "chat_1",
   "method": "chat.send",
   "params": {
-    "message": "Analysiere BTC/USDT",
+    "message": "Analyze BTC/USDT",
     "sessionId": "sess_123",
     "stream": true
   }
@@ -139,13 +139,13 @@ Nachricht an den AI Agent senden.
 | `sessionId` | string | ❌ | Session ID (default: main) |
 | `stream` | boolean | ❌ | Stream response chunks |
 
-**Events (wenn stream=true):**
+**Events (when stream=true):**
 ```javascript
 // Start
 { "type": "event", "event": "chat.start", "payload": { "sessionId": "sess_123", "requestId": "req_1" } }
 
 // Chunks
-{ "type": "event", "event": "chat.chunk", "payload": { "chunk": "BTC ist aktuell..." } }
+{ "type": "event", "event": "chat.chunk", "payload": { "chunk": "BTC is currently..." } }
 
 // Tool Call
 { "type": "event", "event": "chat.tool_call", "payload": { "toolCall": { "name": "market_analyze" } } }
@@ -156,7 +156,7 @@ Nachricht an den AI Agent senden.
 
 ### `chat.history`
 
-Chat-Verlauf abrufen.
+Retrieve chat history.
 
 ```json
 {
@@ -179,8 +179,8 @@ Chat-Verlauf abrufen.
   "ok": true,
   "payload": {
     "messages": [
-      { "id": "msg_1", "role": "user", "content": "Hallo" },
-      { "id": "msg_2", "role": "assistant", "content": "Hallo! Wie kann ich helfen?" }
+      { "id": "msg_1", "role": "user", "content": "Hello" },
+      { "id": "msg_2", "role": "assistant", "content": "Hello! How can I help?" }
     ],
     "hasMore": false
   }
@@ -189,7 +189,7 @@ Chat-Verlauf abrufen.
 
 ### `chat.abort`
 
-Laufende Anfrage abbrechen.
+Abort running request.
 
 ```json
 {
@@ -209,7 +209,7 @@ Laufende Anfrage abbrechen.
 
 ### `portfolio.get`
 
-Portfolio-Übersicht abrufen.
+Retrieve portfolio overview.
 
 ```json
 {
@@ -259,7 +259,7 @@ Portfolio-Übersicht abrufen.
 
 ### `portfolio.pnl`
 
-Profit & Loss Analyse.
+Profit & Loss analysis.
 
 ```json
 {
@@ -274,11 +274,11 @@ Profit & Loss Analyse.
 
 | period | Description |
 |--------|-------------|
-| `24h` | Letzte 24 Stunden |
-| `7d` | Letzte 7 Tage |
-| `30d` | Letzte 30 Tage |
-| `ytd` | Year to Date |
-| `all` | Alle Zeit |
+| `24h` | Last 24 hours |
+| `7d` | Last 7 days |
+| `30d` | Last 30 days |
+| `ytd` | Year to date |
+| `all` | All time |
 
 ---
 
@@ -286,7 +286,7 @@ Profit & Loss Analyse.
 
 ### `trade.execute`
 
-Trade ausführen.
+Execute a trade.
 
 ```json
 {
@@ -337,7 +337,7 @@ Trade ausführen.
 
 ### `trade.positions`
 
-Offene Positionen abrufen.
+Retrieve open positions.
 
 ```json
 {
@@ -379,7 +379,7 @@ Offene Positionen abrufen.
 
 ### `trade.close`
 
-Position schließen.
+Close position.
 
 ```json
 {
@@ -395,7 +395,7 @@ Position schließen.
 
 ### `trade.history`
 
-Trade-Historie abrufen.
+Retrieve trade history.
 
 ```json
 {
@@ -418,7 +418,7 @@ Trade-Historie abrufen.
 
 ### `market.analyze`
 
-Marktanalyse durchführen.
+Perform market analysis.
 
 ```json
 {
@@ -464,7 +464,7 @@ Marktanalyse durchführen.
 
 ### `market.price`
 
-Aktuellen Preis abrufen.
+Get current price.
 
 ```json
 {
@@ -499,7 +499,7 @@ Aktuellen Preis abrufen.
 
 ### `market.candles`
 
-OHLCV Candles abrufen.
+Get OHLCV candles.
 
 ```json
 {
@@ -521,7 +521,7 @@ OHLCV Candles abrufen.
 
 ### `alert.create`
 
-Neuen Alert erstellen.
+Create new alert.
 
 ```json
 {
@@ -533,7 +533,7 @@ Neuen Alert erstellen.
     "pair": "BTC/USDT",
     "condition": "above",
     "value": 70000,
-    "message": "BTC hat $70k erreicht!",
+    "message": "BTC reached $70k!",
     "channels": ["telegram"]
   }
 }
@@ -541,13 +541,13 @@ Neuen Alert erstellen.
 
 | type | condition | Description |
 |------|-----------|-------------|
-| `price` | `above`, `below`, `cross` | Preis-Alert |
-| `indicator` | `above`, `below`, `cross` | Indikator-Alert |
-| `portfolio` | `above`, `below`, `change` | Portfolio-Alert |
+| `price` | `above`, `below`, `cross` | Price alert |
+| `indicator` | `above`, `below`, `cross` | Indicator alert |
+| `portfolio` | `above`, `below`, `change` | Portfolio alert |
 
 ### `alert.list`
 
-Alerts auflisten.
+List alerts.
 
 ```json
 {
@@ -559,7 +559,7 @@ Alerts auflisten.
 
 ### `alert.delete`
 
-Alert löschen.
+Delete alert.
 
 ```json
 {
@@ -578,7 +578,7 @@ Alert löschen.
 
 ### `backtest.run`
 
-Backtest ausführen.
+Run backtest.
 
 ```json
 {
@@ -626,7 +626,7 @@ Backtest ausführen.
 
 ### `backtest.optimize`
 
-Parameter-Optimierung.
+Parameter optimization.
 
 ```json
 {
@@ -651,7 +651,7 @@ Parameter-Optimierung.
 
 ### `cron.list`
 
-Geplante Jobs auflisten.
+List scheduled jobs.
 
 ```json
 {
@@ -663,7 +663,7 @@ Geplante Jobs auflisten.
 
 ### `cron.add`
 
-Neuen Job erstellen.
+Create new job.
 
 ```json
 {
@@ -673,7 +673,7 @@ Neuen Job erstellen.
   "params": {
     "name": "daily_report",
     "schedule": "0 9 * * *",
-    "prompt": "Erstelle meinen täglichen Portfolio-Report",
+    "prompt": "Create my daily portfolio report",
     "enabled": true
   }
 }
@@ -681,7 +681,7 @@ Neuen Job erstellen.
 
 ### `cron.run`
 
-Job manuell ausführen.
+Run job manually.
 
 ```json
 {
@@ -696,7 +696,7 @@ Job manuell ausführen.
 
 ### `cron.remove`
 
-Job löschen.
+Delete job.
 
 ```json
 {
@@ -715,7 +715,7 @@ Job löschen.
 
 ### `sessions.list`
 
-Sessions auflisten.
+List sessions.
 
 ```json
 {
@@ -727,7 +727,7 @@ Sessions auflisten.
 
 ### `sessions.get`
 
-Session Details abrufen.
+Get session details.
 
 ```json
 {
@@ -742,7 +742,7 @@ Session Details abrufen.
 
 ### `sessions.create`
 
-Neue Session erstellen.
+Create new session.
 
 ```json
 {
@@ -762,7 +762,7 @@ Neue Session erstellen.
 
 ### `memory.search`
 
-In Memory suchen.
+Search memory.
 
 ```json
 {
@@ -778,7 +778,7 @@ In Memory suchen.
 
 ### `memory.get`
 
-Memory-Datei abrufen.
+Get memory file.
 
 ```json
 {
@@ -836,7 +836,7 @@ const order = await client.trade.execute({
 });
 
 // Stream chat
-for await (const chunk of client.chat.stream('Analyse BTC')) {
+for await (const chunk of client.chat.stream('Analyze BTC')) {
   process.stdout.write(chunk);
 }
 
@@ -867,7 +867,7 @@ async def main():
     )
     
     # Chat
-    async for chunk in client.chat.stream("Analyse BTC"):
+    async for chunk in client.chat.stream("Analyze BTC"):
         print(chunk, end="")
     
     await client.disconnect()
@@ -881,7 +881,7 @@ asyncio.run(main())
 # Health check
 curl http://localhost:18799/health
 
-# Hinweis: Für vollständige API Funktionalität, nutze WebSocket
+# Note: For full API functionality, use WebSocket
 ```
 
 ---
@@ -910,5 +910,5 @@ curl http://localhost:18799/health
 ---
 
 **Version:** 1.0.0  
-**Erstellt:** 2026-02-10  
-**Autor:** K.I.T. [Sprint-Agent]
+**Created:** 2026-02-10  
+**Author:** K.I.T. [Sprint-Agent]
