@@ -1,9 +1,23 @@
 /**
  * K.I.T. Tools Index
  * 
- * Central export point for all K.I.T. trading tools.
- * Issues: #3, #4, #5, #6, #7, #8, #9, #10, #13
+ * Central export point for all K.I.T. tools.
+ * 
+ * System Tools (OpenClaw-style):
+ * - read, write, edit: File operations
+ * - exec, process: Command execution
+ * - config_get, config_set: Configuration management
+ * - skills_list, skills_enable, skills_disable: Skills management
+ * - onboarding_start, onboarding_continue: Setup wizard
+ * 
+ * Trading Tools:
+ * - auto-trader, market-analysis, portfolio-tracker
+ * - alert-system, tax-tracker, backtester
+ * - defi-connector, scheduler
  */
+
+// System Tools (OpenClaw-style)
+export * from './system';
 
 // Types
 export * from './types';

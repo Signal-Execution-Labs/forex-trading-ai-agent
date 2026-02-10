@@ -11,6 +11,7 @@ export { MemoryManager, createMemoryManager } from './memory-manager';
 export { HeartbeatManager, createHeartbeatManager, parseDuration } from './heartbeat';
 export { CronManager, createCronManager, CronJob } from './cron-manager';
 export { ChatManager, createChatManager, ChatMessage, ChatSession } from './chat-manager';
+export { ToolEnabledChatHandler, getToolEnabledChatHandler } from './tool-enabled-chat';
 export { 
   ProtocolHandler, 
   ProtocolFrame,

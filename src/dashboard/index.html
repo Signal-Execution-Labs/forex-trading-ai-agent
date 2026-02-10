@@ -17,6 +17,7 @@
       --warning: #f59e0b;
       --danger: #ef4444;
       --border: #2a2a3a;
+      --tool-bg: #1a1a2a;
     }
     
     * {
@@ -99,81 +100,110 @@
       max-height: calc(100vh - 80px);
     }
     
-    /* Chat Panel */
-    .chat-panel {
-      background: var(--bg-secondary);
-      border-radius: 12px;
-      border: 1px solid var(--border);
+    /* Chat Section */
+    .chat-section {
       display: flex;
       flex-direction: column;
+      background: var(--bg-secondary);
+      border-radius: 1rem;
       overflow: hidden;
-    }
-    
-    .chat-header {
-      padding: 1rem;
-      border-bottom: 1px solid var(--border);
-      font-weight: 600;
     }
     
     .chat-messages {
       flex: 1;
       overflow-y: auto;
-      padding: 1rem;
+      padding: 1.5rem;
       display: flex;
       flex-direction: column;
       gap: 1rem;
     }
     
     .message {
-      max-width: 80%;
-      padding: 0.75rem 1rem;
-      border-radius: 12px;
+      max-width: 85%;
+      padding: 1rem 1.25rem;
+      border-radius: 1rem;
       line-height: 1.5;
     }
     
     .message.user {
-      align-self: flex-end;
       background: var(--accent);
+      margin-left: auto;
+      border-bottom-right-radius: 0.25rem;
     }
     
     .message.assistant {
-      align-self: flex-start;
       background: var(--bg-tertiary);
+      border-bottom-left-radius: 0.25rem;
     }
     
     .message.system {
-      align-self: center;
       background: transparent;
+      border: 1px dashed var(--border);
       color: var(--text-secondary);
       font-size: 0.875rem;
       text-align: center;
+      max-width: 100%;
+    }
+    
+    .message.tool {
+      background: var(--tool-bg);
+      border-left: 3px solid var(--warning);
+      font-size: 0.85rem;
+      padding: 0.75rem 1rem;
+    }
+    
+    .message.tool .tool-name {
+      color: var(--warning);
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+    
+    .message.tool pre {
+      background: rgba(0,0,0,0.3);
+      padding: 0.5rem;
+      border-radius: 0.25rem;
+      overflow-x: auto;
+      font-size: 0.8rem;
+      margin-top: 0.5rem;
     }
     
     .message pre {
-      background: var(--bg-primary);
+      background: rgba(0, 0, 0, 0.3);
       padding: 0.75rem;
-      border-radius: 8px;
+      border-radius: 0.5rem;
       overflow-x: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
       margin: 0.5rem 0;
-      font-size: 0.875rem;
+    }
+    
+    .message code {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 0.15rem 0.4rem;
+      border-radius: 0.25rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9em;
     }
     
     .chat-input-container {
-      padding: 1rem;
+      padding: 1rem 1.5rem;
       border-top: 1px solid var(--border);
       display: flex;
-      gap: 0.5rem;
+      gap: 0.75rem;
     }
     
     .chat-input {
       flex: 1;
       background: var(--bg-tertiary);
       border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 0.75rem 1rem;
+      border-radius: 0.75rem;
+      padding: 0.875rem 1rem;
       color: var(--text-primary);
-      font-size: 1rem;
+      font-family: inherit;
+      font-size: 0.95rem;
       resize: none;
+      min-height: 50px;
+      max-height: 150px;
     }
     
     .chat-input:focus {
@@ -184,8 +214,8 @@
     .send-btn {
       background: var(--accent);
       border: none;
-      border-radius: 8px;
-      padding: 0.75rem 1.5rem;
+      border-radius: 0.75rem;
+      padding: 0 1.5rem;
       color: white;
       font-weight: 600;
       cursor: pointer;
@@ -196,42 +226,34 @@
       background: var(--accent-hover);
     }
     
-    .send-btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-    
     /* Side Panel */
     .side-panel {
       display: flex;
       flex-direction: column;
       gap: 1rem;
+      overflow-y: auto;
     }
     
     .panel-card {
       background: var(--bg-secondary);
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      padding: 1rem;
+      border-radius: 1rem;
+      padding: 1.25rem;
     }
     
     .panel-card h3 {
-      font-size: 0.875rem;
-      color: var(--text-secondary);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
+      font-size: 1rem;
       margin-bottom: 1rem;
+      color: var(--text-secondary);
     }
     
     .stat-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 0.75rem;
+      gap: 1rem;
     }
     
     .stat-item {
       text-align: center;
-      padding: 0.5rem;
     }
     
     .stat-value {
@@ -239,15 +261,15 @@
       font-weight: 700;
     }
     
-    .stat-label {
-      font-size: 0.75rem;
-      color: var(--text-secondary);
-    }
-    
     .stat-value.positive { color: var(--success); }
     .stat-value.negative { color: var(--danger); }
     
-    /* Quick Actions */
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      margin-top: 0.25rem;
+    }
+    
     .quick-actions {
       display: flex;
       flex-direction: column;
@@ -257,28 +279,58 @@
     .quick-btn {
       background: var(--bg-tertiary);
       border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 0.75rem;
+      border-radius: 0.5rem;
+      padding: 0.75rem 1rem;
       color: var(--text-primary);
-      font-size: 0.875rem;
-      cursor: pointer;
       text-align: left;
+      cursor: pointer;
       transition: all 0.2s;
+      font-size: 0.875rem;
     }
     
     .quick-btn:hover {
+      background: var(--accent);
       border-color: var(--accent);
-      background: rgba(99, 102, 241, 0.1);
     }
     
     /* Responsive */
     @media (max-width: 900px) {
       main {
         grid-template-columns: 1fr;
+        grid-template-rows: 1fr auto;
       }
+      
       .side-panel {
-        display: none;
+        flex-direction: row;
+        overflow-x: auto;
       }
+      
+      .panel-card {
+        min-width: 250px;
+      }
+    }
+
+    /* Typing indicator */
+    .typing-indicator {
+      display: flex;
+      gap: 4px;
+      padding: 0.5rem 0;
+    }
+    
+    .typing-indicator span {
+      width: 8px;
+      height: 8px;
+      background: var(--text-secondary);
+      border-radius: 50%;
+      animation: typing 1.4s infinite;
+    }
+    
+    .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+    
+    @keyframes typing {
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+      30% { transform: translateY(-4px); opacity: 1; }
     }
   </style>
 </head>
@@ -295,11 +347,10 @@
   </header>
   
   <main>
-    <div class="chat-panel">
-      <div class="chat-header">💬 Chat with K.I.T.</div>
+    <div class="chat-section">
       <div class="chat-messages" id="messages">
         <div class="message system">
-          Welcome to K.I.T. Dashboard. Type a message to start chatting.
+          Welcome to K.I.T. Dashboard. Type a message to start chatting with your AI financial agent.
         </div>
       </div>
       <div class="chat-input-container">
@@ -331,17 +382,17 @@
       <div class="panel-card">
         <h3>⚡ Quick Actions</h3>
         <div class="quick-actions">
-          <button class="quick-btn" onclick="sendQuick('Show my portfolio')">
-            📈 View Portfolio
+          <button class="quick-btn" onclick="sendQuick('Help me get started')">
+            🚀 Get Started
           </button>
-          <button class="quick-btn" onclick="sendQuick('Analyze BTC/USDT')">
-            🔍 Analyze BTC
+          <button class="quick-btn" onclick="sendQuick('Show my status')">
+            📊 Check Status
           </button>
-          <button class="quick-btn" onclick="sendQuick('What are the market trends?')">
-            📊 Market Trends
+          <button class="quick-btn" onclick="sendQuick('List available skills')">
+            🔧 Show Skills
           </button>
-          <button class="quick-btn" onclick="sendQuick('Show active signals')">
-            📡 Active Signals
+          <button class="quick-btn" onclick="sendQuick('Set up Telegram')">
+            📱 Setup Telegram
           </button>
         </div>
       </div>
@@ -349,7 +400,7 @@
       <div class="panel-card">
         <h3>🤖 Agent Status</h3>
         <div id="agentStatus" style="color: var(--text-secondary); font-size: 0.875rem;">
-          Loading...
+          Ready to assist
         </div>
       </div>
     </div>
@@ -359,6 +410,9 @@
     const WS_URL = `ws://${window.location.hostname}:${window.location.port}`;
     let ws = null;
     let reconnectAttempts = 0;
+    let currentResponse = '';
+    let isStreaming = false;
+    let streamingDiv = null;
     
     const messagesDiv = document.getElementById('messages');
     const chatInput = document.getElementById('chatInput');
@@ -390,7 +444,6 @@
         statusText.textContent = 'Disconnected';
         addMessage('system', '⚠️ Disconnected. Reconnecting...');
         
-        // Reconnect with exponential backoff
         const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
         reconnectAttempts++;
         setTimeout(connect, delay);
@@ -403,33 +456,94 @@
     
     function handleMessage(msg) {
       switch (msg.type) {
-        case 'response':
-        case 'message':
-          addMessage('assistant', msg.content);
+        case 'chunk':
+          // Streaming chunk - append to current response
+          if (!isStreaming) {
+            isStreaming = true;
+            streamingDiv = addMessageElement('assistant', '');
+          }
+          currentResponse += msg.content;
+          streamingDiv.innerHTML = formatContent(currentResponse);
+          messagesDiv.scrollTop = messagesDiv.scrollHeight;
           break;
+          
+        case 'tool_call':
+          // Tool is being called
+          addToolMessage('calling', msg.name, msg.args);
+          break;
+          
+        case 'tool_result':
+          // Tool result received
+          addToolMessage('result', msg.name, msg.result);
+          break;
+          
+        case 'message':
+          // Final message
+          if (isStreaming) {
+            isStreaming = false;
+            currentResponse = '';
+            streamingDiv = null;
+          } else {
+            addMessage('assistant', msg.content);
+          }
+          break;
+          
         case 'status':
           addMessage('system', msg.content);
           break;
-        case 'trade':
-          addMessage('system', `⚡ Trade: ${msg.content}`);
+          
+        case 'error':
+          addMessage('system', '❌ ' + msg.content);
           break;
+          
         default:
           console.log('Unknown message type:', msg);
       }
     }
     
-    function addMessage(type, content) {
-      const div = document.createElement('div');
-      div.className = `message ${type}`;
-      
-      // Simple markdown-ish rendering
-      content = content
+    function formatContent(content) {
+      return content
         .replace(/```([\s\S]*?)```/g, '<pre>$1</pre>')
         .replace(/`([^`]+)`/g, '<code>$1</code>')
         .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
         .replace(/\n/g, '<br>');
+    }
+    
+    function addMessageElement(type, content) {
+      const div = document.createElement('div');
+      div.className = `message ${type}`;
+      div.innerHTML = formatContent(content);
+      messagesDiv.appendChild(div);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      return div;
+    }
+    
+    function addMessage(type, content) {
+      return addMessageElement(type, content);
+    }
+    
+    function addToolMessage(action, toolName, data) {
+      const div = document.createElement('div');
+      div.className = 'message tool';
       
-      div.innerHTML = content;
+      const icon = action === 'calling' ? '🔧' : '✅';
+      const label = action === 'calling' ? 'Calling' : 'Result';
+      
+      let dataHtml = '';
+      if (data) {
+        const dataStr = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+        if (dataStr.length > 500) {
+          dataHtml = `<pre>${dataStr.substring(0, 500)}...</pre>`;
+        } else {
+          dataHtml = `<pre>${dataStr}</pre>`;
+        }
+      }
+      
+      div.innerHTML = `
+        <div class="tool-name">${icon} ${label}: ${toolName}</div>
+        ${dataHtml}
+      `;
+      
       messagesDiv.appendChild(div);
       messagesDiv.scrollTop = messagesDiv.scrollHeight;
     }
@@ -439,8 +553,13 @@
       
       addMessage('user', text);
       
+      // Reset streaming state
+      isStreaming = false;
+      currentResponse = '';
+      streamingDiv = null;
+      
       ws.send(JSON.stringify({
-        type: 'message',
+        type: 'chat',
         content: text.trim(),
         timestamp: Date.now()
       }));

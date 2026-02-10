@@ -37,8 +37,46 @@ export {
   LoggingConfig
 } from './config';
 
-// Trading Tools
-export * from './tools';
+// Trading Tools (exclude ToolDefinition to avoid conflict with gateway)
+export {
+  // System tools
+  getToolRegistry,
+  createDefaultToolRegistry,
+  ToolRegistry,
+  ToolHandler,
+  ToolContext,
+  // File tools
+  readToolDefinition, readToolHandler,
+  writeToolDefinition, writeToolHandler,
+  editToolDefinition, editToolHandler,
+  listToolDefinition, listToolHandler,
+  // Exec tools
+  execToolDefinition, execToolHandler,
+  processToolDefinition, processToolHandler,
+  // Config tools
+  configGetToolDefinition, configGetToolHandler,
+  configSetToolDefinition, configSetToolHandler,
+  configDeleteToolDefinition, configDeleteToolHandler,
+  envSetToolDefinition, envSetToolHandler,
+  statusToolDefinition, statusToolHandler,
+  userProfileToolDefinition, userProfileToolHandler,
+  // Skills tools
+  skillsListToolDefinition, skillsListToolHandler,
+  skillsEnableToolDefinition, skillsEnableToolHandler,
+  skillsDisableToolDefinition, skillsDisableToolHandler,
+  skillsSetupToolDefinition, skillsSetupToolHandler,
+  // Onboarding
+  onboardingStartToolDefinition, onboardingStartToolHandler,
+  onboardingContinueToolDefinition, onboardingContinueToolHandler,
+  onboardingStatusToolDefinition, onboardingStatusToolHandler,
+  // Trading tools
+  TRADING_TOOLS,
+  getTradingTools,
+  getMockHandlers,
+  MOCK_TOOL_HANDLERS,
+  // Tool factory
+  createAllTools,
+} from './tools';
 
 // Model Providers
 export * from './providers';
