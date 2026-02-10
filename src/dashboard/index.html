@@ -575,26 +575,7 @@
         ws.send(JSON.stringify({ type: 'status_request' }));
       };
       
-      ws.onmessage = (e) => {
-        const data = JSON.parse(e.data);
-        
-        if (data.type === 'message') {
-          // Remove thinking indicator if present
-          const thinkingEl = document.getElementById('thinking');
-          if (thinkingEl) thinkingEl.remove();
-          
-          addMessage('kit', data.content);
-          thinking = false;
-          chatInput.disabled = false;
-          sendBtn.disabled = false;
-        } else if (data.type === 'tool_call') {
-          addMessage('tool', `🔧 Using: ${data.name}`, false);
-        } else if (data.type === 'chunk') {
-          // Handle streaming - update last message or create new
-        } else if (data.type === 'status') {
-          updateDashboard(data);
-        }
-      };
+      ws.onmessage = handleWebSocketMessage;
       
       ws.onclose = () => {
         connected = false;
@@ -986,9 +967,8 @@
       }
     }
     
-    // Override WebSocket onmessage to handle canvas events
-    const originalOnMessage = ws.onmessage;
-    ws.onmessage = (e) => {
+    // Enhanced message handler with canvas support
+    function handleWebSocketMessage(e) {
       const data = JSON.parse(e.data);
       
       // Handle canvas events
@@ -996,7 +976,7 @@
         handleCanvasMessage(data);
       }
       
-      // Call original handler for other messages
+      // Handle regular messages
       if (data.type === 'message') {
         const thinkingEl = document.getElementById('thinking');
         if (thinkingEl) thinkingEl.remove();
@@ -1009,7 +989,7 @@
       } else if (data.type === 'status') {
         updateDashboard(data);
       }
-    };
+    }
     
     // Add keyboard shortcuts
     document.addEventListener('keydown', (e) => {
