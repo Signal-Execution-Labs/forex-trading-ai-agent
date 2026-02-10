@@ -1,5 +1,15 @@
 # K.I.T. - Knight Industries Trading
 
+<p align="center">
+  <img src="https://img.shields.io/badge/🎬_POWERED_BY-TRADERLIFESTYLE_ON_YT-red?style=for-the-badge&labelColor=black" alt="Powered by TraderLifestyle"/>
+</p>
+
+<h3 align="center">
+  ⭐ POWERED BY <a href="https://youtube.com/@TraderLifestyle">TRADERLIFESTYLE ON YOUTUBE</a> ⭐
+</h3>
+
+---
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue.svg)](https://www.typescriptlang.org/)
@@ -339,6 +349,21 @@ K.I.T. is a **tool**, not financial advice. Trading involves risk.
   <b>K.I.T. - Because your wealth deserves an AI that never sleeps.</b> 🌙
 </p>
 
+---
+
+<h2 align="center">
+  🎬 POWERED BY <a href="https://youtube.com/@TraderLifestyle">TRADERLIFESTYLE ON YOUTUBE</a> 🎬
+</h2>
+
 <p align="center">
-  <a href="https://github.com/kayzaa/k.i.t.-bot">GitHub</a>
+  <a href="https://youtube.com/@TraderLifestyle">
+    <img src="https://img.shields.io/badge/YouTube-TraderLifestyle-red?style=for-the-badge&logo=youtube" alt="TraderLifestyle YouTube"/>
+  </a>
+</p>
+
+---
+
+<p align="center">
+  <a href="https://github.com/kayzaa/k.i.t.-bot">GitHub</a> •
+  <a href="https://youtube.com/@TraderLifestyle">YouTube</a>
 </p>
