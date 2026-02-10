@@ -230,6 +230,11 @@ import {
   memoryListToolDefinition, memoryListToolHandler,
 } from './memory-tools';
 
+import {
+  getBinaryOptionsTools,
+  getBinaryOptionsHandlers,
+} from '../binary-options-tools';
+
 export function createDefaultToolRegistry(workspaceDir?: string): ToolRegistry {
   const registry = new ToolRegistry(workspaceDir);
 
@@ -282,6 +287,24 @@ export function createDefaultToolRegistry(workspaceDir?: string): ToolRegistry {
   registry.register(memoryWriteToolDefinition, memoryWriteToolHandler, 'system');
   registry.register(memoryUpdateToolDefinition, memoryUpdateToolHandler, 'system');
   registry.register(memoryListToolDefinition, memoryListToolHandler, 'system');
+
+  // Binary Options / BinaryFaster trading tools
+  const binaryTools = getBinaryOptionsTools();
+  const binaryHandlers = getBinaryOptionsHandlers();
+  for (const tool of binaryTools) {
+    const handler = binaryHandlers[tool.name];
+    if (handler) {
+      registry.register(
+        {
+          name: tool.name,
+          description: tool.description,
+          parameters: tool.parameters as ToolDefinition['parameters'],
+        },
+        async (args, _context) => handler(args),
+        'trading'
+      );
+    }
+  }
 
   return registry;
 }
