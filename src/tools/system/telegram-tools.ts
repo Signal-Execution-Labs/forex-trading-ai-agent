@@ -429,6 +429,311 @@ export const telegramSetChatIdToolHandler: ToolHandler = async (args) => {
 };
 
 // ============================================================================
+// Telegram Send with Buttons Tool
+// ============================================================================
+
+export const telegramSendWithButtonsToolDefinition: ToolDefinition = {
+  name: 'telegram_send_with_buttons',
+  description: 'Send a message with inline keyboard buttons. Useful for confirmations, menus, or quick actions.',
+  parameters: {
+    type: 'object',
+    properties: {
+      chatId: {
+        type: 'string',
+        description: 'Telegram chat ID to send to',
+      },
+      message: {
+        type: 'string',
+        description: 'Message text to send',
+      },
+      buttons: {
+        type: 'array',
+        description: 'Array of button rows. Each row is an array of buttons with text and callbackData or url.',
+        items: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              text: { type: 'string', description: 'Button text' },
+              callbackData: { type: 'string', description: 'Callback data (for action buttons)' },
+              url: { type: 'string', description: 'URL to open (for link buttons)' },
+            },
+            required: ['text'],
+          },
+        },
+      },
+      parseMode: {
+        type: 'string',
+        description: 'Parse mode: HTML or Markdown',
+        enum: ['HTML', 'Markdown'],
+      },
+    },
+    required: ['chatId', 'message', 'buttons'],
+  },
+};
+
+export const telegramSendWithButtonsToolHandler: ToolHandler = async (args) => {
+  const { chatId, message, buttons, parseMode } = args as {
+    chatId: string;
+    message: string;
+    buttons: Array<Array<{ text: string; callbackData?: string; url?: string }>>;
+    parseMode?: string;
+  };
+
+  if (!fs.existsSync(CONFIG_PATH)) {
+    return { success: false, error: 'Telegram not configured. Use telegram_setup first.' };
+  }
+
+  const config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+  const token = config.channels?.telegram?.token;
+
+  if (!token) {
+    return { success: false, error: 'Telegram not configured. Use telegram_setup first.' };
+  }
+
+  try {
+    const inlineKeyboard = buttons.map(row =>
+      row.map(btn => {
+        if (btn.url) return { text: btn.text, url: btn.url };
+        return { text: btn.text, callback_data: btn.callbackData || btn.text };
+      })
+    );
+
+    const params: any = {
+      chat_id: chatId,
+      text: message,
+      reply_markup: { inline_keyboard: inlineKeyboard },
+    };
+    if (parseMode) params.parse_mode = parseMode;
+
+    const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+
+    const data = await response.json() as any;
+
+    if (!data.ok) {
+      return { success: false, error: data.description };
+    }
+
+    return {
+      success: true,
+      messageId: data.result.message_id,
+      chatId: data.result.chat.id,
+    };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Send failed' };
+  }
+};
+
+// ============================================================================
+// Telegram React Tool
+// ============================================================================
+
+export const telegramReactToolDefinition: ToolDefinition = {
+  name: 'telegram_react',
+  description: 'Add an emoji reaction to a message.',
+  parameters: {
+    type: 'object',
+    properties: {
+      chatId: {
+        type: 'string',
+        description: 'Telegram chat ID',
+      },
+      messageId: {
+        type: 'number',
+        description: 'Message ID to react to',
+      },
+      emoji: {
+        type: 'string',
+        description: 'Emoji to react with (e.g., 👍, ❤️, 🔥, 👀)',
+      },
+    },
+    required: ['chatId', 'messageId', 'emoji'],
+  },
+};
+
+export const telegramReactToolHandler: ToolHandler = async (args) => {
+  const { chatId, messageId, emoji } = args as {
+    chatId: string;
+    messageId: number;
+    emoji: string;
+  };
+
+  if (!fs.existsSync(CONFIG_PATH)) {
+    return { success: false, error: 'Telegram not configured. Use telegram_setup first.' };
+  }
+
+  const config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+  const token = config.channels?.telegram?.token;
+
+  if (!token) {
+    return { success: false, error: 'Telegram not configured. Use telegram_setup first.' };
+  }
+
+  try {
+    const response = await fetch(`https://api.telegram.org/bot${token}/setMessageReaction`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        message_id: messageId,
+        reaction: [{ type: 'emoji', emoji }],
+      }),
+    });
+
+    const data = await response.json() as any;
+
+    if (!data.ok) {
+      return {
+        success: false,
+        error: data.description,
+        note: 'Reactions may not be available in all chats (requires Telegram Premium or certain chat settings)',
+      };
+    }
+
+    return { success: true, emoji, messageId };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Reaction failed' };
+  }
+};
+
+// ============================================================================
+// Telegram Edit Message Tool
+// ============================================================================
+
+export const telegramEditToolDefinition: ToolDefinition = {
+  name: 'telegram_edit',
+  description: 'Edit an existing message.',
+  parameters: {
+    type: 'object',
+    properties: {
+      chatId: {
+        type: 'string',
+        description: 'Telegram chat ID',
+      },
+      messageId: {
+        type: 'number',
+        description: 'Message ID to edit',
+      },
+      text: {
+        type: 'string',
+        description: 'New message text',
+      },
+      parseMode: {
+        type: 'string',
+        description: 'Parse mode: HTML or Markdown',
+        enum: ['HTML', 'Markdown'],
+      },
+    },
+    required: ['chatId', 'messageId', 'text'],
+  },
+};
+
+export const telegramEditToolHandler: ToolHandler = async (args) => {
+  const { chatId, messageId, text, parseMode } = args as {
+    chatId: string;
+    messageId: number;
+    text: string;
+    parseMode?: string;
+  };
+
+  if (!fs.existsSync(CONFIG_PATH)) {
+    return { success: false, error: 'Telegram not configured. Use telegram_setup first.' };
+  }
+
+  const config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+  const token = config.channels?.telegram?.token;
+
+  if (!token) {
+    return { success: false, error: 'Telegram not configured. Use telegram_setup first.' };
+  }
+
+  try {
+    const params: any = {
+      chat_id: chatId,
+      message_id: messageId,
+      text,
+    };
+    if (parseMode) params.parse_mode = parseMode;
+
+    const response = await fetch(`https://api.telegram.org/bot${token}/editMessageText`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+
+    const data = await response.json() as any;
+
+    if (!data.ok) {
+      return { success: false, error: data.description };
+    }
+
+    return { success: true, messageId };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Edit failed' };
+  }
+};
+
+// ============================================================================
+// Telegram Delete Message Tool
+// ============================================================================
+
+export const telegramDeleteToolDefinition: ToolDefinition = {
+  name: 'telegram_delete',
+  description: 'Delete a message.',
+  parameters: {
+    type: 'object',
+    properties: {
+      chatId: {
+        type: 'string',
+        description: 'Telegram chat ID',
+      },
+      messageId: {
+        type: 'number',
+        description: 'Message ID to delete',
+      },
+    },
+    required: ['chatId', 'messageId'],
+  },
+};
+
+export const telegramDeleteToolHandler: ToolHandler = async (args) => {
+  const { chatId, messageId } = args as { chatId: string; messageId: number };
+
+  if (!fs.existsSync(CONFIG_PATH)) {
+    return { success: false, error: 'Telegram not configured. Use telegram_setup first.' };
+  }
+
+  const config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+  const token = config.channels?.telegram?.token;
+
+  if (!token) {
+    return { success: false, error: 'Telegram not configured. Use telegram_setup first.' };
+  }
+
+  try {
+    const response = await fetch(`https://api.telegram.org/bot${token}/deleteMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, message_id: messageId }),
+    });
+
+    const data = await response.json() as any;
+
+    if (!data.ok) {
+      return { success: false, error: data.description };
+    }
+
+    return { success: true, deleted: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Delete failed' };
+  }
+};
+
+// ============================================================================
 // Telegram Get Updates Tool (for testing)
 // ============================================================================
 
