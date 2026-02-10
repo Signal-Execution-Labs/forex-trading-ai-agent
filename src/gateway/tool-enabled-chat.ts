@@ -366,8 +366,10 @@ const CHANNELS = [
 
 const SKILL_CATEGORIES = [
   { id: 'trading', name: '📈 Trading', skills: ['binary-options', 'metatrader', 'auto-trader', 'signal-copier'] },
+  { id: 'stocks', name: '📊 Stocks & ETFs', skills: ['stock-portfolio', 'dividend-tracker', 'etf-manager', 'stock-screener'] },
   { id: 'crypto', name: '🪙 Crypto & DeFi', skills: ['exchange-connector', 'defi-connector', 'wallet-connector', 'airdrop-hunter'] },
-  { id: 'analysis', name: '📊 Analysis', skills: ['market-analysis', 'whale-tracker', 'portfolio-tracker', 'backtester'] },
+  { id: 'swap', name: '🔄 Swap & Liquidity', skills: ['token-swap', 'liquidity-pools', 'yield-farming', 'arbitrage-finder'] },
+  { id: 'analysis', name: '🔍 Analysis', skills: ['market-analysis', 'whale-tracker', 'portfolio-tracker', 'backtester'] },
   { id: 'web', name: '🌐 Web Tools', skills: ['web-search', 'web-fetch', 'browser-automation', 'image-analysis'] },
   { id: 'automation', name: '⏰ Automation', skills: ['cron-jobs', 'heartbeat', 'scheduled-tasks', 'alerts'] },
   { id: 'communication', name: '💬 Communication', skills: ['discord', 'slack', 'tts-voice', 'notifications'] },
