@@ -838,10 +838,74 @@ export class GatewayServer extends EventEmitter {
   }
 
   /**
+   * Get dashboard data
+   */
+  private getDashboardData(): any {
+    const fs = require('fs');
+    const configPath = path.join(this.config.stateDir, 'config.json');
+    const skillsDir = path.join(__dirname, '..', '..', 'skills');
+    
+    // Load config
+    let config: any = {};
+    let user: any = null;
+    let channels: any = {};
+    
+    if (fs.existsSync(configPath)) {
+      try {
+        config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        user = config.user;
+        channels = config.channels || {};
+      } catch {}
+    }
+    
+    // Count skills
+    let skillsActive = 0;
+    let skillsTotal = 0;
+    const skillsList: { name: string; active: boolean }[] = [];
+    
+    if (fs.existsSync(skillsDir)) {
+      const dirs = fs.readdirSync(skillsDir).filter((d: string) => {
+        const skillPath = path.join(skillsDir, d, 'SKILL.md');
+        return fs.existsSync(skillPath);
+      });
+      skillsTotal = dirs.length;
+      
+      // Check which skills are enabled in config
+      const enabledSkills = config.skills || {};
+      
+      for (const dir of dirs.slice(0, 20)) { // First 20
+        const isActive = enabledSkills[dir]?.enabled !== false;
+        if (isActive) skillsActive++;
+        skillsList.push({ name: dir, active: isActive });
+      }
+    }
+    
+    // Check channel status
+    const telegramConnected = !!channels.telegram?.token;
+    const whatsappConnected = fs.existsSync(path.join(this.config.stateDir, 'credentials', 'whatsapp', 'creds.json'));
+    
+    return {
+      user,
+      skillsActive,
+      skillsTotal,
+      skillsList,
+      channels: {
+        telegram: { connected: telegramConnected, username: channels.telegram?.botUsername },
+        whatsapp: { connected: whatsappConnected },
+      },
+      portfolio: config.portfolio || { totalValue: 0, change24h: 0 },
+    };
+  }
+
+  /**
    * Get inline dashboard HTML
    */
   private getInlineDashboard(): string {
     const health = this.getHealth();
+    const data = this.getDashboardData();
+    const uptimeHours = Math.floor(health.uptime / 3600000);
+    const uptimeMinutes = Math.floor((health.uptime % 3600000) / 60000);
+    
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -855,105 +919,267 @@ export class GatewayServer extends EventEmitter {
       background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
       color: #fff;
       min-height: 100vh;
-      padding: 2rem;
     }
-    .container { max-width: 1200px; margin: 0 auto; }
+    .container { max-width: 1400px; margin: 0 auto; padding: 1.5rem; }
     .header {
-      text-align: center;
-      margin-bottom: 3rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
     }
+    .logo-section { display: flex; align-items: center; gap: 1rem; }
     .logo {
-      font-size: 3rem;
+      font-size: 2rem;
       font-weight: bold;
       background: linear-gradient(90deg, #00d4ff, #7b2fff);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      margin-bottom: 0.5rem;
     }
-    .tagline { color: #888; font-size: 1.1rem; }
-    .grid {
+    .tagline { color: #888; font-size: 0.9rem; }
+    .user-section { text-align: right; }
+    .user-name { font-size: 1.1rem; color: #00d4ff; }
+    .status-badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 1rem;
+      font-size: 0.8rem;
+      background: rgba(0,255,136,0.2);
+      color: #00ff88;
+    }
+    
+    .dashboard-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 1.5rem;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.5rem;
     }
+    @media (max-width: 1200px) { .dashboard-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 600px) { .dashboard-grid { grid-template-columns: 1fr; } }
+    
     .card {
       background: rgba(255,255,255,0.05);
       border: 1px solid rgba(255,255,255,0.1);
       border-radius: 1rem;
-      padding: 1.5rem;
+      padding: 1.25rem;
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
     }
     .card-title {
-      font-size: 0.9rem;
+      font-size: 0.8rem;
       color: #888;
       text-transform: uppercase;
-      margin-bottom: 1rem;
+      letter-spacing: 0.5px;
     }
+    .card-icon { font-size: 1.25rem; }
     .card-value {
-      font-size: 2rem;
+      font-size: 1.75rem;
       font-weight: bold;
     }
-    .status-ok { color: #00ff88; }
-    .status-warn { color: #ffaa00; }
-    .info { font-size: 0.9rem; color: #666; margin-top: 0.5rem; }
+    .card-value.green { color: #00ff88; }
+    .card-value.blue { color: #00d4ff; }
+    .card-value.purple { color: #7b2fff; }
+    .card-value.yellow { color: #ffaa00; }
+    .card-sub { font-size: 0.85rem; color: #666; margin-top: 0.25rem; }
+    
+    .main-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 1.5rem;
+    }
+    @media (max-width: 900px) { .main-grid { grid-template-columns: 1fr; } }
+    
     .chat-container {
-      margin-top: 2rem;
       background: rgba(255,255,255,0.05);
       border: 1px solid rgba(255,255,255,0.1);
       border-radius: 1rem;
-      padding: 1.5rem;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      height: 500px;
     }
+    .chat-header { margin-bottom: 1rem; }
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem;
+      background: rgba(0,0,0,0.2);
+      border-radius: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    .message { margin-bottom: 0.75rem; line-height: 1.4; }
+    .message.kit { color: #00d4ff; }
+    .message.user { color: #888; }
+    .message.tool { color: #7b2fff; font-size: 0.85rem; }
     .chat-input {
       width: 100%;
-      padding: 1rem;
+      padding: 0.875rem 1rem;
       background: rgba(0,0,0,0.3);
       border: 1px solid rgba(255,255,255,0.2);
       border-radius: 0.5rem;
       color: #fff;
       font-size: 1rem;
-      margin-top: 1rem;
     }
     .chat-input:focus { outline: none; border-color: #00d4ff; }
+    
+    .sidebar { display: flex; flex-direction: column; gap: 1rem; }
+    
+    .skills-card { max-height: 240px; }
+    .skills-list {
+      max-height: 160px;
+      overflow-y: auto;
+    }
+    .skill-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.4rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      font-size: 0.85rem;
+    }
+    .skill-name { color: #ccc; }
+    .skill-status { font-size: 0.75rem; padding: 0.15rem 0.5rem; border-radius: 0.25rem; }
+    .skill-status.active { background: rgba(0,255,136,0.2); color: #00ff88; }
+    .skill-status.inactive { background: rgba(255,170,0,0.2); color: #ffaa00; }
+    
+    .channels-list { margin-top: 0.5rem; }
+    .channel-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 0;
+      font-size: 0.9rem;
+    }
+    .channel-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+    .channel-dot.connected { background: #00ff88; }
+    .channel-dot.disconnected { background: #ff4444; }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <div class="logo">K.I.T.</div>
-      <div class="tagline">Knight Industries Trading - Your Autonomous AI Financial Agent</div>
-    </div>
-    
-    <div class="grid">
-      <div class="card">
-        <div class="card-title">Status</div>
-        <div class="card-value status-ok">● Online</div>
-        <div class="info">Gateway running on port ${this.config.port}</div>
+      <div class="logo-section">
+        <div class="logo">🤖 K.I.T.</div>
+        <div class="tagline">Knight Industries Trading<br><small>"Your wealth is my mission"</small></div>
       </div>
-      
-      <div class="card">
-        <div class="card-title">Agent</div>
-        <div class="card-value">${this.config.agent.name}</div>
-        <div class="info">ID: ${this.config.agent.id}</div>
-      </div>
-      
-      <div class="card">
-        <div class="card-title">Uptime</div>
-        <div class="card-value">${Math.floor(health.uptime / 1000)}s</div>
-        <div class="info">Since startup</div>
-      </div>
-      
-      <div class="card">
-        <div class="card-title">Connections</div>
-        <div class="card-value">${health.clients}</div>
-        <div class="info">Active WebSocket clients</div>
+      <div class="user-section">
+        <div class="user-name">${data.user?.name || 'Guest'}</div>
+        <span class="status-badge">● Online</span>
       </div>
     </div>
     
-    <div class="chat-container">
-      <div class="card-title">Chat with K.I.T.</div>
-      <div id="messages" style="min-height: 200px; margin-bottom: 1rem; padding: 1rem; background: rgba(0,0,0,0.2); border-radius: 0.5rem;">
-        <div style="color: #00d4ff;">K.I.T.: Hello! I'm your autonomous financial agent. How can I help you today?</div>
+    <div class="dashboard-grid">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Portfolio Value</span>
+          <span class="card-icon">💰</span>
+        </div>
+        <div class="card-value green">$${(data.portfolio?.totalValue || 0).toLocaleString()}</div>
+        <div class="card-sub">${data.portfolio?.change24h >= 0 ? '+' : ''}${data.portfolio?.change24h || 0}% (24h)</div>
       </div>
-      <input type="text" class="chat-input" placeholder="Type a message..." id="chatInput">
+      
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Active Skills</span>
+          <span class="card-icon">⚡</span>
+        </div>
+        <div class="card-value blue">${data.skillsActive}/${data.skillsTotal}</div>
+        <div class="card-sub">Trading skills ready</div>
+      </div>
+      
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Uptime</span>
+          <span class="card-icon">⏱️</span>
+        </div>
+        <div class="card-value purple">${uptimeHours}h ${uptimeMinutes}m</div>
+        <div class="card-sub">Gateway running</div>
+      </div>
+      
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Connections</span>
+          <span class="card-icon">🔗</span>
+        </div>
+        <div class="card-value yellow">${health.clients}</div>
+        <div class="card-sub">Active clients</div>
+      </div>
+    </div>
+    
+    <div class="main-grid">
+      <div class="chat-container">
+        <div class="chat-header">
+          <div class="card-title">💬 Chat with K.I.T.</div>
+        </div>
+        <div class="chat-messages" id="messages">
+          <div class="message kit">K.I.T.: Hello${data.user?.name ? ' ' + data.user.name : ''}! I'm your autonomous financial agent. How can I help you today?</div>
+        </div>
+        <input type="text" class="chat-input" placeholder="Type a message... (Enter to send)" id="chatInput">
+      </div>
+      
+      <div class="sidebar">
+        <div class="card skills-card">
+          <div class="card-header">
+            <span class="card-title">📊 Skills Status</span>
+          </div>
+          <div class="skills-list">
+            ${data.skillsList.slice(0, 10).map((s: any) => `
+              <div class="skill-item">
+                <span class="skill-name">${s.name}</span>
+                <span class="skill-status ${s.active ? 'active' : 'inactive'}">${s.active ? 'Active' : 'Inactive'}</span>
+              </div>
+            `).join('')}
+          </div>
+          <div class="card-sub" style="margin-top: 0.5rem;">
+            ${data.skillsTotal > 10 ? `+${data.skillsTotal - 10} more skills` : ''}
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">📱 Channels</span>
+          </div>
+          <div class="channels-list">
+            <div class="channel-item">
+              <span class="channel-dot ${data.channels.telegram.connected ? 'connected' : 'disconnected'}"></span>
+              <span>Telegram ${data.channels.telegram.username ? '@' + data.channels.telegram.username : ''}</span>
+            </div>
+            <div class="channel-item">
+              <span class="channel-dot ${data.channels.whatsapp.connected ? 'connected' : 'disconnected'}"></span>
+              <span>WhatsApp</span>
+            </div>
+            <div class="channel-item">
+              <span class="channel-dot connected"></span>
+              <span>Dashboard (this)</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">⚙️ Quick Links</span>
+          </div>
+          <div style="font-size: 0.85rem; color: #888;">
+            <div style="margin-bottom: 0.5rem;">
+              <a href="https://github.com/kayzaa/k.i.t.-bot" target="_blank" style="color: #00d4ff; text-decoration: none;">📚 Documentation</a>
+            </div>
+            <div style="margin-bottom: 0.5rem;">
+              <span>🛠️ Run: <code style="background: rgba(0,0,0,0.3); padding: 0.1rem 0.3rem; border-radius: 0.25rem;">kit onboard</code></span>
+            </div>
+            <div>
+              <span>📊 Run: <code style="background: rgba(0,0,0,0.3); padding: 0.1rem 0.3rem; border-radius: 0.25rem;">kit status</code></span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
   
@@ -961,22 +1187,36 @@ export class GatewayServer extends EventEmitter {
     const ws = new WebSocket('ws://' + window.location.host);
     const messages = document.getElementById('messages');
     const input = document.getElementById('chatInput');
+    let thinking = false;
     
     ws.onmessage = (e) => {
       const data = JSON.parse(e.data);
       if (data.type === 'message') {
-        messages.innerHTML += '<div style="color: #00d4ff; margin-top: 0.5rem;">K.I.T.: ' + data.content + '</div>';
+        messages.innerHTML += '<div class="message kit">K.I.T.: ' + data.content.replace(/\\n/g, '<br>') + '</div>';
         messages.scrollTop = messages.scrollHeight;
+        thinking = false;
+      } else if (data.type === 'tool_call') {
+        messages.innerHTML += '<div class="message tool">🔧 Using: ' + data.name + '</div>';
+        messages.scrollTop = messages.scrollHeight;
+      } else if (data.type === 'chunk') {
+        // Handle streaming chunks
       }
     };
     
     input.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter' && input.value.trim()) {
-        messages.innerHTML += '<div style="color: #888; margin-top: 0.5rem;">You: ' + input.value + '</div>';
+      if (e.key === 'Enter' && input.value.trim() && !thinking) {
+        messages.innerHTML += '<div class="message user">You: ' + input.value + '</div>';
         ws.send(JSON.stringify({ type: 'chat', content: input.value }));
         input.value = '';
+        thinking = true;
+        messages.innerHTML += '<div class="message kit" id="thinking">K.I.T.: <em>Thinking...</em></div>';
+        messages.scrollTop = messages.scrollHeight;
       }
     });
+    
+    ws.onopen = () => {
+      console.log('Connected to K.I.T.');
+    };
   </script>
 </body>
 </html>`;

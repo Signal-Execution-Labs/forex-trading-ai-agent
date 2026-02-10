@@ -19,6 +19,8 @@ export interface TelegramMessage {
   firstName?: string;
   text: string;
   date: Date;
+  threadId?: number;  // For topic/thread support
+  isTopicMessage?: boolean;
 }
 
 export interface TelegramChannelConfig {
@@ -99,15 +101,16 @@ export class TelegramChannel extends EventEmitter {
         // Process with handler
         if (this.messageHandler) {
           try {
-            console.log(`[Telegram] Processing message from ${msg.username || msg.firstName}: ${msg.text}`);
+            console.log(`[Telegram] Processing message from ${msg.username || msg.firstName}: ${msg.text}${msg.threadId ? ` (thread: ${msg.threadId})` : ''}`);
             const response = await this.messageHandler(msg);
             
             if (response && response.trim()) {
-              await this.sendMessage(msg.chatId, response);
+              // Reply in the same thread if message was in a thread
+              await this.sendMessage(msg.chatId, response, { threadId: msg.threadId });
             }
           } catch (error) {
             console.error('[Telegram] Handler error:', error);
-            await this.sendMessage(msg.chatId, '❌ Sorry, I encountered an error processing your message.');
+            await this.sendMessage(msg.chatId, '❌ Sorry, I encountered an error processing your message.', { threadId: msg.threadId });
           }
         }
       }
@@ -156,6 +159,8 @@ export class TelegramChannel extends EventEmitter {
           firstName: msg.from.first_name,
           text: msg.text,
           date: new Date(msg.date * 1000),
+          threadId: msg.message_thread_id,
+          isTopicMessage: msg.is_topic_message,
         });
       }
     }
@@ -169,6 +174,7 @@ export class TelegramChannel extends EventEmitter {
   async sendMessage(chatId: number | string, text: string, options?: {
     parseMode?: 'HTML' | 'Markdown';
     replyToMessageId?: number;
+    threadId?: number;
   }): Promise<boolean> {
     const params: any = {
       chat_id: chatId,
@@ -177,6 +183,7 @@ export class TelegramChannel extends EventEmitter {
 
     if (options?.parseMode) params.parse_mode = options.parseMode;
     if (options?.replyToMessageId) params.reply_to_message_id = options.replyToMessageId;
+    if (options?.threadId) params.message_thread_id = options.threadId;
 
     try {
       const response = await fetch(`https://api.telegram.org/bot${this.config.token}/sendMessage`, {
