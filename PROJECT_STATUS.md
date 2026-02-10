@@ -1,6 +1,6 @@
 # K.I.T. Project Status
 
-**Last Updated:** 2026-02-10 14:24 CET  
+**Last Updated:** 2026-02-10 14:30 CET  
 **Build Status:** ✅ TypeScript compiles clean  
 **Git Status:** Clean (no uncommitted changes)
 
@@ -142,7 +142,12 @@ All skills have SKILL.md documentation:
 
 ## 📝 Recent Changes
 
-### 2026-02-10
+### 2026-02-10 (14:30)
+- Added `kit version --check` command with GitHub update check
+- Synced VERSION to 2.0.0 across codebase
+- Created PROJECT_STATUS.md for tracking
+
+### 2026-02-10 (earlier)
 - All docs converted to English
 - Package renamed to kit-trading
 - TypeScript compiles cleanly
