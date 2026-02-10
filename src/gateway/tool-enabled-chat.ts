@@ -328,6 +328,7 @@ interface OnboardingState {
   channel?: string;
   telegramToken?: string;
   connections?: string[];
+  skills?: string[];
   userName?: string;
   userGoals?: string;
   userRisk?: string;
@@ -364,9 +365,13 @@ const CHANNELS = [
 ];
 
 const SKILL_CATEGORIES = [
-  { id: 'trading', name: 'Trading', skills: ['binary-options', 'metatrader', 'auto-trader', 'signal-copier'] },
-  { id: 'crypto', name: 'Crypto & DeFi', skills: ['exchange-connector', 'defi-connector', 'wallet-connector', 'airdrop-hunter'] },
-  { id: 'analysis', name: 'Analysis', skills: ['market-analysis', 'whale-tracker', 'portfolio-tracker', 'backtester'] },
+  { id: 'trading', name: '📈 Trading', skills: ['binary-options', 'metatrader', 'auto-trader', 'signal-copier'] },
+  { id: 'crypto', name: '🪙 Crypto & DeFi', skills: ['exchange-connector', 'defi-connector', 'wallet-connector', 'airdrop-hunter'] },
+  { id: 'analysis', name: '📊 Analysis', skills: ['market-analysis', 'whale-tracker', 'portfolio-tracker', 'backtester'] },
+  { id: 'web', name: '🌐 Web Tools', skills: ['web-search', 'web-fetch', 'browser-automation', 'image-analysis'] },
+  { id: 'automation', name: '⏰ Automation', skills: ['cron-jobs', 'heartbeat', 'scheduled-tasks', 'alerts'] },
+  { id: 'communication', name: '💬 Communication', skills: ['discord', 'slack', 'tts-voice', 'notifications'] },
+  { id: 'advanced', name: '🚀 Advanced', skills: ['sub-agents', 'canvas-ui', 'session-management', 'memory-system'] },
 ];
 
 const ENV_VARS: Record<string, string> = {
@@ -527,7 +532,7 @@ export class ToolEnabledChatHandler {
       
       // Check for "done" or "0"
       if (input.toLowerCase() === 'done' || input === '0') {
-        this.onboardingState.set(sessionId, { ...state, step: 'skills' });
+        this.onboardingState.set(sessionId, { ...state, step: 'skills', skills: [] });
         const selectedNames = currentConnections.map(id => 
           TRADING_CONNECTIONS.find(c => c.id === id)?.name || id
         );
@@ -563,14 +568,53 @@ export class ToolEnabledChatHandler {
       return this.getConnectionsPrompt();
     }
 
-    // Step 7: Skills Selection
+    // Step 7: Skills Selection (Multi-Select)
     if (state.step === 'skills') {
-      const num = parseInt(input);
-      if (num >= 1 && num <= SKILL_CATEGORIES.length + 1) {
-        const skillChoice = num === SKILL_CATEGORIES.length + 1 ? 'ALL' : SKILL_CATEGORIES[num - 1].name;
+      const currentSkills = state.skills || [];
+      
+      // Check for "done" or "0"
+      if (input.toLowerCase() === 'done' || input === '0') {
+        const selectedNames = currentSkills.length > 0 
+          ? currentSkills.map(id => SKILL_CATEGORIES.find(c => c.id === id)?.name || id).join(', ')
+          : 'All skills';
         this.onboardingState.set(sessionId, { ...state, step: 'user_name' });
-        return `✅ **${skillChoice}** skills enabled!\n\n---\n\n🎭 **Now let's get to know you!**\n\n**Step 8/11: What's your name?**\n\n👉 Enter your name:`;
+        return `✅ **Skills enabled:** ${selectedNames}\n\n---\n\n🎭 **Now let's get to know you!**\n\n**Step 8/11: What's your name?**\n\n👉 Enter your name:`;
       }
+      
+      // Check for "all" option
+      const allOption = SKILL_CATEGORIES.length + 1;
+      
+      // Parse multiple numbers
+      const nums = input.split(/[,\s]+/).map(n => parseInt(n.trim())).filter(n => !isNaN(n));
+      
+      if (nums.length > 0) {
+        // If "all" selected
+        if (nums.includes(allOption)) {
+          const allSkillIds = SKILL_CATEGORIES.map(c => c.id);
+          this.onboardingState.set(sessionId, { ...state, step: 'user_name', skills: allSkillIds });
+          return `✅ **ALL skills enabled!**\n\n---\n\n🎭 **Now let's get to know you!**\n\n**Step 8/11: What's your name?**\n\n👉 Enter your name:`;
+        }
+        
+        const newSkills = [...currentSkills];
+        const addedNames: string[] = [];
+        
+        for (const num of nums) {
+          if (num >= 1 && num <= SKILL_CATEGORIES.length) {
+            const cat = SKILL_CATEGORIES[num - 1];
+            if (!newSkills.includes(cat.id)) {
+              newSkills.push(cat.id);
+              addedNames.push(cat.name);
+            }
+          }
+        }
+        
+        if (addedNames.length > 0) {
+          this.onboardingState.set(sessionId, { ...state, skills: newSkills });
+          const allNames = newSkills.map(id => SKILL_CATEGORIES.find(c => c.id === id)?.name || id);
+          return `✅ **Added:** ${addedNames.join(', ')}\n\n**Currently selected:** ${allNames.join(', ')}\n\n${this.getSkillsPrompt(state, true)}`;
+        }
+      }
+      
       // Invalid input - repeat the prompt
       return this.getSkillsPrompt(state);
     }
@@ -754,13 +798,16 @@ Your personal AI financial agent is ready.
   /**
    * Get skills selection prompt
    */
-  private getSkillsPrompt(state: OnboardingState): string {
-    let msg = `**Step 7/11: Choose your skill set:**\n\n`;
+  private getSkillsPrompt(state: OnboardingState, showSelected: boolean = false): string {
+    let msg = `**Step 7/11: Choose your skill sets:**\n\n`;
+    msg += `*(Multi-select: enter numbers like "1,2,4" or one at a time)*\n\n`;
+    
     SKILL_CATEGORIES.forEach((cat, i) => {
-      msg += `  [${i + 1}] 📦 **${cat.name}**\n      ${cat.skills.join(', ')}\n\n`;
+      msg += `  [${i + 1}] **${cat.name}**\n      ${cat.skills.join(', ')}\n\n`;
     });
     msg += `  [${SKILL_CATEGORIES.length + 1}] 🚀 **Enable ALL skills**\n`;
-    msg += `\n👉 Enter a number (1-${SKILL_CATEGORIES.length + 1}):`;
+    msg += `  [0] ⏭️ **Done selecting**\n`;
+    msg += `\n👉 Enter numbers (or 0 to continue):`;
     return msg;
   }
 
