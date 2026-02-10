@@ -13,24 +13,163 @@ const KIT_CREDENTIALS = {
 };
 
 let cachedJwt: string | null = null;
+let forumCredentials: { agentId?: string; apiKey?: string } = {};
 
 async function getJwt(): Promise<string> {
   if (cachedJwt) return cachedJwt;
   
+  const apiKey = forumCredentials.apiKey || KIT_CREDENTIALS.apiKey;
+  
   const res = await fetch(`${FORUM_API}/api/agents/auth`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ api_key: KIT_CREDENTIALS.apiKey })
+    body: JSON.stringify({ api_key: apiKey })
   });
   
   const data = await res.json();
   if (data.success && data.data?.token) {
     cachedJwt = data.data.token;
-    return cachedJwt;
+    return cachedJwt!; // Non-null assertion after assignment
   }
   throw new Error(`Auth failed: ${JSON.stringify(data)}`);
 }
 
+// Named export functions for compatibility
+
+export async function forumRegister(params: { name: string; bio?: string }): Promise<any> {
+  try {
+    const res = await fetch(`${FORUM_API}/api/agents/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: params.name,
+        bio: params.bio || 'AI Trading Agent'
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      return { success: true, agentId: data.data?.id, apiKey: data.data?.api_key };
+    }
+    return { success: false, error: data.error };
+  } catch (err) {
+    return { success: false, error: String(err) };
+  }
+}
+
+export async function forumPost(params: { title: string; content: string; category?: string }): Promise<any> {
+  try {
+    const jwt = await getJwt();
+    const res = await fetch(`${FORUM_API}/api/posts`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${jwt}`
+      },
+      body: JSON.stringify({
+        title: params.title,
+        content: params.content,
+        category: params.category || 'general'
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      return {
+        success: true,
+        message: `Posted "${params.title}" to kitbot.finance!`,
+        postId: data.data?.id,
+        url: `https://kitbot.finance/kitview/#/post/${data.data?.id}`
+      };
+    }
+    return { success: false, error: data.error || 'Unknown error' };
+  } catch (err) {
+    return { success: false, error: String(err) };
+  }
+}
+
+export async function forumReply(params: { postId: string; content: string }): Promise<any> {
+  try {
+    const jwt = await getJwt();
+    const res = await fetch(`${FORUM_API}/api/posts/${params.postId}/comments`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${jwt}`
+      },
+      body: JSON.stringify({ content: params.content })
+    });
+    const data = await res.json();
+    if (data.success) {
+      return { success: true, message: 'Reply posted!' };
+    }
+    return { success: false, error: data.error || 'Unknown error' };
+  } catch (err) {
+    return { success: false, error: String(err) };
+  }
+}
+
+export async function forumSignal(params: { 
+  pair: string; 
+  direction: 'LONG' | 'SHORT'; 
+  entry: number;
+  stopLoss?: number;
+  takeProfit?: number;
+  confidence?: number;
+  reasoning?: string;
+}): Promise<any> {
+  const title = `📊 ${params.direction} ${params.pair} @ ${params.entry}`;
+  const content = `
+## Signal: ${params.direction} ${params.pair}
+
+| Parameter | Value |
+|-----------|-------|
+| Entry | ${params.entry} |
+| Stop Loss | ${params.stopLoss || 'TBD'} |
+| Take Profit | ${params.takeProfit || 'TBD'} |
+| Confidence | ${params.confidence || 50}% |
+
+### Reasoning
+${params.reasoning || 'Technical analysis signal'}
+
+---
+*Posted by K.I.T. - Künstliche Intelligenz Trading*
+  `.trim();
+
+  return forumPost({ title, content, category: 'signals' });
+}
+
+export async function forumGetPosts(params?: { category?: string; limit?: number }): Promise<any> {
+  try {
+    const category = params?.category || '';
+    const limit = params?.limit || 10;
+    const url = `${FORUM_API}/api/posts?category=${category}&limit=${limit}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    return { success: true, posts: data.data || data };
+  } catch (err) {
+    return { success: false, error: String(err) };
+  }
+}
+
+export async function forumGetLeaderboard(): Promise<any> {
+  try {
+    const res = await fetch(`${FORUM_API}/api/leaderboard`);
+    const data = await res.json();
+    return { success: true, leaderboard: data.data || data };
+  } catch (err) {
+    return { success: false, error: String(err) };
+  }
+}
+
+export function setForumCredentials(creds: { agentId?: string; apiKey?: string }): void {
+  forumCredentials = creds;
+  cachedJwt = null; // Clear cached JWT to use new credentials
+}
+
+export function getForumCredentials(): { agentId?: string; apiKey?: string } {
+  return { ...forumCredentials };
+}
+
+// Combined object export
 export const forumTools = {
   forum_post: {
     name: 'forum_post',
@@ -48,39 +187,7 @@ export const forumTools = {
       },
       required: ['title', 'content']
     },
-    execute: async (params: { title: string; content: string; category?: string }) => {
-      try {
-        const jwt = await getJwt();
-        
-        const res = await fetch(`${FORUM_API}/api/posts`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${jwt}`
-          },
-          body: JSON.stringify({
-            title: params.title,
-            content: params.content,
-            category: params.category || 'general'
-          })
-        });
-        
-        const data = await res.json();
-        
-        if (data.success) {
-          return {
-            success: true,
-            message: `Posted "${params.title}" to kitbot.finance!`,
-            postId: data.data?.id,
-            url: `https://kitbot.finance/kitview/#/post/${data.data?.id}`
-          };
-        } else {
-          return { success: false, error: data.error || 'Unknown error' };
-        }
-      } catch (err) {
-        return { success: false, error: String(err) };
-      }
-    }
+    execute: forumPost
   },
 
   forum_signal: {
@@ -99,35 +206,7 @@ export const forumTools = {
       },
       required: ['pair', 'direction', 'entry']
     },
-    execute: async (params: { 
-      pair: string; 
-      direction: 'LONG' | 'SHORT'; 
-      entry: number;
-      stopLoss?: number;
-      takeProfit?: number;
-      confidence?: number;
-      reasoning?: string;
-    }) => {
-      const title = `📊 ${params.direction} ${params.pair} @ ${params.entry}`;
-      const content = `
-## Signal: ${params.direction} ${params.pair}
-
-| Parameter | Value |
-|-----------|-------|
-| Entry | ${params.entry} |
-| Stop Loss | ${params.stopLoss || 'TBD'} |
-| Take Profit | ${params.takeProfit || 'TBD'} |
-| Confidence | ${params.confidence || 50}% |
-
-### Reasoning
-${params.reasoning || 'Technical analysis signal'}
-
----
-*Posted by K.I.T. - Künstliche Intelligenz Trading*
-      `.trim();
-
-      return forumTools.forum_post.execute({ title, content, category: 'signals' });
-    }
+    execute: forumSignal
   },
 
   forum_reply: {
@@ -141,30 +220,27 @@ ${params.reasoning || 'Technical analysis signal'}
       },
       required: ['postId', 'content']
     },
-    execute: async (params: { postId: string; content: string }) => {
-      try {
-        const jwt = await getJwt();
-        
-        const res = await fetch(`${FORUM_API}/api/posts/${params.postId}/comments`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${jwt}`
-          },
-          body: JSON.stringify({ content: params.content })
-        });
-        
-        const data = await res.json();
-        
-        if (data.success) {
-          return { success: true, message: 'Reply posted!' };
-        } else {
-          return { success: false, error: data.error || 'Unknown error' };
-        }
-      } catch (err) {
-        return { success: false, error: String(err) };
+    execute: forumReply
+  },
+
+  forum_get_posts: {
+    name: 'forum_get_posts',
+    description: 'Get posts from kitbot.finance forum',
+    parameters: {
+      type: 'object',
+      properties: {
+        category: { type: 'string', description: 'Category filter' },
+        limit: { type: 'number', description: 'Max posts to return' }
       }
-    }
+    },
+    execute: forumGetPosts
+  },
+
+  forum_leaderboard: {
+    name: 'forum_leaderboard',
+    description: 'Get the agent leaderboard from kitbot.finance',
+    parameters: { type: 'object', properties: {} },
+    execute: forumGetLeaderboard
   }
 };
 
