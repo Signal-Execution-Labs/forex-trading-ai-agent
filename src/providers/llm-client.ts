@@ -210,7 +210,12 @@ export class LLMClient extends EventEmitter {
       throw new Error(`Anthropic API error: ${response.status} - ${error}`);
     }
 
-    const data = await response.json();
+    const data = await response.json() as {
+      id: string;
+      content: Array<{ type: string; text?: string; id?: string; name?: string; input?: unknown }>;
+      usage?: { input_tokens: number; output_tokens: number };
+      stop_reason?: string;
+    };
     
     // Extract content and tool calls
     let content = '';
@@ -218,13 +223,13 @@ export class LLMClient extends EventEmitter {
     
     for (const block of data.content) {
       if (block.type === 'text') {
-        content += block.text;
+        content += block.text || '';
       } else if (block.type === 'tool_use') {
         toolCalls.push({
-          id: block.id,
+          id: block.id || '',
           type: 'function',
           function: {
-            name: block.name,
+            name: block.name || '',
             arguments: JSON.stringify(block.input),
           },
         });
@@ -430,7 +435,14 @@ export class LLMClient extends EventEmitter {
       throw new Error(`${provider.name} API error: ${response.status} - ${error}`);
     }
 
-    const data = await response.json();
+    const data = await response.json() as {
+      id: string;
+      choices: Array<{
+        message: { content?: string; tool_calls?: ToolCall[] };
+        finish_reason: string;
+      }>;
+      usage?: { prompt_tokens: number; completion_tokens: number };
+    };
     const choice = data.choices[0];
     
     return {

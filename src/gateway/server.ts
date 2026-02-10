@@ -411,19 +411,19 @@ export class GatewayServer extends EventEmitter {
     
     // Chat handlers
     this.protocol.registerHandler(PROTOCOL_METHODS.CHAT_SEND, async (params, context) => {
-      const chatParams = params as ChatSendParams;
+      const chatParams = params as unknown as ChatSendParams;
       const result = await this.chat.send(chatParams, context.clientId);
       return result;
     });
     
     this.protocol.registerHandler(PROTOCOL_METHODS.CHAT_HISTORY, async (params) => {
-      const historyParams = params as ChatHistoryParams;
+      const historyParams = params as unknown as ChatHistoryParams;
       const messages = this.chat.getHistory(historyParams);
       return { messages };
     });
     
     this.protocol.registerHandler(PROTOCOL_METHODS.CHAT_ABORT, async (params) => {
-      const abortParams = params as ChatAbortParams;
+      const abortParams = params as unknown as ChatAbortParams;
       const aborted = this.chat.abort(abortParams);
       return { aborted };
     });

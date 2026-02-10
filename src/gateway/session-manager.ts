@@ -27,6 +27,7 @@ export interface Session {
 
 export interface SessionManagerConfig {
   transcriptsDir?: string;
+  stateDir?: string;
   maxMessages?: number;
   autoSave?: boolean;
 }
@@ -169,13 +170,56 @@ export class SessionManager extends EventEmitter {
   /**
    * Load session from disk
    */
-  private async loadSession(key: string): Promise<Session | null> {
+  private async loadSession(key: string): Promise<Session | undefined> {
     try {
       const filePath = join(this.config.transcriptsDir!, `${key}.json`);
       const content = await readFile(filePath, 'utf-8');
       return JSON.parse(content);
     } catch {
-      return null;
+      return undefined;
     }
   }
+
+  /**
+   * List all sessions (alias for listSessions)
+   * @param filter Optional filter parameters
+   */
+  list(filter?: { channel?: string; limit?: number }): Session[] {
+    let sessions = this.listSessions();
+    
+    if (filter?.channel) {
+      sessions = sessions.filter(s => s.channel === filter.channel);
+    }
+    
+    if (filter?.limit && filter.limit > 0) {
+      sessions = sessions.slice(0, filter.limit);
+    }
+    
+    return sessions;
+  }
+
+  /**
+   * Flush all sessions to disk
+   */
+  async flush(): Promise<void> {
+    const savePromises = Array.from(this.sessions.values()).map(session => 
+      this.saveSession(session)
+    );
+    await Promise.all(savePromises);
+  }
+}
+
+/**
+ * Factory function to create SessionManager
+ */
+export function createSessionManager(agentId?: string, config?: SessionManagerConfig): SessionManager {
+  // agentId can be used for namespacing transcripts
+  // stateDir takes precedence, then transcriptsDir, then default
+  const transcriptsDir = config?.stateDir || config?.transcriptsDir || 
+    (agentId ? `.kit/transcripts/${agentId}` : '.kit/transcripts');
+  
+  return new SessionManager({
+    ...config,
+    transcriptsDir,
+  });
 }

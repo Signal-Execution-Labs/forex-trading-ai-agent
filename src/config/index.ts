@@ -262,7 +262,7 @@ export class ConfigLoader {
    */
   load(): KitConfig {
     // 1. Start with defaults
-    this.config = this.deepMerge({}, DEFAULT_CONFIG);
+    this.config = { ...DEFAULT_CONFIG };
     
     // 2. Load user config (~/.kit/config.json)
     this.loadFile(path.join(os.homedir(), '.kit', 'config.json'));

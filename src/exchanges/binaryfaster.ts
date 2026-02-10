@@ -125,7 +125,9 @@ export class BinaryFasterClient {
   }
 
   private setAuthHeader(): void {
-    this.client.defaults.headers.common['x-api-key'] = this.apiKey;
+    if (this.apiKey) {
+      this.client.defaults.headers.common['x-api-key'] = this.apiKey;
+    }
   }
 
   /**

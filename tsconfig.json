@@ -16,9 +16,10 @@
     "moduleResolution": "node"
   },
   "include": [
+    "src/**/*.ts",
+    "src/types/**/*.d.ts",
     "cli/**/*.ts",
-    "gateway/**/*.ts",
-    "tools/**/*.ts"
+    "gateway/**/*.ts"
   ],
   "exclude": [
     "node_modules",

@@ -17,8 +17,25 @@
 // Gateway (OpenClaw-inspired infrastructure)
 export * from './gateway';
 
-// Configuration System
-export * from './config';
+// Configuration System (exclude conflicting names)
+export { 
+  loadConfig, 
+  getConfig,
+  saveConfig,
+  updateConfig,
+  getConfigValue,
+  DEFAULT_CONFIG,
+  KitConfig,
+  AgentConfig,
+  AIConfig,
+  TradingConfig,
+  HeartbeatConfig,
+  CronConfig,
+  MemoryConfig,
+  WorkspaceConfig,
+  ChannelConfig,
+  LoggingConfig
+} from './config';
 
 // Trading Tools
 export * from './tools';

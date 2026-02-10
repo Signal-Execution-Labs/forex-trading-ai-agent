@@ -35,12 +35,17 @@ export const startCommand = new Command('start')
       
       const server = await createGatewayServer({
         port,
+        host: '127.0.0.1',
+        stateDir: '.kit/state',
+        workspaceDir: '.kit/workspace',
         agent: {
           id: 'kit',
           name: config.agent?.name || 'K.I.T.',
           model: config.agent?.model || 'claude-opus-4-5-20251101',
         },
-        auth: config.gateway?.auth,
+        heartbeat: { enabled: false, every: '30m' },
+        cron: { enabled: false },
+        memory: {},
       });
 
       console.log(chalk.green(`✓ Gateway running at ws://localhost:${port}`));
