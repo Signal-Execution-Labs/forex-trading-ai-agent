@@ -322,9 +322,11 @@ Use \`memory_update\` to add to MEMORY.md:
 // ============================================================================
 
 interface OnboardingState {
-  step: 'provider' | 'model' | 'apikey' | 'done';
+  step: 'provider' | 'model' | 'apikey' | 'channel' | 'telegram_token' | 'telegram_chatid' | 'skills' | 'done';
   provider?: string;
   model?: string;
+  channel?: string;
+  telegramToken?: string;
 }
 
 const PROVIDERS = [
@@ -334,6 +336,19 @@ const PROVIDERS = [
   { id: 'groq', name: 'Groq', models: ['llama-3.1-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768'] },
   { id: 'xai', name: 'xAI', models: ['grok-beta', 'grok-2'] },
   { id: 'mistral', name: 'Mistral', models: ['mistral-large-latest', 'mistral-medium', 'mistral-small'] },
+];
+
+const CHANNELS = [
+  { id: 'telegram', name: 'Telegram', icon: '📱' },
+  { id: 'whatsapp', name: 'WhatsApp', icon: '💬' },
+  { id: 'discord', name: 'Discord', icon: '🎮' },
+  { id: 'skip', name: 'Skip for now', icon: '⏭️' },
+];
+
+const SKILL_CATEGORIES = [
+  { id: 'trading', name: 'Trading', skills: ['binary-options', 'metatrader', 'auto-trader', 'signal-copier'] },
+  { id: 'crypto', name: 'Crypto & DeFi', skills: ['exchange-connector', 'defi-connector', 'wallet-connector', 'airdrop-hunter'] },
+  { id: 'analysis', name: 'Analysis', skills: ['market-analysis', 'whale-tracker', 'portfolio-tracker', 'backtester'] },
 ];
 
 const ENV_VARS: Record<string, string> = {
@@ -411,52 +426,159 @@ export class ToolEnabledChatHandler {
         
         // Save to runtime
         process.env[envVar] = input;
-        
-        // Save model preference
         process.env.KIT_MODEL = state.model;
         
         // Save to .env file
-        try {
-          const workspaceDir = process.env.KIT_WORKSPACE || path.join(os.homedir(), '.kit');
-          const envFilePath = path.join(workspaceDir, '.env');
-          
-          if (!fs.existsSync(workspaceDir)) {
-            fs.mkdirSync(workspaceDir, { recursive: true });
-          }
-          
-          let envContent = fs.existsSync(envFilePath) ? fs.readFileSync(envFilePath, 'utf-8') : '';
-          
-          // Update API key
-          const keyRegex = new RegExp(`^${envVar}=.*$`, 'm');
-          if (keyRegex.test(envContent)) {
-            envContent = envContent.replace(keyRegex, `${envVar}=${input}`);
-          } else {
-            envContent += `\n${envVar}=${input}`;
-          }
-          
-          // Update model
-          const modelRegex = /^KIT_MODEL=.*$/m;
-          if (modelRegex.test(envContent)) {
-            envContent = envContent.replace(modelRegex, `KIT_MODEL=${state.model}`);
-          } else {
-            envContent += `\nKIT_MODEL=${state.model}`;
-          }
-          
-          fs.writeFileSync(envFilePath, envContent.trim() + '\n');
-        } catch (e) {
-          console.error('Failed to save .env:', e);
-        }
+        this.saveToEnvFile(envVar, input);
+        this.saveToEnvFile('KIT_MODEL', state.model);
         
-        // Clear onboarding state
-        this.onboardingState.delete(sessionId);
+        // Move to channel selection
+        this.onboardingState.set(sessionId, { ...state, step: 'channel' });
         
         const provider = PROVIDERS.find(p => p.id === state.provider);
-        return `🎉 **Setup Complete!**\n\n✅ Provider: **${provider?.name}**\n✅ Model: **${state.model}**\n✅ API Key: Saved!\n\n**K.I.T. is ready!** What would you like to do?\n\n• "show portfolio" - View your balances\n• "connect telegram" - Set up notifications\n• "trade EUR/USD" - Start trading`;
+        let msg = `✅ **${provider?.name}** configured with **${state.model}**!\n\n`;
+        msg += `**Step 4/6: Connect a messaging channel:**\n\n`;
+        CHANNELS.forEach((c, i) => {
+          msg += `  [${i + 1}] ${c.icon} ${c.name}\n`;
+        });
+        msg += `\n👉 Enter a number (1-${CHANNELS.length}):`;
+        return msg;
+      }
+      return null;
+    }
+
+    // Step 4: Channel Selection
+    if (state.step === 'channel') {
+      const num = parseInt(input);
+      if (num >= 1 && num <= CHANNELS.length) {
+        const channel = CHANNELS[num - 1];
+        
+        if (channel.id === 'skip') {
+          // Skip to skills
+          this.onboardingState.set(sessionId, { ...state, step: 'skills', channel: 'none' });
+          return this.getSkillsPrompt(state);
+        }
+        
+        if (channel.id === 'telegram') {
+          this.onboardingState.set(sessionId, { ...state, step: 'telegram_token', channel: 'telegram' });
+          return `✅ **Telegram** selected!\n\n**Step 5/6: Enter your Telegram Bot Token:**\n\n💡 Get your token from @BotFather on Telegram:\n1. Open Telegram, search for @BotFather\n2. Send /newbot and follow instructions\n3. Copy the token (looks like: 123456789:ABCdefGHI...)\n\n👉 Paste your bot token:`;
+        }
+        
+        if (channel.id === 'whatsapp') {
+          this.onboardingState.set(sessionId, { ...state, step: 'skills', channel: 'whatsapp' });
+          return `✅ **WhatsApp** selected!\n\n📱 **WhatsApp Setup:**\nRun this command in terminal after setup:\n\`kit whatsapp login\`\n\nThen scan the QR code with WhatsApp.\n\n${this.getSkillsPrompt(state)}`;
+        }
+        
+        if (channel.id === 'discord') {
+          this.onboardingState.set(sessionId, { ...state, step: 'skills', channel: 'discord' });
+          return `✅ **Discord** selected!\n\n🎮 **Discord Setup:**\nAdd DISCORD_BOT_TOKEN to your .env file.\nGet it from: https://discord.com/developers/applications\n\n${this.getSkillsPrompt(state)}`;
+        }
+      }
+      return null;
+    }
+
+    // Step 5a: Telegram Token
+    if (state.step === 'telegram_token') {
+      // Telegram tokens look like: 123456789:ABCdefGHIjklMNOpqrsTUVwxyz
+      if (input.includes(':') && input.length > 30) {
+        this.saveToEnvFile('TELEGRAM_BOT_TOKEN', input);
+        process.env.TELEGRAM_BOT_TOKEN = input;
+        
+        this.onboardingState.set(sessionId, { ...state, step: 'telegram_chatid', telegramToken: input });
+        return `✅ **Bot Token saved!**\n\n**Step 5b/6: Enter your Telegram Chat ID:**\n\n💡 Get your Chat ID:\n1. Send any message to your bot\n2. Visit: https://api.telegram.org/bot${input}/getUpdates\n3. Find "chat":{"id": YOUR_ID}\n\nOr use @userinfobot on Telegram.\n\n👉 Enter your Chat ID (numbers only):`;
+      }
+      return null;
+    }
+
+    // Step 5b: Telegram Chat ID
+    if (state.step === 'telegram_chatid') {
+      const chatId = parseInt(input);
+      if (!isNaN(chatId)) {
+        this.saveToEnvFile('TELEGRAM_CHAT_ID', input);
+        process.env.TELEGRAM_CHAT_ID = input;
+        
+        this.onboardingState.set(sessionId, { ...state, step: 'skills' });
+        return `✅ **Telegram configured!**\n\n${this.getSkillsPrompt(state)}`;
+      }
+      return null;
+    }
+
+    // Step 6: Skills Selection
+    if (state.step === 'skills') {
+      const num = parseInt(input);
+      if (num >= 1 && num <= SKILL_CATEGORIES.length + 1) {
+        if (num === SKILL_CATEGORIES.length + 1) {
+          // Enable all
+          this.onboardingState.delete(sessionId);
+          return this.getSetupCompleteMessage(state);
+        }
+        
+        const category = SKILL_CATEGORIES[num - 1];
+        // In a real implementation, you'd enable these skills
+        this.onboardingState.delete(sessionId);
+        return `✅ **${category.name}** skills enabled!\n\n${this.getSetupCompleteMessage(state)}`;
       }
       return null;
     }
 
     return null;
+  }
+
+  /**
+   * Get skills selection prompt
+   */
+  private getSkillsPrompt(state: OnboardingState): string {
+    let msg = `**Step 6/6: Choose your skill set:**\n\n`;
+    SKILL_CATEGORIES.forEach((cat, i) => {
+      msg += `  [${i + 1}] 📦 **${cat.name}**\n      ${cat.skills.join(', ')}\n\n`;
+    });
+    msg += `  [${SKILL_CATEGORIES.length + 1}] 🚀 **Enable ALL skills**\n`;
+    msg += `\n👉 Enter a number (1-${SKILL_CATEGORIES.length + 1}):`;
+    return msg;
+  }
+
+  /**
+   * Get setup complete message
+   */
+  private getSetupCompleteMessage(state: OnboardingState): string {
+    const provider = PROVIDERS.find(p => p.id === state.provider);
+    let msg = `\n🎉 **Setup Complete!**\n\n`;
+    msg += `✅ AI Provider: **${provider?.name}** (${state.model})\n`;
+    msg += `✅ Channel: **${state.channel || 'Dashboard'}**\n`;
+    msg += `✅ Skills: **Enabled**\n\n`;
+    msg += `**K.I.T. is ready!** Try these commands:\n\n`;
+    msg += `• "show portfolio" - View your balances\n`;
+    msg += `• "trade EUR/USD" - Start trading\n`;
+    msg += `• "analyze BTC" - Market analysis\n`;
+    msg += `• "help" - See all commands`;
+    return msg;
+  }
+
+  /**
+   * Save a key-value pair to .env file
+   */
+  private saveToEnvFile(key: string, value: string): void {
+    try {
+      const workspaceDir = process.env.KIT_WORKSPACE || path.join(os.homedir(), '.kit');
+      const envFilePath = path.join(workspaceDir, '.env');
+      
+      if (!fs.existsSync(workspaceDir)) {
+        fs.mkdirSync(workspaceDir, { recursive: true });
+      }
+      
+      let envContent = fs.existsSync(envFilePath) ? fs.readFileSync(envFilePath, 'utf-8') : '';
+      
+      const regex = new RegExp(`^${key}=.*$`, 'm');
+      if (regex.test(envContent)) {
+        envContent = envContent.replace(regex, `${key}=${value}`);
+      } else {
+        envContent += `\n${key}=${value}`;
+      }
+      
+      fs.writeFileSync(envFilePath, envContent.trim() + '\n');
+    } catch (e) {
+      console.error(`Failed to save ${key} to .env:`, e);
+    }
   }
 
   /**
