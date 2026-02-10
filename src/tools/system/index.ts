@@ -301,3 +301,32 @@ export {
   webFetchToolDefinition,
   webFetchToolHandler,
 } from './web-tools';
+
+// HTTP Tools (for API calls - replaces curl)
+export {
+  httpRequestToolDefinition,
+  httpRequestToolHandler,
+  jsonApiToolDefinition,
+  jsonApiToolHandler,
+  kitbotRegisterToolDefinition,
+  kitbotRegisterToolHandler,
+  kitbotPostToolDefinition,
+  kitbotPostToolHandler,
+  kitbotSignalToolDefinition,
+  kitbotSignalToolHandler,
+  HTTP_TOOLS,
+  HTTP_HANDLERS,
+} from './http-tools';
+
+// Forum Tools (kitbot.finance)
+export {
+  forumTools,
+  forumRegister,
+  forumPost,
+  forumReply,
+  forumSignal,
+  forumGetPosts,
+  forumGetLeaderboard,
+  setForumCredentials,
+  getForumCredentials,
+} from '../forum-tools';

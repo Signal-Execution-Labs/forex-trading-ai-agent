@@ -295,6 +295,8 @@ import {
   ttsPlayToolDefinition, ttsPlayToolHandler,
 } from './tts-tools';
 
+import { forumTools } from '../forum-tools';
+
 export function createDefaultToolRegistry(workspaceDir?: string): ToolRegistry {
   const registry = new ToolRegistry(workspaceDir);
 
@@ -417,6 +419,19 @@ export function createDefaultToolRegistry(workspaceDir?: string): ToolRegistry {
         'trading'
       );
     }
+  }
+
+  // kitbot.finance Forum tools
+  for (const [name, tool] of Object.entries(forumTools)) {
+    registry.register(
+      {
+        name: tool.name,
+        description: tool.description,
+        parameters: tool.parameters as ToolDefinition['parameters'],
+      },
+      async (args, _context) => tool.execute(args as any),
+      'channel'
+    );
   }
 
   return registry;
