@@ -292,6 +292,14 @@ export const BINARY_OPTIONS_TOOLS: ChatToolDef[] = [
     },
   },
   {
+    name: 'binary_assets',
+    description: 'Get list of all available assets/currency pairs on BinaryFaster with their IDs',
+    parameters: {
+      type: 'object',
+      properties: {},
+    },
+  },
+  {
     name: 'binary_history',
     description: 'Get recent trade history from BinaryFaster',
     parameters: {
@@ -347,39 +355,64 @@ export const BINARY_OPTIONS_TOOLS: ChatToolDef[] = [
 ];
 
 // ============================================================================
-// Asset ID Mapping
+// Asset ID Mapping (dynamic from API)
 // ============================================================================
 
-const ASSET_IDS: Record<string, number> = {
-  'EUR/USD': 159,
-  'EURUSD': 159,
-  'GBP/USD': 160,
-  'GBPUSD': 160,
-  'AUD/USD': 161,
-  'AUDUSD': 161,
-  'USD/JPY': 162,
-  'USDJPY': 162,
-  'USD/CHF': 163,
-  'USDCHF': 163,
-  'USD/CAD': 164,
-  'USDCAD': 164,
-  'BTC/USD': 200,
-  'BTCUSD': 200,
-  'ETH/USD': 201,
-  'ETHUSD': 201,
-  'GOLD': 250,
-  'XAU/USD': 250,
-};
+let cachedAssets: Array<{ id: number; name: string; symbol?: string }> = [];
+
+async function fetchAssets(): Promise<void> {
+  if (cachedAssets.length > 0) return;
+  
+  try {
+    const response = await fetch('https://wsauto.binaryfaster.com/automation/traderoom/currency/all', {
+      method: 'GET',
+      headers: { 'User-Agent': 'K.I.T./2.0 TradingAgent' },
+    });
+    
+    if (response.ok) {
+      const data = await response.json() as Array<{ id: number; name: string; symbol?: string }>;
+      if (Array.isArray(data)) {
+        cachedAssets = data;
+        console.log(`[BinaryFaster] Cached ${data.length} assets`);
+      }
+    }
+  } catch (error) {
+    console.error('[BinaryFaster] Failed to fetch assets:', error);
+  }
+}
 
 function getAssetId(asset: string): number {
-  const normalized = asset.toUpperCase().replace(/\s+/g, '');
-  return ASSET_IDS[normalized] || 159; // Default to EUR/USD
+  const normalized = asset.toUpperCase().replace(/[\s\/\-]/g, '');
+  
+  // First try cached assets from API
+  for (const a of cachedAssets) {
+    const assetName = (a.name || a.symbol || '').toUpperCase().replace(/[\s\/\-]/g, '');
+    if (assetName === normalized || assetName.includes(normalized) || normalized.includes(assetName)) {
+      console.log(`[BinaryFaster] Found asset: ${a.name} = ID ${a.id}`);
+      return a.id;
+    }
+  }
+  
+  // Fallback: search by partial match
+  for (const a of cachedAssets) {
+    const assetName = (a.name || a.symbol || '').toUpperCase();
+    const parts = normalized.match(/.{3}/g) || [normalized];
+    for (const part of parts) {
+      if (assetName.includes(part)) {
+        console.log(`[BinaryFaster] Partial match: ${a.name} = ID ${a.id}`);
+        return a.id;
+      }
+    }
+  }
+  
+  console.log(`[BinaryFaster] ⚠️ Asset "${asset}" not found, using first available`);
+  return cachedAssets.length > 0 ? cachedAssets[0].id : 1;
 }
 
 function getAssetName(id: number): string {
-  for (const [name, assetId] of Object.entries(ASSET_IDS)) {
-    if (assetId === id && name.includes('/')) {
-      return name;
+  for (const a of cachedAssets) {
+    if (a.id === id) {
+      return a.name || a.symbol || `Asset ${id}`;
     }
   }
   return `Asset ${id}`;
@@ -397,12 +430,16 @@ export const BINARY_OPTIONS_HANDLERS: Record<string, (args: Record<string, unkno
     const success = await binaryFasterLogin(email, password);
     
     if (success) {
+      // Fetch available assets after login
+      await fetchAssets();
+      
       const balance = await getBalance();
       return {
         success: true,
         message: `✅ Logged in to BinaryFaster as ${email}`,
         balance,
         mode: session.demoMode ? 'DEMO' : 'REAL',
+        assetsLoaded: cachedAssets.length,
       };
     }
     
@@ -458,6 +495,9 @@ export const BINARY_OPTIONS_HANDLERS: Record<string, (args: Record<string, unkno
       };
     }
     
+    // Ensure assets are loaded
+    await fetchAssets();
+    
     const asset = args.asset as string;
     const amount = args.amount as number;
     const duration = (args.duration as number) || 120;
@@ -484,6 +524,9 @@ export const BINARY_OPTIONS_HANDLERS: Record<string, (args: Record<string, unkno
       };
     }
     
+    // Ensure assets are loaded
+    await fetchAssets();
+    
     const asset = args.asset as string;
     const amount = args.amount as number;
     const duration = (args.duration as number) || 120;
@@ -500,6 +543,43 @@ export const BINARY_OPTIONS_HANDLERS: Record<string, (args: Record<string, unkno
       duration: `${duration} seconds (${duration / 60} min)`,
       mode: session.demoMode ? 'DEMO' : 'REAL 💰',
     };
+  },
+
+  binary_assets: async () => {
+    try {
+      const response = await fetch('https://wsauto.binaryfaster.com/automation/traderoom/currency/all', {
+        method: 'GET',
+        headers: {
+          'User-Agent': 'K.I.T./2.0 TradingAgent',
+        },
+      });
+
+      if (!response.ok) {
+        return { success: false, message: `Failed to fetch assets: ${response.status}` };
+      }
+
+      const data = await response.json() as Array<{ id: number; name: string; symbol?: string; payout?: number }>;
+      
+      // Cache the assets for later use
+      if (Array.isArray(data)) {
+        cachedAssets = data;
+        console.log(`[BinaryFaster] Loaded ${data.length} assets`);
+      }
+
+      return {
+        success: true,
+        count: Array.isArray(data) ? data.length : 0,
+        assets: Array.isArray(data) ? data.slice(0, 30).map(a => ({
+          id: a.id,
+          name: a.name || a.symbol,
+          payout: a.payout,
+        })) : data,
+        message: 'Use the asset ID when placing trades',
+      };
+    } catch (error) {
+      console.error('[BinaryFaster] Assets error:', error);
+      return { success: false, message: `Error: ${error}` };
+    }
   },
 
   binary_history: async (args) => {
@@ -527,6 +607,9 @@ export const BINARY_OPTIONS_HANDLERS: Record<string, (args: Record<string, unkno
         message: '❌ Not logged in. Use binary_login first.',
       };
     }
+
+    // Ensure assets are loaded
+    await fetchAssets();
 
     const asset = args.asset as string;
     const baseAmount = args.baseAmount as number;
