@@ -525,24 +525,44 @@ ${c.cyan}━━━━━━━━━━━━━━━━━━━━━━━�
 // DEFAULT (no command)
 // ═══════════════════════════════════════════════════════════════
 if (process.argv.length === 2) {
+  // Check if onboarded
+  const isOnboarded = fs.existsSync(CONFIG_PATH);
+  const userName = isOnboarded ? JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8')).user?.name : null;
+  
   console.log(`
 ${c.cyan}╔═══════════════════════════════════════════════════════════════╗
 ║                                                               ║
 ║   ${c.bright}🤖 K.I.T. - Knight Industries Trading${c.reset}${c.cyan}                      ║
 ║   ${c.dim}Your Autonomous AI Financial Agent${c.reset}${c.cyan}                        ║
+║   ${c.dim}"Your wealth is my mission"${c.reset}${c.cyan}                              ║
 ║                                                               ║
 ╚═══════════════════════════════════════════════════════════════╝${c.reset}
+${userName ? `\n  ${c.green}Welcome back, ${userName}!${c.reset}\n` : ''}
+${c.bright}Getting Started:${c.reset}
 
-${c.bright}Commands:${c.reset}
+  ${c.yellow}kit onboard${c.reset}        Interactive setup wizard ${!isOnboarded ? `${c.green}← Start here!${c.reset}` : '(re-run to change settings)'}
+  ${c.yellow}kit start${c.reset}          Start the K.I.T. gateway
+  ${c.yellow}kit status${c.reset}         Check system status
+  ${c.yellow}kit dashboard${c.reset}      Open web dashboard
 
-  ${c.yellow}kit onboard${c.reset}    Interactive setup wizard ${c.green}← Start here!${c.reset}
-  ${c.yellow}kit start${c.reset}      Start the gateway
-  ${c.yellow}kit status${c.reset}     Check system status
-  ${c.yellow}kit dashboard${c.reset}  Open web dashboard
-  ${c.yellow}kit config${c.reset}     View/edit configuration
-  ${c.yellow}kit doctor${c.reset}     Diagnose issues
+${c.bright}Channels:${c.reset}
 
-${c.dim}Documentation: https://github.com/kayzaa/k.i.t.-bot${c.reset}
+  ${c.yellow}kit telegram setup${c.reset} Connect Telegram bot
+  ${c.yellow}kit whatsapp login${c.reset} Connect WhatsApp (scan QR)
+
+${c.bright}Tools:${c.reset}
+
+  ${c.yellow}kit config${c.reset}         View/edit configuration
+  ${c.yellow}kit doctor${c.reset}         Diagnose issues
+
+${c.bright}Links:${c.reset}
+
+  ${c.dim}Dashboard:${c.reset}     http://localhost:18799
+  ${c.dim}GitHub:${c.reset}        https://github.com/kayzaa/k.i.t.-bot
+  ${c.dim}Documentation:${c.reset} https://github.com/kayzaa/k.i.t.-bot#readme
+
+${c.bright}Workspace:${c.reset}     ~/.kit/workspace
+${c.bright}Config:${c.reset}        ~/.kit/config.json
 `);
   process.exit(0);
 }

@@ -222,6 +222,14 @@ import {
   whatsappLogoutToolDefinition, whatsappLogoutToolHandler,
 } from './whatsapp-tools';
 
+import {
+  memorySearchToolDefinition, memorySearchToolHandler,
+  memoryGetToolDefinition, memoryGetToolHandler,
+  memoryWriteToolDefinition, memoryWriteToolHandler,
+  memoryUpdateToolDefinition, memoryUpdateToolHandler,
+  memoryListToolDefinition, memoryListToolHandler,
+} from './memory-tools';
+
 export function createDefaultToolRegistry(workspaceDir?: string): ToolRegistry {
   const registry = new ToolRegistry(workspaceDir);
 
@@ -267,6 +275,13 @@ export function createDefaultToolRegistry(workspaceDir?: string): ToolRegistry {
   registry.register(whatsappSetupToolDefinition, whatsappSetupToolHandler, 'channel');
   registry.register(whatsappSendToolDefinition, whatsappSendToolHandler, 'channel');
   registry.register(whatsappLogoutToolDefinition, whatsappLogoutToolHandler, 'channel');
+
+  // Memory tools
+  registry.register(memorySearchToolDefinition, memorySearchToolHandler, 'system');
+  registry.register(memoryGetToolDefinition, memoryGetToolHandler, 'system');
+  registry.register(memoryWriteToolDefinition, memoryWriteToolHandler, 'system');
+  registry.register(memoryUpdateToolDefinition, memoryUpdateToolHandler, 'system');
+  registry.register(memoryListToolDefinition, memoryListToolHandler, 'system');
 
   return registry;
 }
