@@ -322,16 +322,30 @@ Use \`memory_update\` to add to MEMORY.md:
 // ============================================================================
 
 interface OnboardingState {
-  step: 'provider' | 'model' | 'apikey' | 'channel' | 'telegram_token' | 'telegram_chatid' | 'skills' | 'user_name' | 'user_goals' | 'user_risk' | 'user_style' | 'complete';
+  step: 'provider' | 'model' | 'apikey' | 'channel' | 'telegram_token' | 'telegram_chatid' | 'connections' | 'skills' | 'user_name' | 'user_goals' | 'user_risk' | 'user_style' | 'complete';
   provider?: string;
   model?: string;
   channel?: string;
   telegramToken?: string;
+  connections?: string[];
   userName?: string;
   userGoals?: string;
   userRisk?: string;
   userStyle?: string;
 }
+
+const TRADING_CONNECTIONS = [
+  { id: 'binaryfaster', name: 'BinaryFaster', icon: '📊', category: 'Binary Options' },
+  { id: 'metatrader5', name: 'MetaTrader 5', icon: '📈', category: 'Forex/CFD' },
+  { id: 'binance', name: 'Binance', icon: '🟡', category: 'Crypto Exchange' },
+  { id: 'kraken', name: 'Kraken', icon: '🐙', category: 'Crypto Exchange' },
+  { id: 'coinbase', name: 'Coinbase', icon: '🔵', category: 'Crypto Exchange' },
+  { id: 'metamask', name: 'MetaMask', icon: '🦊', category: 'Wallet' },
+  { id: 'ledger', name: 'Ledger', icon: '🔐', category: 'Hardware Wallet' },
+  { id: 'electrum', name: 'Electrum', icon: '⚡', category: 'Bitcoin Wallet' },
+  { id: 'phantom', name: 'Phantom', icon: '👻', category: 'Solana Wallet' },
+  { id: 'trustwallet', name: 'Trust Wallet', icon: '🛡️', category: 'Multi-Chain Wallet' },
+];
 
 const PROVIDERS = [
   { id: 'openai', name: 'OpenAI', models: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'] },
@@ -458,24 +472,24 @@ export class ToolEnabledChatHandler {
         const channel = CHANNELS[num - 1];
         
         if (channel.id === 'skip') {
-          // Skip to skills
-          this.onboardingState.set(sessionId, { ...state, step: 'skills', channel: 'none' });
-          return this.getSkillsPrompt(state);
+          // Skip to connections
+          this.onboardingState.set(sessionId, { ...state, step: 'connections', channel: 'none', connections: [] });
+          return this.getConnectionsPrompt();
         }
         
         if (channel.id === 'telegram') {
           this.onboardingState.set(sessionId, { ...state, step: 'telegram_token', channel: 'telegram' });
-          return `✅ **Telegram** selected!\n\n**Step 5/6: Enter your Telegram Bot Token:**\n\n💡 Get your token from @BotFather on Telegram:\n1. Open Telegram, search for @BotFather\n2. Send /newbot and follow instructions\n3. Copy the token (looks like: 123456789:ABCdefGHI...)\n\n👉 Paste your bot token:`;
+          return `✅ **Telegram** selected!\n\n**Step 5/11: Enter your Telegram Bot Token:**\n\n💡 Get your token from @BotFather on Telegram:\n1. Open Telegram, search for @BotFather\n2. Send /newbot and follow instructions\n3. Copy the token (looks like: 123456789:ABCdefGHI...)\n\n👉 Paste your bot token:`;
         }
         
         if (channel.id === 'whatsapp') {
-          this.onboardingState.set(sessionId, { ...state, step: 'skills', channel: 'whatsapp' });
-          return `✅ **WhatsApp** selected!\n\n📱 **WhatsApp Setup:**\nRun this command in terminal after setup:\n\`kit whatsapp login\`\n\nThen scan the QR code with WhatsApp.\n\n${this.getSkillsPrompt(state)}`;
+          this.onboardingState.set(sessionId, { ...state, step: 'connections', channel: 'whatsapp', connections: [] });
+          return `✅ **WhatsApp** selected!\n\n📱 **WhatsApp Setup:**\nRun this command in terminal after setup:\n\`kit whatsapp login\`\n\nThen scan the QR code with WhatsApp.\n\n${this.getConnectionsPrompt()}`;
         }
         
         if (channel.id === 'discord') {
-          this.onboardingState.set(sessionId, { ...state, step: 'skills', channel: 'discord' });
-          return `✅ **Discord** selected!\n\n🎮 **Discord Setup:**\nAdd DISCORD_BOT_TOKEN to your .env file.\nGet it from: https://discord.com/developers/applications\n\n${this.getSkillsPrompt(state)}`;
+          this.onboardingState.set(sessionId, { ...state, step: 'connections', channel: 'discord', connections: [] });
+          return `✅ **Discord** selected!\n\n🎮 **Discord Setup:**\nAdd DISCORD_BOT_TOKEN to your .env file.\nGet it from: https://discord.com/developers/applications\n\n${this.getConnectionsPrompt()}`;
         }
       }
       return null;
@@ -501,56 +515,98 @@ export class ToolEnabledChatHandler {
         this.saveToEnvFile('TELEGRAM_CHAT_ID', input);
         process.env.TELEGRAM_CHAT_ID = input;
         
-        this.onboardingState.set(sessionId, { ...state, step: 'skills' });
-        return `✅ **Telegram configured!**\n\n${this.getSkillsPrompt(state)}`;
+        this.onboardingState.set(sessionId, { ...state, step: 'connections', connections: [] });
+        return `✅ **Telegram configured!**\n\n${this.getConnectionsPrompt()}`;
       }
-      return null;
+      return `👉 Enter your Chat ID (numbers only):`;
     }
 
-    // Step 6: Skills Selection
+    // Step 6: Trading Connections (Multi-Select)
+    if (state.step === 'connections') {
+      const currentConnections = state.connections || [];
+      
+      // Check for "done" or "0"
+      if (input.toLowerCase() === 'done' || input === '0') {
+        this.onboardingState.set(sessionId, { ...state, step: 'skills' });
+        const selectedNames = currentConnections.map(id => 
+          TRADING_CONNECTIONS.find(c => c.id === id)?.name || id
+        );
+        return `✅ **Connections selected:** ${selectedNames.length > 0 ? selectedNames.join(', ') : 'None'}\n\n${this.getSkillsPrompt(state)}`;
+      }
+      
+      // Parse multiple numbers (e.g., "1,2,3" or "1 2 3")
+      const nums = input.split(/[,\s]+/).map(n => parseInt(n.trim())).filter(n => !isNaN(n));
+      
+      if (nums.length > 0) {
+        const newConnections = [...currentConnections];
+        const addedNames: string[] = [];
+        
+        for (const num of nums) {
+          if (num >= 1 && num <= TRADING_CONNECTIONS.length) {
+            const conn = TRADING_CONNECTIONS[num - 1];
+            if (!newConnections.includes(conn.id)) {
+              newConnections.push(conn.id);
+              addedNames.push(conn.name);
+            }
+          }
+        }
+        
+        if (addedNames.length > 0) {
+          this.onboardingState.set(sessionId, { ...state, connections: newConnections });
+          const allNames = newConnections.map(id => 
+            TRADING_CONNECTIONS.find(c => c.id === id)?.name || id
+          );
+          return `✅ **Added:** ${addedNames.join(', ')}\n\n**Currently selected:** ${allNames.join(', ')}\n\n${this.getConnectionsPrompt(true)}`;
+        }
+      }
+      
+      return this.getConnectionsPrompt();
+    }
+
+    // Step 7: Skills Selection
     if (state.step === 'skills') {
       const num = parseInt(input);
       if (num >= 1 && num <= SKILL_CATEGORIES.length + 1) {
         const skillChoice = num === SKILL_CATEGORIES.length + 1 ? 'ALL' : SKILL_CATEGORIES[num - 1].name;
         this.onboardingState.set(sessionId, { ...state, step: 'user_name' });
-        return `✅ **${skillChoice}** skills enabled!\n\n---\n\n🎭 **Now let's get to know you!**\n\n**Step 7/10: What's your name?**\n\n👉 Enter your name:`;
+        return `✅ **${skillChoice}** skills enabled!\n\n---\n\n🎭 **Now let's get to know you!**\n\n**Step 8/11: What's your name?**\n\n👉 Enter your name:`;
       }
       // Invalid input - repeat the prompt
       return this.getSkillsPrompt(state);
     }
 
-    // Step 7: User Name
+    // Step 8: User Name
     if (state.step === 'user_name') {
       if (input.length >= 1) {
         this.onboardingState.set(sessionId, { ...state, step: 'user_goals', userName: input });
-        return `✅ Nice to meet you, **${input}**!\n\n**Step 8/10: What are your financial goals?**\n\n  [1] 💰 Grow wealth steadily (long-term investing)\n  [2] 🚀 Aggressive growth (high risk, high reward)\n  [3] 💵 Generate passive income\n  [4] 🎯 Short-term trading profits\n  [5] 🛡️ Preserve capital, beat inflation\n\n👉 Enter a number (1-5):`;
+        return `✅ Nice to meet you, **${input}**!\n\n**Step 9/11: What are your financial goals?**\n\n  [1] 💰 Grow wealth steadily (long-term investing)\n  [2] 🚀 Aggressive growth (high risk, high reward)\n  [3] 💵 Generate passive income\n  [4] 🎯 Short-term trading profits\n  [5] 🛡️ Preserve capital, beat inflation\n\n👉 Enter a number (1-5):`;
       }
       return `👉 Please enter your name:`;
     }
 
-    // Step 8: User Goals
+    // Step 9: User Goals
     if (state.step === 'user_goals') {
       const goals = ['Grow wealth steadily', 'Aggressive growth', 'Generate passive income', 'Short-term trading profits', 'Preserve capital'];
       const num = parseInt(input);
       if (num >= 1 && num <= 5) {
         this.onboardingState.set(sessionId, { ...state, step: 'user_risk', userGoals: goals[num - 1] });
-        return `✅ Goal: **${goals[num - 1]}**\n\n**Step 9/10: What's your risk tolerance?**\n\n  [1] 🐢 Conservative - Minimal risk, steady returns\n  [2] ⚖️ Balanced - Some risk for better returns\n  [3] 🔥 Aggressive - High risk, maximum potential\n\n👉 Enter a number (1-3):`;
+        return `✅ Goal: **${goals[num - 1]}**\n\n**Step 10/11: What's your risk tolerance?**\n\n  [1] 🐢 Conservative - Minimal risk, steady returns\n  [2] ⚖️ Balanced - Some risk for better returns\n  [3] 🔥 Aggressive - High risk, maximum potential\n\n👉 Enter a number (1-3):`;
       }
       return `👉 Please enter a number (1-5):`;
     }
 
-    // Step 9: Risk Tolerance
+    // Step 10: Risk Tolerance
     if (state.step === 'user_risk') {
       const risks = ['Conservative', 'Balanced', 'Aggressive'];
       const num = parseInt(input);
       if (num >= 1 && num <= 3) {
         this.onboardingState.set(sessionId, { ...state, step: 'user_style', userRisk: risks[num - 1] });
-        return `✅ Risk: **${risks[num - 1]}**\n\n**Step 10/10: How should I communicate with you?**\n\n  [1] 📊 Professional - Formal, data-focused\n  [2] 😊 Friendly - Casual, supportive\n  [3] ⚡ Direct - Brief, action-oriented\n  [4] 🎓 Educational - Explain everything\n\n👉 Enter a number (1-4):`;
+        return `✅ Risk: **${risks[num - 1]}**\n\n**Step 11/11: How should I communicate with you?**\n\n  [1] 📊 Professional - Formal, data-focused\n  [2] 😊 Friendly - Casual, supportive\n  [3] ⚡ Direct - Brief, action-oriented\n  [4] 🎓 Educational - Explain everything\n\n👉 Enter a number (1-4):`;
       }
       return `👉 Please enter a number (1-3):`;
     }
 
-    // Step 10: Communication Style
+    // Step 11: Communication Style
     if (state.step === 'user_style') {
       const styles = ['Professional', 'Friendly', 'Direct', 'Educational'];
       const num = parseInt(input);
@@ -665,10 +721,41 @@ Your personal AI financial agent is ready.
   }
 
   /**
+   * Get connections selection prompt
+   */
+  private getConnectionsPrompt(showContinue: boolean = false): string {
+    let msg = `**Step 6/11: Connect your trading platforms & wallets:**\n\n`;
+    msg += `*(Multi-select: enter numbers like "1,3,5" or one at a time)*\n\n`;
+    
+    // Group by category
+    const categories = new Map<string, typeof TRADING_CONNECTIONS>();
+    TRADING_CONNECTIONS.forEach((conn, i) => {
+      if (!categories.has(conn.category)) {
+        categories.set(conn.category, []);
+      }
+      categories.get(conn.category)!.push({ ...conn, index: i + 1 } as any);
+    });
+    
+    let index = 1;
+    for (const [category, conns] of categories) {
+      msg += `**${category}:**\n`;
+      for (const conn of conns) {
+        msg += `  [${index}] ${conn.icon} ${conn.name}\n`;
+        index++;
+      }
+      msg += `\n`;
+    }
+    
+    msg += `  [0] ⏭️ **Done / Skip**\n`;
+    msg += `\n👉 Enter numbers to select (or 0 to continue):`;
+    return msg;
+  }
+
+  /**
    * Get skills selection prompt
    */
   private getSkillsPrompt(state: OnboardingState): string {
-    let msg = `**Step 6/6: Choose your skill set:**\n\n`;
+    let msg = `**Step 7/11: Choose your skill set:**\n\n`;
     SKILL_CATEGORIES.forEach((cat, i) => {
       msg += `  [${i + 1}] 📦 **${cat.name}**\n      ${cat.skills.join(', ')}\n\n`;
     });
