@@ -80,3 +80,15 @@ export {
   onboardingStatusToolDefinition,
   onboardingStatusToolHandler,
 } from './onboarding';
+
+// Telegram Tools
+export {
+  telegramSetupToolDefinition,
+  telegramSetupToolHandler,
+  telegramStatusToolDefinition,
+  telegramStatusToolHandler,
+  telegramSendToolDefinition,
+  telegramSendToolHandler,
+  telegramGetUpdatesToolDefinition,
+  telegramGetUpdatesToolHandler,
+} from './telegram-tools';

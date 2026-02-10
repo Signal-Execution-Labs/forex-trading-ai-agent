@@ -206,6 +206,13 @@ import {
   onboardingStatusToolDefinition, onboardingStatusToolHandler,
 } from './onboarding';
 
+import {
+  telegramSetupToolDefinition, telegramSetupToolHandler,
+  telegramStatusToolDefinition, telegramStatusToolHandler,
+  telegramSendToolDefinition, telegramSendToolHandler,
+  telegramGetUpdatesToolDefinition, telegramGetUpdatesToolHandler,
+} from './telegram-tools';
+
 export function createDefaultToolRegistry(workspaceDir?: string): ToolRegistry {
   const registry = new ToolRegistry(workspaceDir);
 
@@ -237,6 +244,12 @@ export function createDefaultToolRegistry(workspaceDir?: string): ToolRegistry {
   registry.register(onboardingStartToolDefinition, onboardingStartToolHandler, 'system');
   registry.register(onboardingContinueToolDefinition, onboardingContinueToolHandler, 'system');
   registry.register(onboardingStatusToolDefinition, onboardingStatusToolHandler, 'system');
+
+  // Telegram/Channel tools
+  registry.register(telegramSetupToolDefinition, telegramSetupToolHandler, 'channel');
+  registry.register(telegramStatusToolDefinition, telegramStatusToolHandler, 'channel');
+  registry.register(telegramSendToolDefinition, telegramSendToolHandler, 'channel');
+  registry.register(telegramGetUpdatesToolDefinition, telegramGetUpdatesToolHandler, 'channel');
 
   return registry;
 }
