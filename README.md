@@ -9,23 +9,33 @@
 
 K.I.T. is your **personal AI trading agent** - like having a professional trader working for you 24/7. Just tell it what you want, and it handles everything else.
 
-**For Users:** Chat with K.I.T. via Telegram/Discord - it trades autonomously.  
-**For Developers:** Use K.I.T. as a framework to build your own trading apps.
-
-```
-You: "Invest $500 in Bitcoin when the price drops below 40k"
-K.I.T.: "✅ Limit order set. I'll notify you when executed."
-
-You: "How's my portfolio doing?"
-K.I.T.: "📊 Portfolio: $12,450 (+3.2% today). BTC +5%, ETH -1%, EURUSD +0.8%"
-
-You: "Copy signals from @CryptoWhale"  
-K.I.T.: "📡 Signal Copier activated. Auto-Trading: ON"
-```
-
 ```
 "One man can make a difference... especially with proper position sizing."
    - K.I.T.
+```
+
+---
+
+## 🚀 One-Line Installation
+
+### Windows (CMD or PowerShell)
+
+```cmd
+cd C:\ && git clone https://github.com/kayzaa/k.i.t.-bot.git && cd k.i.t.-bot && npm install && npm run build && npm link
+```
+
+### Linux / macOS
+
+```bash
+cd ~ && git clone https://github.com/kayzaa/k.i.t.-bot.git && cd k.i.t.-bot && npm install && npm run build && npm link
+```
+
+**That's it!** Now you can use `kit` from anywhere:
+
+```cmd
+kit --help
+kit start
+kit dashboard
 ```
 
 ---
