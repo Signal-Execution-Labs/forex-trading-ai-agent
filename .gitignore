@@ -46,3 +46,7 @@ data/historical/
 
 # Reports (regeneratable)
 reports/
+
+__pycache__/
+*.pyc
+.kit/
