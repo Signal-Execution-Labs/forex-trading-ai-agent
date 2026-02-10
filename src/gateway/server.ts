@@ -167,16 +167,12 @@ export class GatewayServer extends EventEmitter {
         return;
       }
       
-      // Serve dashboard
+      // Serve dashboard - always use inline for reliability
       if (req.url === '/' || req.url === '/index.html') {
-        const dashboardPath = path.join(__dirname, '..', 'dashboard', 'index.html');
-        if (fs.existsSync(dashboardPath)) {
-          res.writeHead(200, { 'Content-Type': 'text/html' });
-          res.end(fs.readFileSync(dashboardPath, 'utf8'));
-          return;
-        }
-        // Fallback inline dashboard
-        res.writeHead(200, { 'Content-Type': 'text/html' });
+        res.writeHead(200, { 
+          'Content-Type': 'text/html',
+          'Cache-Control': 'no-cache, no-store, must-revalidate'
+        });
         res.end(this.getInlineDashboard());
         return;
       }
