@@ -218,8 +218,10 @@ export class ExchangeManager extends EventEmitter {
       for (const [asset, balance] of Object.entries(balances.total || {})) {
         const total = balance as number;
         if (total > 0) {
-          const free = (balances.free?.[asset] as number) || 0;
-          const used = (balances.used?.[asset] as number) || 0;
+          const freeBalances = balances.free as unknown as Record<string, number> | undefined;
+          const usedBalances = balances.used as unknown as Record<string, number> | undefined;
+          const free = freeBalances?.[asset] || 0;
+          const used = usedBalances?.[asset] || 0;
           
           result.push({
             asset,

@@ -164,8 +164,21 @@ export class BrainCore extends EventEmitter {
     
     const parsed = await this.goalParser.parse(prompt);
     
+    // Convert parsed goal to full UserGoal type
+    const now = new Date();
+    const fullGoal: UserGoal = {
+      id: `goal-${Date.now()}`,
+      type: parsed.goal.type,
+      targetReturn: parsed.goal.targetReturn,
+      riskTolerance: parsed.goal.riskTolerance,
+      timeHorizon: parsed.goal.timeHorizon,
+      originalPrompt: parsed.goal.raw,
+      createdAt: now,
+      updatedAt: now
+    };
+    
     // Replace existing goals (single goal for now)
-    this.state.goals = [parsed.goal];
+    this.state.goals = [fullGoal];
     this.decisionEngine.setGoals(this.state.goals);
     
     console.log(`\\n✅ Goal understood (${parsed.confidence}% confidence):`);
@@ -173,7 +186,7 @@ export class BrainCore extends EventEmitter {
     
     this.emit('event', {
       type: 'goal_set',
-      goal: parsed.goal
+      goal: fullGoal
     } as BrainEvent);
     
     return parsed;
@@ -470,3 +483,6 @@ export class BrainCore extends EventEmitter {
 export function createBrainCore(config?: BrainConfig): BrainCore {
   return new BrainCore(config);
 }
+
+// Re-export types for convenience
+export type { BrainState } from './types';

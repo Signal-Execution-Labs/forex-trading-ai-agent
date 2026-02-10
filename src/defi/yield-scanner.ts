@@ -96,7 +96,7 @@ export class YieldScanner extends EventEmitter {
   private config: YieldScannerConfig;
   private farms: YieldFarm[] = [];
   private lastScan: Date | null = null;
-  private refreshTimer?: NodeJS.Timer;
+  private refreshTimer?: ReturnType<typeof setInterval>;
   
   constructor(config: YieldScannerConfig = {}) {
     super();
@@ -152,7 +152,7 @@ export class YieldScanner extends EventEmitter {
         throw new Error(`API error: ${response.status}`);
       }
       
-      const data = await response.json();
+      const data = (await response.json()) as { data?: any[] };
       const pools = data.data || [];
       
       // Process and filter

@@ -141,7 +141,7 @@ export class DeFiManager extends EventEmitter {
   private config: DeFiConfig;
   private positions: DeFiPosition[] = [];
   private healthStatuses: HealthStatus[] = [];
-  private refreshTimer?: NodeJS.Timer;
+  private refreshTimer?: ReturnType<typeof setInterval>;
   
   constructor(config: DeFiConfig) {
     super();
