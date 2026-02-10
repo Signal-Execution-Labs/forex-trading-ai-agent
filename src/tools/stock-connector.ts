@@ -260,6 +260,126 @@ export class AlpacaClient {
     return this.mapOrder(data);
   }
 
+  /**
+   * Submit a bracket order (entry + stop-loss + take-profit)
+   * The bracket order creates a main order and attaches OCO (one-cancels-other) legs
+   */
+  async submitBracketOrder(params: {
+    symbol: string;
+    qty: number;
+    side: OrderSide;
+    type: OrderType;
+    timeInForce?: TimeInForce;
+    limitPrice?: number;
+    stopLoss: number;         // Stop loss price
+    takeProfit: number;       // Take profit price
+    stopLossLimitPrice?: number;  // Optional: make SL a stop-limit instead of stop
+    extendedHours?: boolean;
+    clientOrderId?: string;
+  }): Promise<StockOrder> {
+    const body: any = {
+      symbol: params.symbol,
+      qty: params.qty.toString(),
+      side: params.side,
+      type: params.type,
+      time_in_force: params.timeInForce || 'gtc',  // Bracket orders typically use GTC
+      order_class: 'bracket',
+      take_profit: {
+        limit_price: params.takeProfit.toString(),
+      },
+      stop_loss: {
+        stop_price: params.stopLoss.toString(),
+      },
+    };
+
+    if (params.limitPrice) body.limit_price = params.limitPrice.toString();
+    if (params.extendedHours) body.extended_hours = true;
+    if (params.clientOrderId) body.client_order_id = params.clientOrderId;
+    
+    // If a stop-loss limit price is specified, make it a stop-limit order
+    if (params.stopLossLimitPrice) {
+      body.stop_loss.limit_price = params.stopLossLimitPrice.toString();
+    }
+
+    const data = await this.request<any>('/v2/orders', 'POST', body);
+    return this.mapOrder(data);
+  }
+
+  /**
+   * Submit an OTO (one-triggers-other) order - main order triggers a dependent order
+   */
+  async submitOTOOrder(params: {
+    symbol: string;
+    qty: number;
+    side: OrderSide;
+    type: OrderType;
+    timeInForce?: TimeInForce;
+    limitPrice?: number;
+    // Dependent order (triggered after main fills)
+    dependentSide: OrderSide;
+    dependentType: OrderType;
+    dependentLimitPrice?: number;
+    dependentStopPrice?: number;
+  }): Promise<StockOrder> {
+    const body: any = {
+      symbol: params.symbol,
+      qty: params.qty.toString(),
+      side: params.side,
+      type: params.type,
+      time_in_force: params.timeInForce || 'day',
+      order_class: 'oto',
+      take_profit: params.dependentType === 'limit' ? {
+        limit_price: params.dependentLimitPrice?.toString(),
+      } : undefined,
+      stop_loss: params.dependentType === 'stop' || params.dependentType === 'stop_limit' ? {
+        stop_price: params.dependentStopPrice?.toString(),
+        limit_price: params.dependentLimitPrice?.toString(),
+      } : undefined,
+    };
+
+    if (params.limitPrice) body.limit_price = params.limitPrice.toString();
+
+    const data = await this.request<any>('/v2/orders', 'POST', body);
+    return this.mapOrder(data);
+  }
+
+  /**
+   * Submit an OCO (one-cancels-other) order - two orders where filling one cancels the other
+   */
+  async submitOCOOrder(params: {
+    symbol: string;
+    qty: number;
+    side: OrderSide;
+    timeInForce?: TimeInForce;
+    // First leg: take profit (limit order)
+    takeProfitPrice: number;
+    // Second leg: stop loss (stop or stop-limit order)  
+    stopLossPrice: number;
+    stopLossLimitPrice?: number;
+  }): Promise<StockOrder> {
+    const body: any = {
+      symbol: params.symbol,
+      qty: params.qty.toString(),
+      side: params.side,
+      type: 'limit',
+      time_in_force: params.timeInForce || 'gtc',
+      order_class: 'oco',
+      take_profit: {
+        limit_price: params.takeProfitPrice.toString(),
+      },
+      stop_loss: {
+        stop_price: params.stopLossPrice.toString(),
+      },
+    };
+
+    if (params.stopLossLimitPrice) {
+      body.stop_loss.limit_price = params.stopLossLimitPrice.toString();
+    }
+
+    const data = await this.request<any>('/v2/orders', 'POST', body);
+    return this.mapOrder(data);
+  }
+
   async cancelOrder(orderId: string): Promise<void> {
     await this.request(`/v2/orders/${orderId}`, 'DELETE');
   }
@@ -464,17 +584,60 @@ export class StockConnector {
   ): Promise<StockOrder> {
     this.ensureConnected();
     
-    const order = await this.client!.submitOrder({
-      symbol,
-      qty,
-      side: 'buy',
-      type: options?.type || 'market',
-      limitPrice: options?.limitPrice,
-    });
-
-    console.log(`📈 BUY ${qty} ${symbol} @ ${options?.type || 'market'}`);
+    let order: StockOrder;
     
-    // TODO: Implement bracket orders for SL/TP
+    // Use bracket order if both SL and TP are specified
+    if (options?.stopLoss && options?.takeProfit) {
+      order = await this.client!.submitBracketOrder({
+        symbol,
+        qty,
+        side: 'buy',
+        type: options?.type || 'market',
+        limitPrice: options?.limitPrice,
+        stopLoss: options.stopLoss,
+        takeProfit: options.takeProfit,
+      });
+      console.log(`📈 BUY ${qty} ${symbol} @ ${options?.type || 'market'} [Bracket: SL=${options.stopLoss}, TP=${options.takeProfit}]`);
+    } 
+    // Use OTO order if only stop loss is specified
+    else if (options?.stopLoss) {
+      order = await this.client!.submitOTOOrder({
+        symbol,
+        qty,
+        side: 'buy',
+        type: options?.type || 'market',
+        limitPrice: options?.limitPrice,
+        dependentSide: 'sell',
+        dependentType: 'stop',
+        dependentStopPrice: options.stopLoss,
+      });
+      console.log(`📈 BUY ${qty} ${symbol} @ ${options?.type || 'market'} [OTO: SL=${options.stopLoss}]`);
+    }
+    // Use OTO order if only take profit is specified
+    else if (options?.takeProfit) {
+      order = await this.client!.submitOTOOrder({
+        symbol,
+        qty,
+        side: 'buy',
+        type: options?.type || 'market',
+        limitPrice: options?.limitPrice,
+        dependentSide: 'sell',
+        dependentType: 'limit',
+        dependentLimitPrice: options.takeProfit,
+      });
+      console.log(`📈 BUY ${qty} ${symbol} @ ${options?.type || 'market'} [OTO: TP=${options.takeProfit}]`);
+    }
+    // Simple order without SL/TP
+    else {
+      order = await this.client!.submitOrder({
+        symbol,
+        qty,
+        side: 'buy',
+        type: options?.type || 'market',
+        limitPrice: options?.limitPrice,
+      });
+      console.log(`📈 BUY ${qty} ${symbol} @ ${options?.type || 'market'}`);
+    }
     
     return order;
   }

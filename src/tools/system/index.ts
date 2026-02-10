@@ -133,6 +133,19 @@ export {
   discordDeleteToolHandler,
   discordListGuildsToolDefinition,
   discordListGuildsToolHandler,
+  // OpenClaw-inspired Discord tools
+  discordPollToolDefinition,
+  discordPollToolHandler,
+  discordThreadToolDefinition,
+  discordThreadToolHandler,
+  discordPresenceToolDefinition,
+  discordPresenceToolHandler,
+  discordPinToolDefinition,
+  discordPinToolHandler,
+  discordListPinsToolDefinition,
+  discordListPinsToolHandler,
+  discordSearchToolDefinition,
+  discordSearchToolHandler,
 } from './discord-tools';
 
 // Slack Tools

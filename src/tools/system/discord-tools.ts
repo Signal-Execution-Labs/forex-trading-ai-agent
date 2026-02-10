@@ -610,3 +610,567 @@ export const discordListGuildsToolHandler: ToolHandler = async () => {
     return { success: false, error: error instanceof Error ? error.message : 'Failed to list guilds' };
   }
 };
+
+// ============================================================================
+// Discord Poll Tool (OpenClaw-inspired)
+// ============================================================================
+
+export const discordPollToolDefinition: ToolDefinition = {
+  name: 'discord_poll',
+  description: 'Create a poll in a Discord channel. Polls support 2-10 answer options and can run for up to 32 days.',
+  parameters: {
+    type: 'object',
+    properties: {
+      channelId: {
+        type: 'string',
+        description: 'Discord channel ID to post poll in',
+      },
+      question: {
+        type: 'string',
+        description: 'Poll question (max 300 characters)',
+      },
+      answers: {
+        type: 'array',
+        items: { type: 'string' },
+        description: 'Array of 2-10 answer options (max 55 chars each)',
+      },
+      allowMultiselect: {
+        type: 'boolean',
+        description: 'Allow users to select multiple answers. Default: false',
+      },
+      durationHours: {
+        type: 'number',
+        description: 'Poll duration in hours (1-768, default 24)',
+      },
+      content: {
+        type: 'string',
+        description: 'Optional message text to include with the poll',
+      },
+    },
+    required: ['channelId', 'question', 'answers'],
+  },
+};
+
+export const discordPollToolHandler: ToolHandler = async (args) => {
+  const { channelId, question, answers, allowMultiselect, durationHours, content } = args as {
+    channelId: string;
+    question: string;
+    answers: string[];
+    allowMultiselect?: boolean;
+    durationHours?: number;
+    content?: string;
+  };
+
+  if (!fs.existsSync(CONFIG_PATH)) {
+    return { success: false, error: 'Discord not configured. Use discord_setup first.' };
+  }
+
+  const config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+  const token = config.channels?.discord?.token;
+
+  if (!token) {
+    return { success: false, error: 'Discord not configured. Use discord_setup first.' };
+  }
+
+  // Validate inputs
+  if (!Array.isArray(answers) || answers.length < 2 || answers.length > 10) {
+    return { success: false, error: 'Poll must have 2-10 answers' };
+  }
+
+  if (question.length > 300) {
+    return { success: false, error: 'Question must be 300 characters or less' };
+  }
+
+  const invalidAnswer = answers.find(a => a.length > 55);
+  if (invalidAnswer) {
+    return { success: false, error: `Answer "${invalidAnswer.substring(0, 20)}..." exceeds 55 character limit` };
+  }
+
+  const duration = Math.min(Math.max(durationHours || 24, 1), 768);
+
+  try {
+    const response = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bot ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        content: content || undefined,
+        poll: {
+          question: { text: question },
+          answers: answers.map((text, i) => ({ 
+            poll_media: { text },
+            answer_id: i + 1,
+          })),
+          allow_multiselect: allowMultiselect ?? false,
+          duration: duration,
+          layout_type: 1, // DEFAULT layout
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({})) as any;
+      return {
+        success: false,
+        error: error.message || `HTTP ${response.status}`,
+        details: error,
+      };
+    }
+
+    const result = await response.json() as any;
+
+    return {
+      success: true,
+      messageId: result.id,
+      channelId,
+      poll: {
+        question,
+        answers,
+        allowMultiselect: allowMultiselect ?? false,
+        durationHours: duration,
+        expiresAt: new Date(Date.now() + duration * 60 * 60 * 1000).toISOString(),
+      },
+    };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Poll creation failed' };
+  }
+};
+
+// ============================================================================
+// Discord Thread Tool (OpenClaw-inspired)
+// ============================================================================
+
+export const discordThreadToolDefinition: ToolDefinition = {
+  name: 'discord_thread',
+  description: 'Create a thread in a Discord channel, optionally from an existing message.',
+  parameters: {
+    type: 'object',
+    properties: {
+      channelId: {
+        type: 'string',
+        description: 'Discord channel ID',
+      },
+      name: {
+        type: 'string',
+        description: 'Thread name (1-100 characters)',
+      },
+      messageId: {
+        type: 'string',
+        description: 'Optional: Message ID to create thread from. If omitted, creates a standalone thread.',
+      },
+      autoArchiveMinutes: {
+        type: 'number',
+        description: 'Auto-archive after inactivity (60, 1440, 4320, 10080 minutes). Default: 1440 (1 day)',
+      },
+    },
+    required: ['channelId', 'name'],
+  },
+};
+
+export const discordThreadToolHandler: ToolHandler = async (args) => {
+  const { channelId, name, messageId, autoArchiveMinutes } = args as {
+    channelId: string;
+    name: string;
+    messageId?: string;
+    autoArchiveMinutes?: number;
+  };
+
+  if (!fs.existsSync(CONFIG_PATH)) {
+    return { success: false, error: 'Discord not configured. Use discord_setup first.' };
+  }
+
+  const config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+  const token = config.channels?.discord?.token;
+
+  if (!token) {
+    return { success: false, error: 'Discord not configured. Use discord_setup first.' };
+  }
+
+  if (name.length < 1 || name.length > 100) {
+    return { success: false, error: 'Thread name must be 1-100 characters' };
+  }
+
+  const validArchiveDurations = [60, 1440, 4320, 10080];
+  const archiveDuration = validArchiveDurations.includes(autoArchiveMinutes || 0) 
+    ? autoArchiveMinutes 
+    : 1440;
+
+  try {
+    let url: string;
+    let body: any;
+
+    if (messageId) {
+      // Create thread from message
+      url = `https://discord.com/api/v10/channels/${channelId}/messages/${messageId}/threads`;
+      body = {
+        name,
+        auto_archive_duration: archiveDuration,
+      };
+    } else {
+      // Create standalone thread
+      url = `https://discord.com/api/v10/channels/${channelId}/threads`;
+      body = {
+        name,
+        auto_archive_duration: archiveDuration,
+        type: 11, // GUILD_PUBLIC_THREAD
+      };
+    }
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bot ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({})) as any;
+      return {
+        success: false,
+        error: error.message || `HTTP ${response.status}`,
+      };
+    }
+
+    const thread = await response.json() as any;
+
+    return {
+      success: true,
+      threadId: thread.id,
+      name: thread.name,
+      channelId,
+      fromMessage: messageId || null,
+      autoArchiveMinutes: archiveDuration,
+    };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Thread creation failed' };
+  }
+};
+
+// ============================================================================
+// Discord Presence Tool (OpenClaw-inspired)
+// ============================================================================
+
+export const discordPresenceToolDefinition: ToolDefinition = {
+  name: 'discord_presence',
+  description: 'Set the bot\'s presence (status and activity). Note: Requires an active Discord.js client connection.',
+  parameters: {
+    type: 'object',
+    properties: {
+      status: {
+        type: 'string',
+        enum: ['online', 'idle', 'dnd', 'invisible'],
+        description: 'Bot status. Default: online',
+      },
+      activityType: {
+        type: 'string',
+        enum: ['playing', 'streaming', 'listening', 'watching', 'competing', 'custom'],
+        description: 'Activity type',
+      },
+      activityName: {
+        type: 'string',
+        description: 'Activity name (shown in sidebar for non-custom types)',
+      },
+      activityState: {
+        type: 'string',
+        description: 'For custom type: the status text. For others: shown in profile flyout.',
+      },
+      activityUrl: {
+        type: 'string',
+        description: 'Streaming URL (Twitch/YouTube) for streaming type',
+      },
+    },
+    required: [],
+  },
+};
+
+export const discordPresenceToolHandler: ToolHandler = async (args) => {
+  const { status, activityType, activityName, activityState, activityUrl } = args as {
+    status?: 'online' | 'idle' | 'dnd' | 'invisible';
+    activityType?: string;
+    activityName?: string;
+    activityState?: string;
+    activityUrl?: string;
+  };
+
+  // Note: This tool requires an active Discord.js client to work
+  // Store the desired presence in config for the gateway to apply
+  
+  if (!fs.existsSync(CONFIG_PATH)) {
+    return { success: false, error: 'Discord not configured. Use discord_setup first.' };
+  }
+
+  const config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+
+  if (!config.channels?.discord?.token) {
+    return { success: false, error: 'Discord not configured. Use discord_setup first.' };
+  }
+
+  // Store presence config for the running gateway to pick up
+  config.channels.discord.presence = {
+    status: status || 'online',
+    activityType,
+    activityName,
+    activityState,
+    activityUrl,
+    updatedAt: new Date().toISOString(),
+  };
+
+  fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+
+  return {
+    success: true,
+    message: 'Presence configuration saved. The running gateway will apply this on next poll.',
+    presence: config.channels.discord.presence,
+    note: 'Presence changes require an active gateway connection to take effect.',
+  };
+};
+
+// ============================================================================
+// Discord Pin Tool (OpenClaw-inspired)
+// ============================================================================
+
+export const discordPinToolDefinition: ToolDefinition = {
+  name: 'discord_pin',
+  description: 'Pin or unpin a message in a Discord channel.',
+  parameters: {
+    type: 'object',
+    properties: {
+      channelId: {
+        type: 'string',
+        description: 'Discord channel ID',
+      },
+      messageId: {
+        type: 'string',
+        description: 'Message ID to pin/unpin',
+      },
+      unpin: {
+        type: 'boolean',
+        description: 'If true, unpin the message. Default: false (pin)',
+      },
+    },
+    required: ['channelId', 'messageId'],
+  },
+};
+
+export const discordPinToolHandler: ToolHandler = async (args) => {
+  const { channelId, messageId, unpin } = args as {
+    channelId: string;
+    messageId: string;
+    unpin?: boolean;
+  };
+
+  if (!fs.existsSync(CONFIG_PATH)) {
+    return { success: false, error: 'Discord not configured. Use discord_setup first.' };
+  }
+
+  const config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+  const token = config.channels?.discord?.token;
+
+  if (!token) {
+    return { success: false, error: 'Discord not configured. Use discord_setup first.' };
+  }
+
+  try {
+    const response = await fetch(
+      `https://discord.com/api/v10/channels/${channelId}/pins/${messageId}`,
+      {
+        method: unpin ? 'DELETE' : 'PUT',
+        headers: {
+          Authorization: `Bot ${token}`,
+        },
+      }
+    );
+
+    if (!response.ok && response.status !== 204) {
+      const error = await response.json().catch(() => ({})) as any;
+      return {
+        success: false,
+        error: error.message || `HTTP ${response.status}`,
+      };
+    }
+
+    return {
+      success: true,
+      action: unpin ? 'unpinned' : 'pinned',
+      messageId,
+      channelId,
+    };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Pin operation failed' };
+  }
+};
+
+// ============================================================================
+// Discord List Pins Tool (OpenClaw-inspired)
+// ============================================================================
+
+export const discordListPinsToolDefinition: ToolDefinition = {
+  name: 'discord_list_pins',
+  description: 'List all pinned messages in a Discord channel.',
+  parameters: {
+    type: 'object',
+    properties: {
+      channelId: {
+        type: 'string',
+        description: 'Discord channel ID',
+      },
+    },
+    required: ['channelId'],
+  },
+};
+
+export const discordListPinsToolHandler: ToolHandler = async (args) => {
+  const { channelId } = args as { channelId: string };
+
+  if (!fs.existsSync(CONFIG_PATH)) {
+    return { success: false, error: 'Discord not configured. Use discord_setup first.' };
+  }
+
+  const config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+  const token = config.channels?.discord?.token;
+
+  if (!token) {
+    return { success: false, error: 'Discord not configured. Use discord_setup first.' };
+  }
+
+  try {
+    const response = await fetch(
+      `https://discord.com/api/v10/channels/${channelId}/pins`,
+      {
+        headers: {
+          Authorization: `Bot ${token}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({})) as any;
+      return {
+        success: false,
+        error: error.message || `HTTP ${response.status}`,
+      };
+    }
+
+    const pins = await response.json() as any[];
+
+    return {
+      success: true,
+      channelId,
+      count: pins.length,
+      pins: pins.map((msg: any) => ({
+        id: msg.id,
+        content: msg.content?.substring(0, 200) || '(no text)',
+        author: msg.author?.username,
+        timestamp: msg.timestamp,
+      })),
+    };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Failed to list pins' };
+  }
+};
+
+// ============================================================================
+// Discord Search Tool (OpenClaw-inspired - searches recent messages)
+// ============================================================================
+
+export const discordSearchToolDefinition: ToolDefinition = {
+  name: 'discord_search',
+  description: 'Search recent messages in a Discord channel. Note: Searches last 100 messages (Discord API limitation for bots).',
+  parameters: {
+    type: 'object',
+    properties: {
+      channelId: {
+        type: 'string',
+        description: 'Discord channel ID to search',
+      },
+      query: {
+        type: 'string',
+        description: 'Text to search for (case-insensitive)',
+      },
+      authorId: {
+        type: 'string',
+        description: 'Optional: Filter by author user ID',
+      },
+      limit: {
+        type: 'number',
+        description: 'Maximum results to return (1-50, default 20)',
+      },
+    },
+    required: ['channelId', 'query'],
+  },
+};
+
+export const discordSearchToolHandler: ToolHandler = async (args) => {
+  const { channelId, query, authorId, limit } = args as {
+    channelId: string;
+    query: string;
+    authorId?: string;
+    limit?: number;
+  };
+
+  if (!fs.existsSync(CONFIG_PATH)) {
+    return { success: false, error: 'Discord not configured. Use discord_setup first.' };
+  }
+
+  const config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+  const token = config.channels?.discord?.token;
+
+  if (!token) {
+    return { success: false, error: 'Discord not configured. Use discord_setup first.' };
+  }
+
+  const maxResults = Math.min(Math.max(limit || 20, 1), 50);
+
+  try {
+    // Fetch last 100 messages from channel
+    const response = await fetch(
+      `https://discord.com/api/v10/channels/${channelId}/messages?limit=100`,
+      {
+        headers: {
+          Authorization: `Bot ${token}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({})) as any;
+      return {
+        success: false,
+        error: error.message || `HTTP ${response.status}`,
+      };
+    }
+
+    const messages = await response.json() as any[];
+    const queryLower = query.toLowerCase();
+
+    // Filter messages
+    const matches = messages
+      .filter((msg: any) => {
+        const matchesQuery = msg.content?.toLowerCase().includes(queryLower);
+        const matchesAuthor = !authorId || msg.author?.id === authorId;
+        return matchesQuery && matchesAuthor;
+      })
+      .slice(0, maxResults);
+
+    return {
+      success: true,
+      channelId,
+      query,
+      count: matches.length,
+      messages: matches.map((msg: any) => ({
+        id: msg.id,
+        content: msg.content?.substring(0, 300),
+        author: msg.author?.username,
+        authorId: msg.author?.id,
+        timestamp: msg.timestamp,
+      })),
+      note: 'Search is limited to the last 100 messages in the channel.',
+    };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Search failed' };
+  }
+};
