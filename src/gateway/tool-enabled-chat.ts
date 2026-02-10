@@ -959,6 +959,17 @@ Your personal AI financial agent is ready.
     // =========================================================================
     const onboardingActive = this.onboardingState.has(sessionId);
     
+    // Check for trigger words to START onboarding
+    const triggerWords = ['start', 'setup', 'onboard', 'onboarding', 'begin', 'configure', 'config'];
+    const lowerMessage = userMessage.toLowerCase().trim();
+    if (!onboardingActive && triggerWords.includes(lowerMessage)) {
+      const prompt = this.getOnboardingPrompt(sessionId);
+      history.push({ role: 'user', content: userMessage });
+      history.push({ role: 'assistant', content: prompt });
+      this.conversationHistory.set(sessionId, history);
+      return prompt;
+    }
+    
     if (onboardingActive) {
       const wizardResponse = this.handleOnboardingWizard(sessionId, userMessage);
       if (wizardResponse) {

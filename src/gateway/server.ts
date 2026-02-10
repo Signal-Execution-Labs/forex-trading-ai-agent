@@ -1177,7 +1177,7 @@ export class GatewayServer extends EventEmitter {
           <div class="card-title">💬 Chat with K.I.T.</div>
         </div>
         <div class="chat-messages" id="messages">
-          <div class="message kit">K.I.T.: Hello${data.user?.name ? ' ' + data.user.name : ''}! I'm your autonomous financial agent. How can I help you today?</div>
+          <div class="message kit">K.I.T.: Hello${data.user?.name ? ' ' + data.user.name : ''}! I'm your autonomous financial agent. 🏎️<br><br>${data.user?.name ? 'How can I help you today?' : '👋 <b>New here?</b> Type <code>start</code> or <code>setup</code> to begin the onboarding wizard!'}</div>
         </div>
         <input type="text" class="chat-input" placeholder="Type a message... (Enter to send)" id="chatInput">
       </div>
