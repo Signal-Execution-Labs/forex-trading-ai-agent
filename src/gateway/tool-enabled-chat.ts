@@ -820,6 +820,21 @@ Your personal AI financial agent is ready.
     // Get or create conversation history
     let history = this.conversationHistory.get(sessionId) || [];
 
+    // =========================================================================
+    // ONBOARDING WIZARD - CHECK FIRST! (continues even after API key is set)
+    // =========================================================================
+    const onboardingActive = this.onboardingState.has(sessionId);
+    
+    if (onboardingActive) {
+      const wizardResponse = this.handleOnboardingWizard(sessionId, userMessage);
+      if (wizardResponse) {
+        history.push({ role: 'user', content: userMessage });
+        history.push({ role: 'assistant', content: wizardResponse });
+        this.conversationHistory.set(sessionId, history);
+        return wizardResponse;
+      }
+    }
+
     // Get API key from multiple sources
     const anthropicKey = process.env.ANTHROPIC_API_KEY;
     const openaiKey = process.env.OPENAI_API_KEY;
@@ -830,19 +845,19 @@ Your personal AI financial agent is ready.
     const hasApiKey = !!(anthropicKey || openaiKey || googleKey || groqKey || xaiKey);
 
     // =========================================================================
-    // ONBOARDING WIZARD (if no API key configured)
+    // START ONBOARDING if no API key and not already in wizard
     // =========================================================================
-    if (!hasApiKey) {
-      // Check if user is in onboarding flow
-      const wizardResponse = this.handleOnboardingWizard(sessionId, userMessage);
-      if (wizardResponse) {
-        history.push({ role: 'user', content: userMessage });
-        history.push({ role: 'assistant', content: wizardResponse });
-        this.conversationHistory.set(sessionId, history);
-        return wizardResponse;
-      }
-      
+    if (!hasApiKey && !onboardingActive) {
       // Start onboarding wizard
+      const prompt = this.getOnboardingPrompt(sessionId);
+      history.push({ role: 'user', content: userMessage });
+      history.push({ role: 'assistant', content: prompt });
+      this.conversationHistory.set(sessionId, history);
+      return prompt;
+    }
+
+    // If still no API key after wizard attempt, show prompt
+    if (!hasApiKey) {
       const prompt = this.getOnboardingPrompt(sessionId);
       history.push({ role: 'user', content: userMessage });
       history.push({ role: 'assistant', content: prompt });
