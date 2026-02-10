@@ -450,7 +450,41 @@ Enter your bot token:
       }
       config.channels = config.channels || {};
       config.channels[channel] = { enabled: true, token };
+      state.data.channelToken = token;
+      
+      // If Telegram, ask for chat ID
+      if (channel === 'telegram') {
+        return { nextStep: 'telegram_chat_id', message: `✅ Telegram token saved` };
+      }
       return { nextStep: 'trading_style', message: `✅ ${channel} configured` };
+    },
+  },
+  
+  {
+    id: 'telegram_chat_id',
+    prompt: `
+📱 **Telegram Chat ID**
+
+K.I.T. needs your Chat ID to send you messages.
+
+**How to get it:**
+1. Send a message to your bot on Telegram
+2. Visit: https://api.telegram.org/bot<YOUR_TOKEN>/getUpdates
+3. Look for "chat":{"id": YOUR_CHAT_ID}
+
+Or use the telegram_get_chat_id tool after sending a message to your bot.
+
+**Enter your Telegram Chat ID** (e.g., 988209153):
+    `.trim(),
+    process: (input, state, config) => {
+      const chatId = input.trim();
+      if (!chatId || isNaN(parseInt(chatId))) {
+        return { nextStep: 'trading_style', message: '⚠️ Invalid Chat ID. You can set it later with `telegram_set_chat_id`' };
+      }
+      config.channels = config.channels || {};
+      config.channels.telegram = config.channels.telegram || { enabled: true, token: state.data.channelToken };
+      config.channels.telegram.chatId = chatId;
+      return { nextStep: 'trading_style', message: `✅ Telegram fully configured! Chat ID: ${chatId}` };
     },
   },
   
