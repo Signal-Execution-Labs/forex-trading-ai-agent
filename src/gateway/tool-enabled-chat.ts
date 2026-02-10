@@ -86,6 +86,19 @@ const DEFAULT_SYSTEM_PROMPT = `You are K.I.T. (Knight Industries Trading), an au
 - \`whatsapp_send\` - Send message via WhatsApp
 - \`whatsapp_logout\` - Logout and delete WhatsApp credentials
 
+### BinaryFaster Trading Tools (ACTIVE - USE THESE!)
+- \`binary_login\` - Login to BinaryFaster with email and password
+- \`binary_balance\` - Get account balance (real and demo)
+- \`binary_set_mode\` - Switch between DEMO and REAL mode
+- \`binary_call\` - Place a CALL (UP) trade - betting price goes UP
+- \`binary_put\` - Place a PUT (DOWN) trade - betting price goes DOWN
+- \`binary_history\` - Get recent trade history
+
+**Example: To trade on BinaryFaster:**
+1. \`binary_login\` with email and password
+2. \`binary_balance\` to check funds
+3. \`binary_call\` or \`binary_put\` with asset (e.g., "EUR/USD"), amount, and duration (120 for 2 min)
+
 ## IMPORTANT: For new users
 
 **FIRST** check with \`onboarding_status\` if setup is complete.
@@ -141,13 +154,17 @@ K.I.T. has **36+ trading skills** available! You CAN trade - read the skill file
 2. Use \`read\` tool to read \`skills/<skill-name>/SKILL.md\`
 3. Follow the instructions in the skill file
 
-### BinaryFaster Trading
-When user wants to trade binary options:
-1. Read \`skills/binary-options/SKILL.md\` for instructions
-2. Check if credentials are configured: \`config_get exchanges.binaryfaster\`
-3. If not configured, ask for their BinaryFaster email and API key
-4. Use \`config_set\` to save credentials
-5. Execute trades using the binary-options scripts
+### BinaryFaster Trading (YOU CAN DO THIS NOW!)
+When user wants to trade binary options on BinaryFaster:
+1. Use \`binary_login\` with their email and password
+2. Use \`binary_balance\` to check their balance
+3. Use \`binary_call\` for UP trades or \`binary_put\` for DOWN trades
+   - asset: "EUR/USD", "GBP/USD", "BTC/USD", etc.
+   - amount: trade amount in USD (e.g., 10)
+   - duration: seconds (60=1min, 120=2min, 300=5min)
+
+**Example trade:**
+\`binary_call asset="EUR/USD" amount=10 duration=120\` → $10 CALL on EUR/USD for 2 minutes
 
 Be proactive - if you can use a tool or skill to help, do it!
 
