@@ -1,16 +1,16 @@
 ---
-summary: "Verfügbare Trading-Tools in K.I.T."
+summary: "Available trading tools in K.I.T."
 read_when:
-  - Trading-Funktionen verstehen
-  - Neue Tools nutzen
-title: "Trading-Tools"
+  - Understand trading features
+  - Use new tools
+title: "Trading Tools"
 ---
 
-# Trading-Tools
+# Trading Tools
 
-K.I.T. bietet eine Vielzahl von Tools für professionelles Trading. Hier eine Übersicht aller verfügbaren Werkzeuge.
+K.I.T. offers a variety of tools for professional trading. Here's an overview of all available tools.
 
-## Übersicht
+## Overview
 
 ```mermaid
 mindmap
@@ -33,106 +33,106 @@ mindmap
       Backtesting
 ```
 
-## Order-Typen
+## Order Types
 
 ### Market Order
 
-Sofortige Ausführung zum besten verfügbaren Preis.
+Immediate execution at best available price.
 
 ```bash
 kit buy BTC/USDT 100 --type market
 ```
 
 ```
-"Kaufe BTC für 100$ sofort"
+"Buy BTC for $100 immediately"
 ```
 
 ### Limit Order
 
-Ausführung nur bei erreichtem Preis.
+Execution only at specified price.
 
 ```bash
 kit buy BTC/USDT 100 --price 65000
 ```
 
 ```
-"Kaufe BTC für 100$ bei 65000"
+"Buy BTC for $100 at 65000"
 ```
 
 ### Stop-Limit Order
 
-Limit Order, die bei Stop-Preis aktiviert wird.
+Limit order that activates at stop price.
 
 ```bash
 kit buy BTC/USDT 100 --stop 66000 --limit 66100
 ```
 
 ```
-"Kaufe BTC bei Stop 66k, Limit 66.1k"
+"Buy BTC at stop 66k, limit 66.1k"
 ```
 
 ### Trailing Stop
 
-Stop-Loss, der dem Preis folgt.
+Stop-loss that follows the price.
 
 ```bash
 kit sell BTC/USDT --trailing-stop 2%
 ```
 
 ```
-"Setze 2% Trailing Stop für BTC"
+"Set 2% trailing stop for BTC"
 ```
 
 ### OCO (One-Cancels-Other)
 
-Zwei Orders, wobei die Ausführung der einen die andere storniert.
+Two orders where execution of one cancels the other.
 
 ```bash
 kit oco BTC/USDT --take-profit 70000 --stop-loss 64000
 ```
 
 ```
-"OCO: TP 70k, SL 64k für BTC"
+"OCO: TP 70k, SL 64k for BTC"
 ```
 
-## Technische Indikatoren
+## Technical Indicators
 
-K.I.T. berechnet automatisch diese Indikatoren:
+K.I.T. automatically calculates these indicators:
 
-| Kategorie | Indikatoren |
-|-----------|-------------|
+| Category | Indicators |
+|----------|------------|
 | **Trend** | SMA, EMA, MACD, ADX, Parabolic SAR |
 | **Momentum** | RSI, Stochastic, CCI, Williams %R |
-| **Volatilität** | Bollinger Bands, ATR, Keltner Channels |
-| **Volumen** | OBV, Volume Profile, VWAP |
+| **Volatility** | Bollinger Bands, ATR, Keltner Channels |
+| **Volume** | OBV, Volume Profile, VWAP |
 | **Support/Resistance** | Pivot Points, Fibonacci, Price Levels |
 
-### Indikatoren abfragen
+### Query Indicators
 
 ```bash
 kit indicators BTC/USDT
 ```
 
 ```
-"Zeig Indikatoren für BTC"
+"Show indicators for BTC"
 ```
 
 Output:
 ```
-📊 BTC/USDT Indikatoren
+📊 BTC/USDT Indicators
 ─────────────────────────
 Trend:
-• SMA(20): $66,500 (Preis drüber ✅)
-• SMA(50): $64,200 (Preis drüber ✅)
+• SMA(20): $66,500 (Price above ✅)
+• SMA(50): $64,200 (Price above ✅)
 • MACD: Bullish (0.42)
-• ADX: 28 (Trend stärker werdend)
+• ADX: 28 (Trend strengthening)
 
 Momentum:
 • RSI(14): 58 (Neutral)
 • Stochastic: 65/72 (Neutral)
 
-Volatilität:
-• BB: $64,500 - $68,500 (Preis mittig)
+Volatility:
+• BB: $64,500 - $68,500 (Price in middle)
 • ATR: $1,200 (2.1%)
 
 Support/Resistance:
@@ -140,11 +140,11 @@ Support/Resistance:
 • Resistance: $68,000, $70,000
 ```
 
-## Chart-Analyse
+## Chart Analysis
 
-### Candlestick-Patterns
+### Candlestick Patterns
 
-K.I.T. erkennt automatisch:
+K.I.T. automatically detects:
 
 - **Bullish:** Hammer, Engulfing, Morning Star, Three White Soldiers
 - **Bearish:** Shooting Star, Engulfing, Evening Star, Three Black Crows
@@ -155,10 +155,10 @@ kit patterns BTC/USDT
 ```
 
 ```
-"Zeig Chart-Patterns für BTC"
+"Show chart patterns for BTC"
 ```
 
-### Chart-Formationen
+### Chart Formations
 
 - Head and Shoulders
 - Double Top/Bottom
@@ -166,50 +166,50 @@ kit patterns BTC/USDT
 - Wedges
 - Flags and Pennants
 
-## Position-Management
+## Position Management
 
-### Position öffnen
+### Open Position
 
 ```bash
-# Mit automatischem Risk-Management
+# With automatic risk management
 kit position open BTC/USDT long 100 \
   --stop-loss 2% \
   --take-profit 6% \
   --risk 1%
 ```
 
-### Position modifizieren
+### Modify Position
 
 ```bash
-# Stop-Loss nachziehen
+# Trail stop-loss
 kit position modify BTC/USDT --stop-loss 66500
 
-# Take-Profit anpassen
+# Adjust take-profit
 kit position modify BTC/USDT --take-profit 72000
 
-# Position vergrößern
+# Add to position
 kit position add BTC/USDT 50
 ```
 
-### Position schließen
+### Close Position
 
 ```bash
-# Komplett schließen
+# Close completely
 kit position close BTC/USDT
 
-# Teilweise schließen
+# Partial close
 kit position close BTC/USDT 50%
 
-# Alle Positionen
+# Close all positions
 kit position close-all
 ```
 
-## Portfolio-Tools
+## Portfolio Tools
 
 ### Rebalancing
 
 ```bash
-# Portfolio rebalancen
+# Rebalance portfolio
 kit portfolio rebalance --target "BTC:50%, ETH:30%, USDT:20%"
 ```
 
@@ -217,7 +217,7 @@ kit portfolio rebalance --target "BTC:50%, ETH:30%, USDT:20%"
 "Rebalance: 50% BTC, 30% ETH, 20% USDT"
 ```
 
-### Korrelationsanalyse
+### Correlation Analysis
 
 ```bash
 kit portfolio correlation
@@ -225,17 +225,17 @@ kit portfolio correlation
 
 Output:
 ```
-📊 Portfolio-Korrelation
+📊 Portfolio Correlation
 ─────────────────────────
         BTC    ETH    SOL
 BTC    1.00   0.85   0.72
 ETH    0.85   1.00   0.78
 SOL    0.72   0.78   1.00
 
-⚠️ Hohe Korrelation: Diversifikation begrenzt
+⚠️ High correlation: Diversification limited
 ```
 
-### Performance-Tracking
+### Performance Tracking
 
 ```bash
 kit portfolio performance --period 30d
@@ -243,21 +243,21 @@ kit portfolio performance --period 30d
 
 Output:
 ```
-📈 Portfolio Performance (30 Tage)
+📈 Portfolio Performance (30 days)
 ─────────────────────────
-Gesamt: +12.5% ($1,250)
+Total: +12.5% ($1,250)
 vs BTC: +3.2%
 vs ETH: +8.1%
 
-Beste Position: SOL +25%
-Schlechteste: LINK -5%
+Best position: SOL +25%
+Worst: LINK -5%
 
 Sharpe Ratio: 1.8
 Max Drawdown: -8.2%
 Win Rate: 65%
 ```
 
-## Screening-Tools
+## Screening Tools
 
 ### Market Scanner
 
@@ -266,12 +266,12 @@ kit scan --rsi-oversold --volume-spike
 ```
 
 ```
-"Scanne nach überverkauften Coins mit Volumen-Spike"
+"Scan for oversold coins with volume spike"
 ```
 
 Output:
 ```
-🔍 Scan-Ergebnisse
+🔍 Scan Results
 ─────────────────────────
 LINK/USDT: RSI 25, Vol +280%
 AVAX/USDT: RSI 28, Vol +150%
@@ -281,7 +281,7 @@ DOT/USDT: RSI 30, Vol +120%
 ### Watchlist
 
 ```bash
-# Watchlist verwalten
+# Manage watchlist
 kit watchlist add BTC ETH SOL
 kit watchlist remove DOGE
 kit watchlist show
@@ -311,25 +311,25 @@ Social Metrics:
 • Fear & Greed: 65 (Greed)
 ```
 
-## Alerts & Benachrichtigungen
+## Alerts & Notifications
 
-### Alert-Typen
+### Alert Types
 
 ```bash
-# Preis-Alert
+# Price alert
 kit alert BTC/USDT price 70000
 
-# RSI-Alert
+# RSI alert
 kit alert BTC/USDT rsi below 30
 
-# Volumen-Alert
+# Volume alert
 kit alert BTC/USDT volume above 200%
 
-# Pattern-Alert
+# Pattern alert
 kit alert BTC/USDT pattern "bullish engulfing"
 ```
 
-### Alert-Verwaltung
+### Alert Management
 
 ```bash
 kit alerts list
@@ -349,10 +349,10 @@ kit backtest --strategy trend-following \
 
 Output:
 ```
-📊 Backtest Ergebnisse
+📊 Backtest Results
 ─────────────────────────
-Strategie: Trend Following
-Zeitraum: 2023-01-01 bis 2024-01-01
+Strategy: Trend Following
+Period: 2023-01-01 to 2024-01-01
 
 Performance:
 • Total Return: +85%
@@ -361,20 +361,20 @@ Performance:
 • Win Rate: 58%
 
 Trades: 47
-• Gewinner: 27 (Avg +8.2%)
-• Verlierer: 20 (Avg -4.5%)
+• Winners: 27 (Avg +8.2%)
+• Losers: 20 (Avg -4.5%)
 ```
 
-## Nächste Schritte
+## Next Steps
 
 <Columns>
   <Card title="Auto-Trader" href="/skills/auto-trader" icon="bot">
-    Automatische Trading-Strategien.
+    Automatic trading strategies.
   </Card>
   <Card title="Backtester" href="/skills/backtester" icon="history">
-    Strategien testen.
+    Test strategies.
   </Card>
   <Card title="Risk Management" href="/concepts/risk-management" icon="shield">
-    Risiko-Kontrolle.
+    Risk control.
   </Card>
 </Columns>

@@ -1,70 +1,70 @@
 ---
-summary: "K.I.T. Skill-System und Erweiterungen"
+summary: "K.I.T. skill system and extensions"
 read_when:
-  - Skills verstehen
-  - Eigene Skills entwickeln
+  - Understand skills
+  - Develop custom skills
 title: "Skills"
 ---
 
 # Skills
 
-Skills sind modulare Erweiterungen, die K.I.T. um Funktionalitäten erweitern. Sie kapseln Trading-Logik, Exchange-Anbindungen und Analyse-Tools.
+Skills are modular extensions that add functionality to K.I.T. They encapsulate trading logic, exchange connections, and analysis tools.
 
-## Übersicht
+## Overview
 
 ```
 ~/.kit/skills/
-├── exchange-connector/    # Exchange-APIs
-├── portfolio-tracker/     # Portfolio-Verwaltung
-├── alert-system/         # Preis-Alerts
-├── market-analysis/      # Technische Analyse
-├── auto-trader/          # Automatisches Trading
-└── backtester/           # Strategie-Testing
+├── exchange-connector/    # Exchange APIs
+├── portfolio-tracker/     # Portfolio management
+├── alert-system/         # Price alerts
+├── market-analysis/      # Technical analysis
+├── auto-trader/          # Automatic trading
+└── backtester/           # Strategy testing
 ```
 
-## Eingebaute Skills
+## Built-in Skills
 
-| Skill | Beschreibung | Befehle |
-|-------|--------------|---------|
-| `exchange-connector` | Exchange-API-Verbindungen | buy, sell, balance |
-| `portfolio-tracker` | Portfolio-Übersicht | portfolio, holdings |
-| `alert-system` | Preis-Alerts | alert, alerts, remove-alert |
-| `market-analysis` | Marktanalyse | analyze, chart, indicators |
-| `auto-trader` | Automatische Trades | strategy, run, stop |
+| Skill | Description | Commands |
+|-------|-------------|----------|
+| `exchange-connector` | Exchange API connections | buy, sell, balance |
+| `portfolio-tracker` | Portfolio overview | portfolio, holdings |
+| `alert-system` | Price alerts | alert, alerts, remove-alert |
+| `market-analysis` | Market analysis | analyze, chart, indicators |
+| `auto-trader` | Automatic trades | strategy, run, stop |
 | `backtester` | Backtesting | backtest, optimize |
 
-## Skill-Struktur
+## Skill Structure
 
-Jeder Skill folgt dieser Struktur:
+Each skill follows this structure:
 
 ```
 my-skill/
-├── SKILL.md           # Dokumentation für die AI
-├── index.ts           # Hauptlogik
-├── config.json        # Konfiguration
-├── commands/          # Befehls-Handler
+├── SKILL.md           # Documentation for the AI
+├── index.ts           # Main logic
+├── config.json        # Configuration
+├── commands/          # Command handlers
 │   ├── main-command.ts
 │   └── sub-command.ts
-├── lib/               # Hilfs-Funktionen
+├── lib/               # Helper functions
 └── tests/             # Tests
 ```
 
 ### SKILL.md
 
-Dokumentation, die der AI den Skill erklärt:
+Documentation that explains the skill to the AI:
 
 ```markdown
 # My Skill
 
-## Beschreibung
-Dieser Skill macht XYZ.
+## Description
+This skill does XYZ.
 
-## Befehle
-- `my-command [arg]` - Führt XYZ aus
+## Commands
+- `my-command [arg]` - Executes XYZ
 
-## Beispiele
-- "Führe my-command aus"
-- "my-command mit option X"
+## Examples
+- "Execute my-command"
+- "my-command with option X"
 ```
 
 ### config.json
@@ -82,40 +82,40 @@ Dieser Skill macht XYZ.
 }
 ```
 
-## Skill-Management
+## Skill Management
 
 ```bash
-# Alle Skills auflisten
+# List all skills
 kit skills list
 
-# Skill aktivieren/deaktivieren
+# Enable/disable skill
 kit skills enable market-analysis
 kit skills disable backtester
 
-# Skill-Status
+# Skill status
 kit skills status
 
-# Skill neu laden
+# Reload skill
 kit skills reload exchange-connector
 
-# Skill installieren (Community)
+# Install skill (community)
 kit skills install @community/my-skill
 ```
 
-## Skill-Kommunikation
+## Skill Communication
 
-Skills können untereinander kommunizieren:
+Skills can communicate with each other:
 
 ```typescript
 // In market-analysis/commands/analyze.ts
 import { useSkill } from '@kit/core';
 
 export async function analyze(pair: string) {
-  // Exchange-Connector für Preisdaten nutzen
+  // Use exchange connector for price data
   const exchange = useSkill('exchange-connector');
   const ohlcv = await exchange.getOHLCV(pair, '1h', 100);
   
-  // Analyse durchführen
+  // Perform analysis
   const analysis = calculateIndicators(ohlcv);
   
   return analysis;
@@ -124,51 +124,51 @@ export async function analyze(pair: string) {
 
 ## Events
 
-Skills können Events emittieren und empfangen:
+Skills can emit and receive events:
 
 ```typescript
 import { events } from '@kit/core';
 
-// Event emittieren
+// Emit event
 events.emit('price-alert', { pair: 'BTC/USDT', price: 70000 });
 
-// Event empfangen
+// Receive event
 events.on('trade-executed', (trade) => {
   console.log(`Trade: ${trade.pair} ${trade.side} ${trade.amount}`);
 });
 ```
 
-## Eigenen Skill erstellen
+## Create Your Own Skill
 
 <Steps>
-  <Step title="Skill-Verzeichnis erstellen">
+  <Step title="Create skill directory">
     ```bash
     kit skills create my-skill
     ```
     
-    Oder manuell:
+    Or manually:
     ```bash
     mkdir -p ~/.kit/skills/my-skill
     cd ~/.kit/skills/my-skill
     ```
   </Step>
   
-  <Step title="SKILL.md schreiben">
+  <Step title="Write SKILL.md">
     ```markdown
     # My Custom Skill
     
-    ## Beschreibung
-    Beschreibt, was der Skill macht.
+    ## Description
+    Describes what the skill does.
     
-    ## Befehle
-    - `my-command` - Was es tut
+    ## Commands
+    - `my-command` - What it does
     
-    ## Beispiele
-    - "Nutze my-command"
+    ## Examples
+    - "Use my-command"
     ```
   </Step>
   
-  <Step title="index.ts implementieren">
+  <Step title="Implement index.ts">
     ```typescript
     import { Skill, Context } from '@kit/core';
     
@@ -184,17 +184,17 @@ events.on('trade-executed', (trade) => {
         'my-command': async (ctx: Context) => {
           const { args, reply } = ctx;
           
-          // Skill-Logik hier
+          // Skill logic here
           const result = await doSomething(args);
           
-          await reply(`Ergebnis: ${result}`);
+          await reply(`Result: ${result}`);
         }
       }
     };
     ```
   </Step>
   
-  <Step title="Skill registrieren">
+  <Step title="Register skill">
     ```bash
     kit skills register ./my-skill
     kit skills enable my-skill
@@ -202,29 +202,29 @@ events.on('trade-executed', (trade) => {
   </Step>
 </Steps>
 
-## Skill-Kontext
+## Skill Context
 
-Jeder Command-Handler erhält einen Context:
+Each command handler receives a context:
 
 ```typescript
 interface Context {
-  // User-Info
+  // User info
   user: { id: string; name: string };
   
-  // Channel-Info
+  // Channel info
   channel: { type: 'telegram' | 'discord'; id: string };
   
-  // Parsed Arguments
+  // Parsed arguments
   args: Record<string, any>;
   
-  // Original Message
+  // Original message
   message: string;
   
-  // Response-Methoden
+  // Response methods
   reply: (text: string) => Promise<void>;
   replyWithButtons: (text: string, buttons: Button[]) => Promise<void>;
   
-  // Andere Skills nutzen
+  // Use other skills
   useSkill: <T>(name: string) => T;
   
   // State
@@ -238,15 +238,15 @@ interface Context {
 ## Best Practices
 
 <Tip>
-**Skill-Entwicklung:**
-1. Halte Skills fokussiert (Single Responsibility)
-2. Schreibe gute SKILL.md Dokumentation
-3. Handle Fehler gracefully
-4. Nutze TypeScript für Type-Safety
-5. Schreibe Tests
+**Skill Development:**
+1. Keep skills focused (single responsibility)
+2. Write good SKILL.md documentation
+3. Handle errors gracefully
+4. Use TypeScript for type safety
+5. Write tests
 </Tip>
 
-## Beispiel: Price Alert Skill
+## Example: Price Alert Skill
 
 ```typescript
 // skills/price-alert/index.ts
@@ -267,7 +267,7 @@ export const skill: Skill = {
   version: '1.0.0',
   
   async init() {
-    // Preis-Updates abonnieren
+    // Subscribe to price updates
     events.on('price-update', this.checkAlerts);
   },
   
@@ -284,14 +284,14 @@ export const skill: Skill = {
       };
       
       alerts.push(alert);
-      await ctx.reply(`✅ Alert gesetzt: ${pair} ${condition} ${price}`);
+      await ctx.reply(`✅ Alert set: ${pair} ${condition} ${price}`);
     },
     
     'alerts': async (ctx: Context) => {
       const userAlerts = alerts.filter(a => a.userId === ctx.user.id);
       
       if (userAlerts.length === 0) {
-        await ctx.reply('Keine aktiven Alerts.');
+        await ctx.reply('No active alerts.');
         return;
       }
       
@@ -299,7 +299,7 @@ export const skill: Skill = {
         `• ${a.pair} ${a.condition} ${a.price}`
       ).join('\n');
       
-      await ctx.reply(`📋 Deine Alerts:\n${list}`);
+      await ctx.reply(`📋 Your alerts:\n${list}`);
     }
   },
   
@@ -313,23 +313,23 @@ export const skill: Skill = {
     
     triggered.forEach(alert => {
       events.emit('alert-triggered', alert);
-      // Alert entfernen
+      // Remove alert
       alerts.splice(alerts.indexOf(alert), 1);
     });
   }
 };
 ```
 
-## Nächste Schritte
+## Next Steps
 
 <Columns>
   <Card title="Exchange Connector" href="/skills/exchange-connector" icon="link">
-    Exchange-Anbindung im Detail.
+    Exchange connection in detail.
   </Card>
   <Card title="Auto-Trader" href="/skills/auto-trader" icon="bot">
-    Automatische Trading-Strategien.
+    Automatic trading strategies.
   </Card>
   <Card title="Market Analysis" href="/skills/market-analysis" icon="bar-chart">
-    Technische Analyse Tools.
+    Technical analysis tools.
   </Card>
 </Columns>

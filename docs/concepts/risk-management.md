@@ -1,20 +1,20 @@
 ---
-summary: "Risiko-Management und Schutzfunktionen in K.I.T."
+summary: "Risk management and protection features in K.I.T."
 read_when:
-  - Risiko-Management verstehen
-  - Schutzfunktionen konfigurieren
+  - Understand risk management
+  - Configure protection features
 title: "Risk Management"
 ---
 
 # Risk Management
 
-Effektives Risiko-Management ist der Schlüssel zum langfristigen Trading-Erfolg. K.I.T. bietet umfangreiche Tools, um dein Kapital zu schützen.
+Effective risk management is the key to long-term trading success. K.I.T. offers comprehensive tools to protect your capital.
 
 <Warning>
-**Regel Nr. 1:** Schütze dein Kapital. Gewinne kommen von selbst, wenn du nicht zu viel verlierst.
+**Rule #1:** Protect your capital. Profits come naturally when you don't lose too much.
 </Warning>
 
-## Übersicht
+## Overview
 
 ```mermaid
 flowchart TD
@@ -33,20 +33,20 @@ flowchart TD
     H -->|No| G
 ```
 
-## Konfiguration
+## Configuration
 
 ```json
 {
   "risk": {
-    "maxPositionSize": 0.1,      // Max 10% pro Position
-    "maxDailyLoss": 0.05,        // Max 5% Tagesverlust
-    "maxWeeklyLoss": 0.15,       // Max 15% Wochenverlust
-    "maxMonthlyLoss": 0.25,      // Max 25% Monatsverlust
-    "maxOpenPositions": 5,       // Max offene Positionen
-    "maxLeverage": 3,            // Max Hebel
-    "stopLossRequired": true,    // SL Pflicht
-    "stopLossDefault": 0.02,     // 2% Standard-SL
-    "takeProfitDefault": 0.06,   // 6% Standard-TP
+    "maxPositionSize": 0.1,      // Max 10% per position
+    "maxDailyLoss": 0.05,        // Max 5% daily loss
+    "maxWeeklyLoss": 0.15,       // Max 15% weekly loss
+    "maxMonthlyLoss": 0.25,      // Max 25% monthly loss
+    "maxOpenPositions": 5,       // Max open positions
+    "maxLeverage": 3,            // Max leverage
+    "stopLossRequired": true,    // SL required
+    "stopLossDefault": 0.02,     // 2% default SL
+    "takeProfitDefault": 0.06,   // 6% default TP
     "trailingStop": {
       "enabled": true,
       "activation": 0.02,
@@ -58,24 +58,24 @@ flowchart TD
 
 ## Position Sizing
 
-### Feste Prozent-Methode
+### Fixed Percent Method
 
-Riskiere immer den gleichen Prozentsatz pro Trade:
+Always risk the same percentage per trade:
 
 ```json
 {
   "risk": {
     "method": "fixed-percent",
-    "riskPerTrade": 0.01  // 1% pro Trade
+    "riskPerTrade": 0.01  // 1% per trade
   }
 }
 ```
 
-**Berechnung:**
+**Calculation:**
 ```
 Position Size = (Portfolio * Risk%) / Stop-Loss%
 
-Beispiel:
+Example:
 Portfolio: $10,000
 Risk: 1% ($100)
 Stop-Loss: 2%
@@ -83,22 +83,22 @@ Stop-Loss: 2%
 Position Size = $100 / 0.02 = $5,000
 ```
 
-### Kelly-Kriterium
+### Kelly Criterion
 
-Optimale Positionsgröße basierend auf Win-Rate:
+Optimal position size based on win rate:
 
 ```json
 {
   "risk": {
     "method": "kelly",
-    "kellyFraction": 0.25  // Viertel-Kelly (konservativ)
+    "kellyFraction": 0.25  // Quarter Kelly (conservative)
   }
 }
 ```
 
-### ATR-basiert
+### ATR-Based
 
-Position Size basierend auf Volatilität:
+Position size based on volatility:
 
 ```json
 {
@@ -110,15 +110,15 @@ Position Size basierend auf Volatilität:
 }
 ```
 
-## Stop-Loss Strategien
+## Stop-Loss Strategies
 
-### Fester Prozent-SL
+### Fixed Percent SL
 
 ```bash
 kit buy BTC/USDT 100 --stop-loss 2%
 ```
 
-### ATR-basierter SL
+### ATR-Based SL
 
 ```bash
 kit buy BTC/USDT 100 --stop-loss atr:2
@@ -126,13 +126,13 @@ kit buy BTC/USDT 100 --stop-loss atr:2
 
 Stop-Loss = Entry - (2 * ATR)
 
-### Support-basierter SL
+### Support-Based SL
 
 ```bash
 kit buy BTC/USDT 100 --stop-loss support
 ```
 
-Stop-Loss unterhalb des nächsten Supports.
+Stop-loss below nearest support.
 
 ### Trailing Stop
 
@@ -144,16 +144,16 @@ kit buy BTC/USDT 100 --trailing-stop 2%
 {
   "trailingStop": {
     "enabled": true,
-    "activation": 0.02,    // Aktiviert bei 2% Gewinn
-    "distance": 0.01,      // 1% Abstand zum Höchststand
-    "step": 0.005          // 0.5% Schritte
+    "activation": 0.02,    // Activates at 2% profit
+    "distance": 0.01,      // 1% distance from high
+    "step": 0.005          // 0.5% steps
   }
 }
 ```
 
-## Take-Profit Strategien
+## Take-Profit Strategies
 
-### Festes TP
+### Fixed TP
 
 ```bash
 kit buy BTC/USDT 100 --take-profit 6%
@@ -161,15 +161,15 @@ kit buy BTC/USDT 100 --take-profit 6%
 
 ### Partial Take-Profit
 
-Gewinne in Stufen realisieren:
+Realize profits in stages:
 
 ```bash
 kit buy BTC/USDT 100 --partial-tp "3%:33%, 6%:33%, 10%:34%"
 ```
 
-- 33% verkaufen bei +3%
-- 33% verkaufen bei +6%
-- 34% verkaufen bei +10%
+- Sell 33% at +3%
+- Sell 33% at +6%
+- Sell 34% at +10%
 
 ### Risk/Reward Ratio
 
@@ -179,9 +179,9 @@ kit buy BTC/USDT 100 --stop-loss 2% --rr 3
 
 Take-Profit = 3 * Stop-Loss = 6%
 
-## Verlust-Limits
+## Loss Limits
 
-### Tägliches Limit
+### Daily Limit
 
 ```json
 {
@@ -192,36 +192,36 @@ Take-Profit = 3 * Stop-Loss = 6%
 }
 ```
 
-**Aktionen:**
-- `halt`: Trading für heute stoppen
-- `warn`: Warnung senden, weiter traden
-- `reduce`: Positionsgrößen halbieren
+**Actions:**
+- `halt`: Stop trading for today
+- `warn`: Send warning, continue trading
+- `reduce`: Halve position sizes
 
-### Drawdown-Schutz
+### Drawdown Protection
 
 ```json
 {
   "risk": {
-    "maxDrawdown": 0.20,           // 20% max Drawdown
+    "maxDrawdown": 0.20,           // 20% max drawdown
     "onDrawdownReached": "halt",
-    "drawdownRecovery": "gradual"  // Langsame Wiederaufnahme
+    "drawdownRecovery": "gradual"  // Gradual resumption
   }
 }
 ```
 
-## Portfolio-Risiko
+## Portfolio Risk
 
-### Korrelationsgrenze
+### Correlation Limit
 
 ```json
 {
   "risk": {
-    "maxCorrelatedExposure": 0.5  // Max 50% in korrelierte Assets
+    "maxCorrelatedExposure": 0.5  // Max 50% in correlated assets
   }
 }
 ```
 
-### Sektor-Limits
+### Sector Limits
 
 ```json
 {
@@ -229,13 +229,13 @@ Take-Profit = 3 * Stop-Loss = 6%
     "sectorLimits": {
       "defi": 0.3,      // Max 30% in DeFi
       "layer1": 0.4,    // Max 40% in L1s
-      "memecoins": 0.05 // Max 5% in Memecoins
+      "memecoins": 0.05 // Max 5% in memecoins
     }
   }
 }
 ```
 
-## Risiko-Dashboard
+## Risk Dashboard
 
 ```bash
 kit risk status
@@ -243,78 +243,78 @@ kit risk status
 
 Output:
 ```
-🛡️ Risiko-Dashboard
+🛡️ Risk Dashboard
 ─────────────────────────
 Portfolio: $10,000
 
-Heutige Verluste: $150 (1.5%)
+Today's Losses: $150 (1.5%)
 ├─ Limit: $500 (5%)
 └─ Status: ✅ OK
 
-Offene Positionen: 3/5
+Open Positions: 3/5
 ├─ BTC Long: $2,000 (20%)
 ├─ ETH Long: $1,500 (15%)
 └─ SOL Short: $500 (5%)
 
-Gesamt-Exposure: 40%
+Total Exposure: 40%
 Max Drawdown (7d): -3.2%
 
-⚠️ Warnungen:
-• BTC Position nähert sich TP (aktuell +5.2%)
-• SOL SL sollte nachgezogen werden
+⚠️ Warnings:
+• BTC position approaching TP (currently +5.2%)
+• SOL SL should be trailed
 ```
 
-## Risiko-Befehle
+## Risk Commands
 
 ```bash
-# Risiko-Status
+# Risk status
 kit risk status
 
-# Position-Size berechnen
+# Calculate position size
 kit risk calc --entry 67000 --stop 65000 --risk 1%
 
-# Alle SL prüfen
+# Check all SLs
 kit risk check-stops
 
-# Exposure reduzieren
+# Reduce exposure
 kit risk reduce 50%
 
-# Trading pausieren
+# Pause trading
 kit risk halt --duration 24h
 
-# Trading wieder aufnehmen
+# Resume trading
 kit risk resume
 ```
 
 ## Best Practices
 
 <Tip>
-**Goldene Regeln:**
+**Golden Rules:**
 
-1. **1-2% Regel:** Riskiere nie mehr als 1-2% pro Trade
-2. **Risk/Reward:** Mindestens 1:2, idealerweise 1:3
-3. **Diversifikation:** Nicht alles auf eine Karte
-4. **Emotionen:** Lass K.I.T. die Regeln durchsetzen
-5. **Review:** Wöchentliche Risiko-Analyse
+1. **1-2% Rule:** Never risk more than 1-2% per trade
+2. **Risk/Reward:** At least 1:2, ideally 1:3
+3. **Diversification:** Don't put all eggs in one basket
+4. **Emotions:** Let K.I.T. enforce the rules
+5. **Review:** Weekly risk analysis
 </Tip>
 
-## Risiko-Szenarien
+## Risk Scenarios
 
-### Szenario 1: Black Swan Event
+### Scenario 1: Black Swan Event
 
 ```json
 {
   "risk": {
     "emergencyStop": {
       "enabled": true,
-      "portfolioDropTrigger": 0.10,  // 10% Drop
+      "portfolioDropTrigger": 0.10,  // 10% drop
       "action": "close-all"
     }
   }
 }
 ```
 
-### Szenario 2: Exchange-Ausfall
+### Scenario 2: Exchange Outage
 
 ```json
 {
@@ -328,35 +328,35 @@ kit risk resume
 }
 ```
 
-## Automatische Anpassungen
+## Automatic Adjustments
 
-K.I.T. kann Risiko-Parameter automatisch anpassen:
+K.I.T. can automatically adjust risk parameters:
 
 ```json
 {
   "risk": {
     "adaptive": {
       "enabled": true,
-      "reduceOnLossStreak": 3,      // Nach 3 Verlusten
-      "reductionFactor": 0.5,       // Halbieren
-      "increaseOnWinStreak": 5,     // Nach 5 Gewinnen
-      "increaseFactor": 1.25,       // 25% erhöhen
+      "reduceOnLossStreak": 3,      // After 3 losses
+      "reductionFactor": 0.5,       // Halve
+      "increaseOnWinStreak": 5,     // After 5 wins
+      "increaseFactor": 1.25,       // 25% increase
       "maxIncrease": 2              // Max 2x normal
     }
   }
 }
 ```
 
-## Nächste Schritte
+## Next Steps
 
 <Columns>
-  <Card title="Erster Trade" href="/start/first-trade" icon="trending-up">
-    Risiko-Management in der Praxis.
+  <Card title="First Trade" href="/start/first-trade" icon="trending-up">
+    Risk management in practice.
   </Card>
   <Card title="Auto-Trader" href="/skills/auto-trader" icon="bot">
-    Automatische Strategien mit Risiko-Kontrolle.
+    Automatic strategies with risk control.
   </Card>
   <Card title="Backtesting" href="/skills/backtester" icon="history">
-    Risiko-Parameter testen.
+    Test risk parameters.
   </Card>
 </Columns>

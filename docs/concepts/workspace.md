@@ -1,78 +1,78 @@
 ---
-summary: "K.I.T. Workspace und Datenverzeichnis"
+summary: "K.I.T. workspace and data directory"
 read_when:
-  - Workspace-Struktur verstehen
-  - Dateien und Logs finden
+  - Understand workspace structure
+  - Find files and logs
 title: "Workspace"
 ---
 
 # Workspace
 
-Der K.I.T. Workspace ist das zentrale Verzeichnis für Konfiguration, Daten und Logs.
+The K.I.T. workspace is the central directory for configuration, data, and logs.
 
-## Standardpfad
+## Default Path
 
-| OS | Pfad |
+| OS | Path |
 |----|------|
 | Windows | `C:\Users\<username>\.kit` |
 | macOS | `~/.kit` |
 | Linux | `~/.kit` |
 
-Überschreiben mit:
+Override with:
 ```bash
 export KIT_HOME="/path/to/workspace"
 ```
 
-## Verzeichnisstruktur
+## Directory Structure
 
 ```
 ~/.kit/
-├── config.json              # Hauptkonfiguration
-├── state.json              # Runtime-State
+├── config.json              # Main configuration
+├── state.json              # Runtime state
 │
-├── exchanges/              # Exchange-Credentials
-│   ├── binance.json       # Verschlüsselt
+├── exchanges/              # Exchange credentials
+│   ├── binance.json       # Encrypted
 │   ├── kraken.json
 │   └── metatrader.json
 │
-├── skills/                 # Skill-Module
+├── skills/                 # Skill modules
 │   ├── exchange-connector/
 │   ├── portfolio-tracker/
 │   ├── alert-system/
 │   └── custom-skills/
 │
-├── strategies/             # Trading-Strategien
+├── strategies/             # Trading strategies
 │   ├── trend-following.json
 │   ├── mean-reversion.json
 │   └── custom/
 │
-├── data/                   # Marktdaten-Cache
-│   ├── ohlcv/             # Candlestick-Daten
-│   ├── orderbook/         # Orderbook-Snapshots
-│   └── tickers/           # Ticker-Cache
+├── data/                   # Market data cache
+│   ├── ohlcv/             # Candlestick data
+│   ├── orderbook/         # Orderbook snapshots
+│   └── tickers/           # Ticker cache
 │
-├── backtest/               # Backtesting-Ergebnisse
+├── backtest/               # Backtesting results
 │   ├── results/
 │   └── reports/
 │
-├── logs/                   # Log-Dateien
-│   ├── kit.log            # Haupt-Log
-│   ├── trades.log         # Trade-History
-│   ├── errors.log         # Fehler
-│   └── archive/           # Alte Logs
+├── logs/                   # Log files
+│   ├── kit.log            # Main log
+│   ├── trades.log         # Trade history
+│   ├── errors.log         # Errors
+│   └── archive/           # Old logs
 │
-├── sessions/               # User-Sessions
+├── sessions/               # User sessions
 │   └── telegram/
 │
-└── backup/                 # Automatische Backups
+└── backup/                 # Automatic backups
     └── 2024-01-15/
 ```
 
-## Wichtige Dateien
+## Important Files
 
 ### config.json
 
-Hauptkonfiguration:
+Main configuration:
 
 ```json
 {
@@ -84,11 +84,11 @@ Hauptkonfiguration:
 }
 ```
 
-Siehe [Konfiguration](/start/configuration) für Details.
+See [Configuration](/start/configuration) for details.
 
 ### state.json
 
-Runtime-State (nicht manuell bearbeiten):
+Runtime state (do not edit manually):
 
 ```json
 {
@@ -101,7 +101,7 @@ Runtime-State (nicht manuell bearbeiten):
 
 ### exchanges/*.json
 
-Verschlüsselte Exchange-Credentials:
+Encrypted exchange credentials:
 
 ```json
 {
@@ -111,52 +111,52 @@ Verschlüsselte Exchange-Credentials:
 }
 ```
 
-## Daten-Management
+## Data Management
 
-### Marktdaten-Cache
+### Market Data Cache
 
-K.I.T. cached Marktdaten lokal für schnellere Analyse:
+K.I.T. caches market data locally for faster analysis:
 
 ```bash
-# Cache-Status
+# Cache status
 kit data status
 
-# Cache leeren
+# Clear cache
 kit data clear
 
-# Cache-Größe begrenzen
+# Limit cache size
 kit config set data.maxCacheSize "5GB"
 ```
 
-### Backtest-Daten
+### Backtest Data
 
 ```bash
-# Historische Daten laden
+# Download historical data
 kit data download BTC/USDT --from 2023-01-01 --to 2024-01-01
 
-# Daten anzeigen
+# Show data
 kit data list
 ```
 
 ## Logs
 
-### Log-Level
+### Log Level
 
 ```bash
-# Log-Level setzen
+# Set log level
 kit config set logging.level debug  # debug, info, warn, error
 
-# Logs in Echtzeit
+# Real-time logs
 kit logs -f
 
-# Nur Trades
+# Only trades
 kit logs --filter trades
 
-# Nur Fehler
+# Only errors
 kit logs --filter errors
 ```
 
-### Log-Rotation
+### Log Rotation
 
 ```json
 {
@@ -170,7 +170,7 @@ kit logs --filter errors
 
 ## Backups
 
-### Automatische Backups
+### Automatic Backups
 
 ```json
 {
@@ -183,53 +183,53 @@ kit logs --filter errors
 }
 ```
 
-### Manuelles Backup
+### Manual Backup
 
 ```bash
-# Backup erstellen
+# Create backup
 kit backup create
 
-# Backup wiederherstellen
+# Restore backup
 kit backup restore 2024-01-15
 
-# Backups auflisten
+# List backups
 kit backup list
 ```
 
-## Workspace-Befehle
+## Workspace Commands
 
 ```bash
-# Workspace-Info
+# Workspace info
 kit workspace info
 
-# Workspace-Pfad
+# Workspace path
 kit workspace path
 
-# Workspace bereinigen
+# Clean workspace
 kit workspace clean
 
-# Workspace validieren
+# Validate workspace
 kit workspace validate
 
-# Workspace exportieren
+# Export workspace
 kit workspace export ./kit-backup.zip
 
-# Workspace importieren
+# Import workspace
 kit workspace import ./kit-backup.zip
 ```
 
 ## Multi-Workspace
 
-Für verschiedene Setups (z.B. Test/Produktion):
+For different setups (e.g. test/production):
 
 ```bash
-# Workspace erstellen
+# Create workspace
 kit workspace create test
 
-# Workspace wechseln
+# Switch workspace
 kit workspace use test
 
-# Workspace auflisten
+# List workspaces
 kit workspace list
 
 # Output:
@@ -238,21 +238,21 @@ kit workspace list
 #   prod     ~/.kit-prod
 ```
 
-## Sicherheit
+## Security
 
 <Warning>
-**Sensible Dateien:**
-- `exchanges/*.json` - API-Keys
-- `config.json` - Kann Tokens enthalten
-- `sessions/` - User-Sessions
+**Sensitive Files:**
+- `exchanges/*.json` - API keys
+- `config.json` - May contain tokens
+- `sessions/` - User sessions
 
-Diese Dateien sollten:
-- Nicht in Git commited werden
-- Regelmäßig gesichert werden
-- Mit restriktiven Permissions gespeichert werden
+These files should:
+- Not be committed to Git
+- Be backed up regularly
+- Be stored with restrictive permissions
 </Warning>
 
-### Permissions setzen
+### Set Permissions
 
 ```bash
 # Linux/macOS
@@ -261,16 +261,16 @@ chmod 600 ~/.kit/exchanges/*
 chmod 600 ~/.kit/config.json
 ```
 
-## Nächste Schritte
+## Next Steps
 
 <Columns>
-  <Card title="Konfiguration" href="/start/configuration" icon="settings">
-    Konfigurationsoptionen im Detail.
+  <Card title="Configuration" href="/start/configuration" icon="settings">
+    Configuration options in detail.
   </Card>
   <Card title="Skills" href="/concepts/skills" icon="plug">
-    Skill-System verstehen.
+    Understand skill system.
   </Card>
-  <Card title="Sicherheit" href="/security/api-keys" icon="shield">
-    Best Practices für Sicherheit.
+  <Card title="Security" href="/security/api-keys" icon="shield">
+    Security best practices.
   </Card>
 </Columns>

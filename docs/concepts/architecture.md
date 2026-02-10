@@ -1,16 +1,16 @@
 ---
-summary: "K.I.T. Systemarchitektur und Komponenten"
+summary: "K.I.T. system architecture and components"
 read_when:
-  - Architektur verstehen
-  - Entwicklung an K.I.T.
-title: "Architektur"
+  - Understand architecture
+  - Developing K.I.T.
+title: "Architecture"
 ---
 
-# Architektur
+# Architecture
 
-K.I.T. ist als modulares System aufgebaut, das KI-gesteuerte Trading-Entscheidungen mit Exchange-APIs und Messaging-Channels verbindet.
+K.I.T. is built as a modular system that connects AI-powered trading decisions with exchange APIs and messaging channels.
 
-## Übersicht
+## Overview
 
 ```mermaid
 flowchart TB
@@ -52,16 +52,16 @@ flowchart TB
     Skills --> External
 ```
 
-## Komponenten
+## Components
 
 ### Gateway
 
-Der Gateway ist das Herzstück von K.I.T. Er:
+The gateway is the heart of K.I.T. It:
 
-- Empfängt Nachrichten von allen Channels
-- Routet sie zur AI Engine
-- Verwaltet Sessions pro User
-- Koordiniert alle Skills
+- Receives messages from all channels
+- Routes them to the AI Engine
+- Manages sessions per user
+- Coordinates all skills
 
 ```
 User Message → Gateway → AI Engine → Action → Response
@@ -69,7 +69,7 @@ User Message → Gateway → AI Engine → Action → Response
 
 ### AI Engine
 
-Die KI-Engine interpretiert natürliche Sprache und generiert Trading-Entscheidungen:
+The AI engine interprets natural language and generates trading decisions:
 
 ```json
 {
@@ -86,15 +86,15 @@ Die KI-Engine interpretiert natürliche Sprache und generiert Trading-Entscheidu
 }
 ```
 
-**Verantwortlichkeiten:**
-- Natürliche Sprachverarbeitung
-- Intent-Erkennung (buy, sell, analyze, etc.)
-- Marktinterpretation
-- Strategie-Empfehlungen
+**Responsibilities:**
+- Natural language processing
+- Intent recognition (buy, sell, analyze, etc.)
+- Market interpretation
+- Strategy recommendations
 
 ### Trading Engine
 
-Führt Trading-Operationen aus:
+Executes trading operations:
 
 ```mermaid
 flowchart LR
@@ -106,14 +106,14 @@ flowchart LR
 ```
 
 **Features:**
-- Order Management (Limit, Market, Stop)
-- Position Tracking
-- Order-Routing zu Exchanges
-- Trade-Execution-Reports
+- Order management (limit, market, stop)
+- Position tracking
+- Order routing to exchanges
+- Trade execution reports
 
 ### Risk Manager
 
-Schützt vor übermäßigen Verlusten:
+Protects against excessive losses:
 
 ```json
 {
@@ -133,9 +133,9 @@ Schützt vor übermäßigen Verlusten:
 }
 ```
 
-## Datenfluss
+## Data Flow
 
-### Trade-Ausführung
+### Trade Execution
 
 ```mermaid
 sequenceDiagram
@@ -146,7 +146,7 @@ sequenceDiagram
     participant TradingEngine
     participant Exchange
     
-    User->>Gateway: "Kaufe BTC für 100$"
+    User->>Gateway: "Buy BTC for $100"
     Gateway->>AI: Parse Intent
     AI->>Gateway: {action: "buy", pair: "BTC/USDT", amount: 100}
     Gateway->>RiskMgr: Validate Trade
@@ -155,7 +155,7 @@ sequenceDiagram
     TradingEngine->>Exchange: POST /order
     Exchange->>TradingEngine: Order Filled
     TradingEngine->>Gateway: Confirmation
-    Gateway->>User: "✅ Gekauft: 0.0015 BTC @ $67,000"
+    Gateway->>User: "✅ Bought: 0.0015 BTC @ $67,000"
 ```
 
 ### Market Analysis
@@ -168,7 +168,7 @@ sequenceDiagram
     participant MarketAnalysis
     participant DataFeed
     
-    User->>Gateway: "Analysiere ETH"
+    User->>Gateway: "Analyze ETH"
     Gateway->>AI: Parse Intent
     AI->>MarketAnalysis: Request Analysis
     MarketAnalysis->>DataFeed: Get OHLCV, Indicators
@@ -178,9 +178,9 @@ sequenceDiagram
     Gateway->>User: "📊 ETH Analysis..."
 ```
 
-## Skill-System
+## Skill System
 
-Skills sind modulare Erweiterungen:
+Skills are modular extensions:
 
 ```
 skills/
@@ -195,10 +195,10 @@ skills/
 └── backtester/            # Strategy Testing
 ```
 
-Jeder Skill hat:
-- `SKILL.md` - Dokumentation
-- `index.ts` - Hauptlogik
-- `config.json` - Konfiguration
+Each skill has:
+- `SKILL.md` - Documentation
+- `index.ts` - Main logic
+- `config.json` - Configuration
 
 ## State Management
 
@@ -225,7 +225,7 @@ Jeder Skill hat:
 }
 ```
 
-## Skalierbarkeit
+## Scalability
 
 ### Single Instance
 
@@ -261,14 +261,14 @@ Jeder Skill hat:
 
 ```
 1. Channel Auth      → Telegram Bot Token, Discord OAuth
-2. Gateway Auth      → API Token für externe Zugriffe
-3. Exchange Auth     → API Keys (verschlüsselt)
-4. Risk Auth         → Trade-Limits, IP-Whitelist
+2. Gateway Auth      → API Token for external access
+3. Exchange Auth     → API Keys (encrypted)
+4. Risk Auth         → Trade limits, IP whitelist
 ```
 
-## Erweiterbarkeit
+## Extensibility
 
-### Neuen Skill hinzufügen
+### Add New Skill
 
 ```typescript
 // skills/my-skill/index.ts
@@ -279,13 +279,13 @@ export const mySkill: Skill = {
   version: '1.0.0',
   commands: {
     'my-command': async (ctx) => {
-      // Skill-Logik
+      // Skill logic
     }
   }
 };
 ```
 
-### Neue Exchange hinzufügen
+### Add New Exchange
 
 ```typescript
 // skills/exchange-connector/my-exchange.ts
@@ -298,16 +298,16 @@ export class MyExchange extends Exchange {
 }
 ```
 
-## Nächste Schritte
+## Next Steps
 
 <Columns>
   <Card title="Skills" href="/concepts/skills" icon="plug">
-    Skill-System im Detail.
+    Skill system in detail.
   </Card>
-  <Card title="Trading-Tools" href="/concepts/trading-tools" icon="wrench">
-    Verfügbare Trading-Werkzeuge.
+  <Card title="Trading Tools" href="/concepts/trading-tools" icon="wrench">
+    Available trading tools.
   </Card>
   <Card title="Risk Management" href="/concepts/risk-management" icon="shield">
-    Risiko-Kontrolle verstehen.
+    Understand risk control.
   </Card>
 </Columns>
