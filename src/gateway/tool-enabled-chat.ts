@@ -127,16 +127,23 @@ This tool handles everything automatically:
   - trades: 5
   - martingale: true
 
-## IMPORTANT: For new users
+## IMPORTANT: Direct Platform Connection
 
-**FIRST** check with \`onboarding_status\` if setup is complete.
+When user wants to connect a platform, use the DIRECT tools:
 
-If \`completed: false\`:
-1. Start with \`onboarding_start\`
-2. Show the user the \`prompt\` from the response
-3. Wait for their answer
-4. Use \`onboarding_continue\` with their answer
-5. Repeat until \`status: completed\`
+**BinaryFaster:** Use \`binary_login\` with email and password
+**Telegram:** Use \`telegram_setup\` with bot token
+**WhatsApp:** Tell them to run \`kit whatsapp login\`
+
+**DO NOT use onboarding tools for platform connections!**
+Only use onboarding_start/onboarding_continue for initial K.I.T. setup (name, preferences).
+
+## For new users (ONLY if they haven't set up their profile)
+
+Check with \`onboarding_status\` if setup is complete.
+If \`completed: false\` AND user asks about initial setup:
+1. Use \`onboarding_start\`
+2. Follow the flow
 
 ## IMPORTANT: Telegram Setup
 
