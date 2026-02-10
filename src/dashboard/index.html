@@ -871,6 +871,88 @@
     // Initial status fetch
     refreshStatus();
     
+    // ========== ERROR BOUNDARIES & GLOBAL ERROR HANDLING ==========
+    let errorCount = 0;
+    const MAX_ERRORS = 5;
+    const ERROR_RESET_MS = 60000; // Reset error count after 1 minute
+    
+    function showError(message, isRetryable = true) {
+      const errorBanner = document.getElementById('errorBanner') || createErrorBanner();
+      errorBanner.innerHTML = `
+        <span>⚠️ ${message}</span>
+        ${isRetryable ? '<button onclick="dismissError()" style="background:transparent;border:1px solid #ff4444;color:#ff4444;padding:0.25rem 0.5rem;border-radius:4px;cursor:pointer;margin-left:1rem;">Dismiss</button>' : ''}
+      `;
+      errorBanner.style.display = 'flex';
+      
+      errorCount++;
+      if (errorCount >= MAX_ERRORS) {
+        errorBanner.innerHTML = `
+          <span>⚠️ Multiple errors detected. Please refresh the page or check if K.I.T. gateway is running.</span>
+          <button onclick="location.reload()" style="background:#ff4444;border:none;color:white;padding:0.25rem 0.75rem;border-radius:4px;cursor:pointer;margin-left:1rem;">Refresh</button>
+        `;
+      }
+      
+      // Reset error count after a minute
+      setTimeout(() => { errorCount = Math.max(0, errorCount - 1); }, ERROR_RESET_MS);
+    }
+    
+    function createErrorBanner() {
+      const banner = document.createElement('div');
+      banner.id = 'errorBanner';
+      banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:rgba(255,68,68,0.15);border-bottom:1px solid #ff4444;color:#ff4444;padding:0.75rem 1.5rem;display:none;align-items:center;justify-content:center;z-index:9999;font-size:0.9rem;';
+      document.body.prepend(banner);
+      return banner;
+    }
+    
+    function dismissError() {
+      const errorBanner = document.getElementById('errorBanner');
+      if (errorBanner) errorBanner.style.display = 'none';
+    }
+    
+    // Global error handler
+    window.onerror = function(msg, url, lineNo, columnNo, error) {
+      console.error('Global error:', { msg, url, lineNo, columnNo, error });
+      showError('An unexpected error occurred. Check console for details.');
+      return false;
+    };
+    
+    // Unhandled promise rejection handler
+    window.onunhandledrejection = function(event) {
+      console.error('Unhandled promise rejection:', event.reason);
+      if (event.reason?.message?.includes('fetch')) {
+        showError('Network error. Please check your connection.');
+      }
+    };
+    
+    // WebSocket error enhancement
+    const originalConnect = connect;
+    connect = function() {
+      originalConnect();
+      if (ws) {
+        ws.onerror = function(error) {
+          console.error('WebSocket error:', error);
+          showError('Connection error. Attempting to reconnect...', true);
+        };
+      }
+    };
+    
+    // Fetch wrapper with error handling
+    const originalFetch = window.fetch;
+    window.fetch = async function(...args) {
+      try {
+        const response = await originalFetch(...args);
+        if (!response.ok && response.status >= 500) {
+          showError(`Server error (${response.status}). K.I.T. may be restarting.`);
+        }
+        return response;
+      } catch (error) {
+        if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+          showError('Cannot connect to K.I.T. gateway. Is it running?');
+        }
+        throw error;
+      }
+    };
+    
     // ========== CANVAS FUNCTIONALITY ==========
     let canvasContent = null;
     let canvasHistory = [];

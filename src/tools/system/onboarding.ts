@@ -488,11 +488,37 @@ Paste your API key:
     `.trim(),
     process: (input, state, config) => {
       const key = input.trim();
-      if (key.length < 10) {
-        return { nextStep: 'channel_select', message: 'Invalid key. Skipping - configure later.' };
-      }
       const provider = state.data.aiProvider || 'anthropic';
       const model = state.data.aiModel;
+      
+      // Enhanced API key validation with provider-specific patterns
+      const keyPatterns: Record<string, { pattern: RegExp; example: string }> = {
+        anthropic: { pattern: /^sk-ant-[a-zA-Z0-9\-_]{40,}$/, example: 'sk-ant-...' },
+        openai: { pattern: /^sk-[a-zA-Z0-9\-_]{32,}$/, example: 'sk-...' },
+        google: { pattern: /^AI[a-zA-Z0-9\-_]{35,}$/, example: 'AIza...' },
+        xai: { pattern: /^xai-[a-zA-Z0-9]{32,}$/, example: 'xai-...' },
+        groq: { pattern: /^gsk_[a-zA-Z0-9]{50,}$/, example: 'gsk_...' },
+        mistral: { pattern: /^[a-zA-Z0-9]{32,}$/, example: '32+ character key' },
+        openrouter: { pattern: /^sk-or-[a-zA-Z0-9\-_]{40,}$/, example: 'sk-or-...' },
+      };
+      
+      const validation = keyPatterns[provider];
+      if (key.length < 10) {
+        return { nextStep: 'channel_select', message: '⚠️ Invalid key (too short). Skipping - configure later with `kit config`' };
+      }
+      
+      // Validate format if we have a pattern for this provider
+      if (validation && !validation.pattern.test(key)) {
+        return { 
+          nextStep: 'ai_key', 
+          message: `⚠️ Key doesn't match expected ${provider} format (${validation.example}). Please check and try again, or type "skip" to continue.`
+        };
+      }
+      
+      // Allow "skip" to bypass validation
+      if (key.toLowerCase() === 'skip') {
+        return { nextStep: 'channel_select', message: '⏩ AI key skipped. Configure later with `kit config`' };
+      }
       
       config.ai = config.ai || { providers: {} };
       config.ai.providers[provider] = { apiKey: key, enabled: true, model };
