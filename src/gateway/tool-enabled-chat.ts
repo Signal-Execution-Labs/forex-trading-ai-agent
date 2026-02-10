@@ -318,11 +318,40 @@ Use \`memory_update\` to add to MEMORY.md:
 // ============================================================================
 // Tool-Enabled Chat Handler
 // ============================================================================
+// Onboarding Wizard State
+// ============================================================================
+
+interface OnboardingState {
+  step: 'provider' | 'model' | 'apikey' | 'done';
+  provider?: string;
+  model?: string;
+}
+
+const PROVIDERS = [
+  { id: 'openai', name: 'OpenAI', models: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'] },
+  { id: 'anthropic', name: 'Anthropic', models: ['claude-sonnet-4-20250514', 'claude-3-5-sonnet-20241022', 'claude-3-haiku-20240307'] },
+  { id: 'google', name: 'Google/Gemini', models: ['gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-pro'] },
+  { id: 'groq', name: 'Groq', models: ['llama-3.1-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768'] },
+  { id: 'xai', name: 'xAI', models: ['grok-beta', 'grok-2'] },
+  { id: 'mistral', name: 'Mistral', models: ['mistral-large-latest', 'mistral-medium', 'mistral-small'] },
+];
+
+const ENV_VARS: Record<string, string> = {
+  openai: 'OPENAI_API_KEY',
+  anthropic: 'ANTHROPIC_API_KEY',
+  google: 'GOOGLE_API_KEY',
+  groq: 'GROQ_API_KEY',
+  xai: 'XAI_API_KEY',
+  mistral: 'MISTRAL_API_KEY',
+};
+
+// ============================================================================
 
 export class ToolEnabledChatHandler {
   private toolRegistry: ToolRegistry;
   private config: ChatConfig;
   private conversationHistory: Map<string, ChatMessage[]> = new Map();
+  private onboardingState: Map<string, OnboardingState> = new Map();
 
   constructor(config?: ChatConfig) {
     this.toolRegistry = getToolRegistry();
@@ -332,6 +361,117 @@ export class ToolEnabledChatHandler {
       maxTokens: config?.maxTokens || 4096,
       temperature: config?.temperature || 0.7,
     };
+  }
+
+  /**
+   * Handle onboarding wizard flow
+   */
+  private handleOnboardingWizard(sessionId: string, userMessage: string): string | null {
+    const state = this.onboardingState.get(sessionId);
+    const input = userMessage.trim();
+
+    // Step 1: Provider Selection
+    if (!state || state.step === 'provider') {
+      const num = parseInt(input);
+      if (num >= 1 && num <= PROVIDERS.length) {
+        const provider = PROVIDERS[num - 1];
+        this.onboardingState.set(sessionId, { step: 'model', provider: provider.id });
+        
+        let modelList = `✅ **${provider.name}** selected!\n\n`;
+        modelList += `**Step 2/3: Choose your model:**\n\n`;
+        provider.models.forEach((m, i) => {
+          modelList += `  [${i + 1}] ${m}\n`;
+        });
+        modelList += `\n👉 Enter a number (1-${provider.models.length}):`;
+        return modelList;
+      }
+      return null; // Not a valid selection, show initial prompt
+    }
+
+    // Step 2: Model Selection
+    if (state.step === 'model' && state.provider) {
+      const provider = PROVIDERS.find(p => p.id === state.provider);
+      if (provider) {
+        const num = parseInt(input);
+        if (num >= 1 && num <= provider.models.length) {
+          const model = provider.models[num - 1];
+          this.onboardingState.set(sessionId, { ...state, step: 'apikey', model });
+          
+          return `✅ **${model}** selected!\n\n**Step 3/3: Enter your ${provider.name} API key:**\n\n💡 Get your key from:\n• OpenAI: https://platform.openai.com/api-keys\n• Anthropic: https://console.anthropic.com/\n• Google: https://aistudio.google.com/apikey\n\n👉 Paste your API key:`;
+        }
+      }
+      return null;
+    }
+
+    // Step 3: API Key Input
+    if (state.step === 'apikey' && state.provider && state.model) {
+      // Check if it looks like an API key (at least 20 chars, no spaces)
+      if (input.length >= 20 && !input.includes(' ')) {
+        const envVar = ENV_VARS[state.provider];
+        
+        // Save to runtime
+        process.env[envVar] = input;
+        
+        // Save model preference
+        process.env.KIT_MODEL = state.model;
+        
+        // Save to .env file
+        try {
+          const workspaceDir = process.env.KIT_WORKSPACE || path.join(os.homedir(), '.kit');
+          const envFilePath = path.join(workspaceDir, '.env');
+          
+          if (!fs.existsSync(workspaceDir)) {
+            fs.mkdirSync(workspaceDir, { recursive: true });
+          }
+          
+          let envContent = fs.existsSync(envFilePath) ? fs.readFileSync(envFilePath, 'utf-8') : '';
+          
+          // Update API key
+          const keyRegex = new RegExp(`^${envVar}=.*$`, 'm');
+          if (keyRegex.test(envContent)) {
+            envContent = envContent.replace(keyRegex, `${envVar}=${input}`);
+          } else {
+            envContent += `\n${envVar}=${input}`;
+          }
+          
+          // Update model
+          const modelRegex = /^KIT_MODEL=.*$/m;
+          if (modelRegex.test(envContent)) {
+            envContent = envContent.replace(modelRegex, `KIT_MODEL=${state.model}`);
+          } else {
+            envContent += `\nKIT_MODEL=${state.model}`;
+          }
+          
+          fs.writeFileSync(envFilePath, envContent.trim() + '\n');
+        } catch (e) {
+          console.error('Failed to save .env:', e);
+        }
+        
+        // Clear onboarding state
+        this.onboardingState.delete(sessionId);
+        
+        const provider = PROVIDERS.find(p => p.id === state.provider);
+        return `🎉 **Setup Complete!**\n\n✅ Provider: **${provider?.name}**\n✅ Model: **${state.model}**\n✅ API Key: Saved!\n\n**K.I.T. is ready!** What would you like to do?\n\n• "show portfolio" - View your balances\n• "connect telegram" - Set up notifications\n• "trade EUR/USD" - Start trading`;
+      }
+      return null;
+    }
+
+    return null;
+  }
+
+  /**
+   * Get the initial onboarding prompt
+   */
+  private getOnboardingPrompt(sessionId: string): string {
+    this.onboardingState.set(sessionId, { step: 'provider' });
+    
+    let prompt = `🚀 **Welcome to K.I.T.!** Let's set up your AI provider.\n\n`;
+    prompt += `**Step 1/3: Choose your AI provider:**\n\n`;
+    PROVIDERS.forEach((p, i) => {
+      prompt += `  [${i + 1}] ${p.name}\n`;
+    });
+    prompt += `\n👉 Enter a number (1-${PROVIDERS.length}):`;
+    return prompt;
   }
 
   /**
@@ -417,29 +557,6 @@ export class ToolEnabledChatHandler {
   ): Promise<string> {
     // Get or create conversation history
     let history = this.conversationHistory.get(sessionId) || [];
-    
-    // =========================================================================
-    // AUTO-DETECT API KEY IN USER MESSAGE
-    // =========================================================================
-    const detectedKey = this.detectAndSaveApiKey(userMessage);
-    if (detectedKey) {
-      const successMessage = `✅ **${detectedKey.provider} API Key detected and saved!**
-
-Your ${detectedKey.provider} key has been configured. K.I.T. is now ready!
-
-What would you like to do?
-- "show my portfolio" - See your balances
-- "connect telegram" - Set up Telegram notifications  
-- "trade EUR/USD" - Start trading
-- "onboard" - Complete setup wizard`;
-      history.push({ role: 'user', content: '[API Key provided]' });
-      history.push({ role: 'assistant', content: successMessage });
-      this.conversationHistory.set(sessionId, history);
-      return successMessage;
-    }
-    
-    // Add user message
-    history.push({ role: 'user', content: userMessage });
 
     // Get API key from multiple sources
     const anthropicKey = process.env.ANTHROPIC_API_KEY;
@@ -448,26 +565,31 @@ What would you like to do?
     const groqKey = process.env.GROQ_API_KEY;
     const xaiKey = process.env.XAI_API_KEY;
 
-    if (!anthropicKey && !openaiKey && !googleKey && !groqKey && !xaiKey) {
-      const noKeyMessage = `🔑 **I need an AI API key to respond intelligently.**
+    const hasApiKey = !!(anthropicKey || openaiKey || googleKey || groqKey || xaiKey);
 
-**Just paste your API key below!** I'll auto-detect the provider.
-
-**Supported:**
-• **OpenAI** - starts with \`sk-\` or \`sk-proj-\`
-• **Anthropic** - starts with \`sk-ant-\`
-• **Google/Gemini** - starts with \`AIza\`
-• **Groq** - starts with \`gsk_\`
-• **xAI** - starts with \`xai-\`
-
-Or set manually:
-\`config_set ai.providers.openai.apiKey YOUR_KEY\`
-
-💡 **Just paste your key and I'll do the rest!**`;
-      history.push({ role: 'assistant', content: noKeyMessage });
+    // =========================================================================
+    // ONBOARDING WIZARD (if no API key configured)
+    // =========================================================================
+    if (!hasApiKey) {
+      // Check if user is in onboarding flow
+      const wizardResponse = this.handleOnboardingWizard(sessionId, userMessage);
+      if (wizardResponse) {
+        history.push({ role: 'user', content: userMessage });
+        history.push({ role: 'assistant', content: wizardResponse });
+        this.conversationHistory.set(sessionId, history);
+        return wizardResponse;
+      }
+      
+      // Start onboarding wizard
+      const prompt = this.getOnboardingPrompt(sessionId);
+      history.push({ role: 'user', content: userMessage });
+      history.push({ role: 'assistant', content: prompt });
       this.conversationHistory.set(sessionId, history);
-      return noKeyMessage;
+      return prompt;
     }
+    
+    // Add user message
+    history.push({ role: 'user', content: userMessage });
 
     // Call LLM with tools
     try {
