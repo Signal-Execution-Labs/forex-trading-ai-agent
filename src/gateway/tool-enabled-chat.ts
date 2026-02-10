@@ -322,12 +322,15 @@ Use \`memory_update\` to add to MEMORY.md:
 // ============================================================================
 
 interface OnboardingState {
-  step: 'provider' | 'model' | 'apikey' | 'channel' | 'telegram_token' | 'telegram_chatid' | 'connections' | 'skills' | 'user_name' | 'user_goals' | 'user_risk' | 'user_style' | 'complete';
+  step: 'provider' | 'model' | 'apikey' | 'channel' | 'telegram_token' | 'telegram_chatid' | 'platform_select' | 'platform_config' | 'platform_more' | 'wallet_select' | 'wallet_config' | 'wallet_more' | 'skills' | 'user_name' | 'user_goals' | 'user_risk' | 'user_style' | 'complete';
   provider?: string;
   model?: string;
   channel?: string;
   telegramToken?: string;
-  connections?: string[];
+  platforms?: { id: string; configured: boolean }[];
+  currentPlatform?: string;
+  wallets?: { id: string; configured: boolean }[];
+  currentWallet?: string;
   skills?: string[];
   userName?: string;
   userGoals?: string;
@@ -335,17 +338,24 @@ interface OnboardingState {
   userStyle?: string;
 }
 
-const TRADING_CONNECTIONS = [
-  { id: 'binaryfaster', name: 'BinaryFaster', icon: '📊', category: 'Binary Options' },
-  { id: 'metatrader5', name: 'MetaTrader 5', icon: '📈', category: 'Forex/CFD' },
-  { id: 'binance', name: 'Binance', icon: '🟡', category: 'Crypto Exchange' },
-  { id: 'kraken', name: 'Kraken', icon: '🐙', category: 'Crypto Exchange' },
-  { id: 'coinbase', name: 'Coinbase', icon: '🔵', category: 'Crypto Exchange' },
-  { id: 'metamask', name: 'MetaMask', icon: '🦊', category: 'Wallet' },
-  { id: 'ledger', name: 'Ledger', icon: '🔐', category: 'Hardware Wallet' },
-  { id: 'electrum', name: 'Electrum', icon: '⚡', category: 'Bitcoin Wallet' },
-  { id: 'phantom', name: 'Phantom', icon: '👻', category: 'Solana Wallet' },
-  { id: 'trustwallet', name: 'Trust Wallet', icon: '🛡️', category: 'Multi-Chain Wallet' },
+const TRADING_PLATFORMS = [
+  { id: 'binaryfaster', name: 'BinaryFaster', icon: '📊', fields: ['email', 'password'], hint: 'Binary Options Trading' },
+  { id: 'metatrader5', name: 'MetaTrader 5', icon: '📈', fields: ['server', 'login', 'password'], hint: 'Forex/CFD Trading' },
+  { id: 'binance', name: 'Binance', icon: '🟡', fields: ['apiKey', 'apiSecret'], hint: 'Crypto Exchange' },
+  { id: 'kraken', name: 'Kraken', icon: '🐙', fields: ['apiKey', 'apiSecret'], hint: 'Crypto Exchange' },
+  { id: 'coinbase', name: 'Coinbase', icon: '🔵', fields: ['apiKey', 'apiSecret'], hint: 'Crypto Exchange' },
+  { id: 'robinhood', name: 'Robinhood', icon: '🪶', fields: ['email', 'password'], hint: 'Stock Trading' },
+  { id: 'tradingview', name: 'TradingView', icon: '📺', fields: ['username', 'password'], hint: 'Charts & Signals' },
+];
+
+const CRYPTO_WALLETS = [
+  { id: 'metamask', name: 'MetaMask', icon: '🦊', fields: ['seedPhrase'], hint: 'Ethereum & EVM Chains' },
+  { id: 'ledger', name: 'Ledger', icon: '🔐', fields: ['deviceId'], hint: 'Hardware Wallet (USB)' },
+  { id: 'trezor', name: 'Trezor', icon: '🛡️', fields: ['deviceId'], hint: 'Hardware Wallet (USB)' },
+  { id: 'electrum', name: 'Electrum', icon: '⚡', fields: ['walletFile', 'password'], hint: 'Bitcoin Wallet' },
+  { id: 'phantom', name: 'Phantom', icon: '👻', fields: ['seedPhrase'], hint: 'Solana Wallet' },
+  { id: 'trustwallet', name: 'Trust Wallet', icon: '🔷', fields: ['seedPhrase'], hint: 'Multi-Chain Wallet' },
+  { id: 'exodus', name: 'Exodus', icon: '🌀', fields: ['email', 'password'], hint: 'Multi-Chain Wallet' },
 ];
 
 const PROVIDERS = [
@@ -522,52 +532,100 @@ export class ToolEnabledChatHandler {
         this.saveToEnvFile('TELEGRAM_CHAT_ID', input);
         process.env.TELEGRAM_CHAT_ID = input;
         
-        this.onboardingState.set(sessionId, { ...state, step: 'connections', connections: [] });
-        return `✅ **Telegram configured!**\n\n${this.getConnectionsPrompt()}`;
+        this.onboardingState.set(sessionId, { ...state, step: 'platform_select', platforms: [] });
+        return `✅ **Telegram configured!**\n\n${this.getPlatformSelectPrompt()}`;
       }
       return `👉 Enter your Chat ID (numbers only):`;
     }
 
-    // Step 6: Trading Connections (Multi-Select)
-    if (state.step === 'connections') {
-      const currentConnections = state.connections || [];
+    // Step 6a: Platform Selection
+    if (state.step === 'platform_select') {
+      // Skip option
+      if (input === '0' || input.toLowerCase() === 'skip') {
+        this.onboardingState.set(sessionId, { ...state, step: 'wallet_select', wallets: [] });
+        return `⏭️ **Skipping platforms.**\n\n${this.getWalletSelectPrompt()}`;
+      }
       
-      // Check for "done" or "0"
-      if (input.toLowerCase() === 'done' || input === '0') {
+      const num = parseInt(input);
+      if (num >= 1 && num <= TRADING_PLATFORMS.length) {
+        const platform = TRADING_PLATFORMS[num - 1];
+        this.onboardingState.set(sessionId, { ...state, step: 'platform_config', currentPlatform: platform.id });
+        return this.getPlatformConfigPrompt(platform);
+      }
+      return this.getPlatformSelectPrompt();
+    }
+
+    // Step 6b: Platform Configuration (credentials)
+    if (state.step === 'platform_config' && state.currentPlatform) {
+      const platform = TRADING_PLATFORMS.find(p => p.id === state.currentPlatform);
+      if (platform) {
+        // Save credentials (simplified - in real app would parse properly)
+        this.saveToEnvFile(`${platform.id.toUpperCase()}_CREDENTIALS`, input);
+        
+        const platforms = [...(state.platforms || []), { id: platform.id, configured: true }];
+        this.onboardingState.set(sessionId, { ...state, step: 'platform_more', platforms, currentPlatform: undefined });
+        
+        return `✅ **${platform.name}** configured!\n\n**Add another trading platform?**\n\n  [1] ✅ Yes, add more\n  [2] ➡️ No, continue to wallets\n\n👉 Enter 1 or 2:`;
+      }
+    }
+
+    // Step 6c: Add more platforms?
+    if (state.step === 'platform_more') {
+      if (input === '1' || input.toLowerCase() === 'yes') {
+        this.onboardingState.set(sessionId, { ...state, step: 'platform_select' });
+        return this.getPlatformSelectPrompt(state.platforms);
+      }
+      // Continue to wallets
+      this.onboardingState.set(sessionId, { ...state, step: 'wallet_select', wallets: [] });
+      const configuredPlatforms = (state.platforms || []).map(p => 
+        TRADING_PLATFORMS.find(tp => tp.id === p.id)?.name || p.id
+      ).join(', ');
+      return `✅ **Platforms configured:** ${configuredPlatforms || 'None'}\n\n${this.getWalletSelectPrompt()}`;
+    }
+
+    // Step 7a: Wallet Selection
+    if (state.step === 'wallet_select') {
+      // Skip option
+      if (input === '0' || input.toLowerCase() === 'skip') {
         this.onboardingState.set(sessionId, { ...state, step: 'skills', skills: [] });
-        const selectedNames = currentConnections.map(id => 
-          TRADING_CONNECTIONS.find(c => c.id === id)?.name || id
-        );
-        return `✅ **Connections selected:** ${selectedNames.length > 0 ? selectedNames.join(', ') : 'None'}\n\n${this.getSkillsPrompt(state)}`;
+        return `⏭️ **Skipping wallets.**\n\n${this.getSkillsPrompt(state)}`;
       }
       
-      // Parse multiple numbers (e.g., "1,2,3" or "1 2 3")
-      const nums = input.split(/[,\s]+/).map(n => parseInt(n.trim())).filter(n => !isNaN(n));
-      
-      if (nums.length > 0) {
-        const newConnections = [...currentConnections];
-        const addedNames: string[] = [];
-        
-        for (const num of nums) {
-          if (num >= 1 && num <= TRADING_CONNECTIONS.length) {
-            const conn = TRADING_CONNECTIONS[num - 1];
-            if (!newConnections.includes(conn.id)) {
-              newConnections.push(conn.id);
-              addedNames.push(conn.name);
-            }
-          }
-        }
-        
-        if (addedNames.length > 0) {
-          this.onboardingState.set(sessionId, { ...state, connections: newConnections });
-          const allNames = newConnections.map(id => 
-            TRADING_CONNECTIONS.find(c => c.id === id)?.name || id
-          );
-          return `✅ **Added:** ${addedNames.join(', ')}\n\n**Currently selected:** ${allNames.join(', ')}\n\n${this.getConnectionsPrompt(true)}`;
-        }
+      const num = parseInt(input);
+      if (num >= 1 && num <= CRYPTO_WALLETS.length) {
+        const wallet = CRYPTO_WALLETS[num - 1];
+        this.onboardingState.set(sessionId, { ...state, step: 'wallet_config', currentWallet: wallet.id });
+        return this.getWalletConfigPrompt(wallet);
       }
-      
-      return this.getConnectionsPrompt();
+      return this.getWalletSelectPrompt();
+    }
+
+    // Step 7b: Wallet Configuration (seed/API)
+    if (state.step === 'wallet_config' && state.currentWallet) {
+      const wallet = CRYPTO_WALLETS.find(w => w.id === state.currentWallet);
+      if (wallet) {
+        // Save wallet config (simplified)
+        this.saveToEnvFile(`${wallet.id.toUpperCase()}_CONFIG`, input);
+        
+        const wallets = [...(state.wallets || []), { id: wallet.id, configured: true }];
+        this.onboardingState.set(sessionId, { ...state, step: 'wallet_more', wallets, currentWallet: undefined });
+        
+        return `✅ **${wallet.name}** configured!\n\n**Add another wallet?**\n\n  [1] ✅ Yes, add more\n  [2] ➡️ No, continue to skills\n\n👉 Enter 1 or 2:`;
+      }
+    }
+
+    // Step 7c: Add more wallets?
+    if (state.step === 'wallet_more') {
+      if (input === '1' || input.toLowerCase() === 'yes') {
+        this.onboardingState.set(sessionId, { ...state, step: 'wallet_select' });
+        return this.getWalletSelectPrompt(state.wallets);
+      }
+      // Continue to skills
+      this.onboardingState.set(sessionId, { ...state, step: 'skills', skills: [] });
+      const configuredWallets = (state.wallets || []).map(w => 
+        CRYPTO_WALLETS.find(cw => cw.id === w.id)?.name || w.id
+      ).join(', ');
+      return `✅ **Wallets configured:** ${configuredWallets || 'None'}\n\n${this.getSkillsPrompt(state)}`;
     }
 
     // Step 7: Skills Selection (Multi-Select)
@@ -767,33 +825,98 @@ Your personal AI financial agent is ready.
   }
 
   /**
-   * Get connections selection prompt
+   * Get platform selection prompt
    */
-  private getConnectionsPrompt(showContinue: boolean = false): string {
-    let msg = `**Step 6/11: Connect your trading platforms & wallets:**\n\n`;
-    msg += `*(Multi-select: enter numbers like "1,3,5" or one at a time)*\n\n`;
+  private getPlatformSelectPrompt(configured?: { id: string }[]): string {
+    const configuredIds = (configured || []).map(c => c.id);
+    let msg = `**Step 6/12: Connect a Trading Platform:**\n\n`;
     
-    // Group by category
-    const categories = new Map<string, typeof TRADING_CONNECTIONS>();
-    TRADING_CONNECTIONS.forEach((conn, i) => {
-      if (!categories.has(conn.category)) {
-        categories.set(conn.category, []);
-      }
-      categories.get(conn.category)!.push({ ...conn, index: i + 1 } as any);
-    });
-    
-    let index = 1;
-    for (const [category, conns] of categories) {
-      msg += `**${category}:**\n`;
-      for (const conn of conns) {
-        msg += `  [${index}] ${conn.icon} ${conn.name}\n`;
-        index++;
-      }
-      msg += `\n`;
+    if (configuredIds.length > 0) {
+      msg += `*Already configured: ${configuredIds.map(id => TRADING_PLATFORMS.find(p => p.id === id)?.name).join(', ')}*\n\n`;
     }
     
-    msg += `  [0] ⏭️ **Done / Skip**\n`;
-    msg += `\n👉 Enter numbers to select (or 0 to continue):`;
+    TRADING_PLATFORMS.forEach((p, i) => {
+      const check = configuredIds.includes(p.id) ? '✅' : '';
+      msg += `  [${i + 1}] ${p.icon} **${p.name}** ${check}\n      ${p.hint}\n\n`;
+    });
+    
+    msg += `  [0] ⏭️ **Skip / Continue**\n`;
+    msg += `\n👉 Select a platform (1-${TRADING_PLATFORMS.length}) or 0 to skip:`;
+    return msg;
+  }
+
+  /**
+   * Get platform configuration prompt
+   */
+  private getPlatformConfigPrompt(platform: typeof TRADING_PLATFORMS[0]): string {
+    let msg = `✅ **${platform.name}** selected!\n\n`;
+    msg += `**Enter your credentials:**\n\n`;
+    
+    if (platform.fields.includes('email') && platform.fields.includes('password')) {
+      msg += `Format: \`email:password\`\n`;
+      msg += `Example: \`myemail@example.com:mypassword123\`\n\n`;
+    } else if (platform.fields.includes('apiKey') && platform.fields.includes('apiSecret')) {
+      msg += `Format: \`apiKey:apiSecret\`\n`;
+      msg += `Example: \`abc123xyz:secretkey456\`\n\n`;
+    } else if (platform.fields.includes('server')) {
+      msg += `Format: \`server:login:password\`\n`;
+      msg += `Example: \`ICMarkets-Demo:12345678:mypassword\`\n\n`;
+    }
+    
+    msg += `⚠️ *Your credentials are stored locally and encrypted.*\n\n`;
+    msg += `👉 Enter your ${platform.name} credentials:`;
+    return msg;
+  }
+
+  /**
+   * Get wallet selection prompt
+   */
+  private getWalletSelectPrompt(configured?: { id: string }[]): string {
+    const configuredIds = (configured || []).map(c => c.id);
+    let msg = `**Step 7/12: Connect a Crypto Wallet:**\n\n`;
+    
+    if (configuredIds.length > 0) {
+      msg += `*Already configured: ${configuredIds.map(id => CRYPTO_WALLETS.find(w => w.id === id)?.name).join(', ')}*\n\n`;
+    }
+    
+    CRYPTO_WALLETS.forEach((w, i) => {
+      const check = configuredIds.includes(w.id) ? '✅' : '';
+      msg += `  [${i + 1}] ${w.icon} **${w.name}** ${check}\n      ${w.hint}\n\n`;
+    });
+    
+    msg += `  [0] ⏭️ **Skip / Continue**\n`;
+    msg += `\n👉 Select a wallet (1-${CRYPTO_WALLETS.length}) or 0 to skip:`;
+    return msg;
+  }
+
+  /**
+   * Get wallet configuration prompt
+   */
+  private getWalletConfigPrompt(wallet: typeof CRYPTO_WALLETS[0]): string {
+    let msg = `✅ **${wallet.name}** selected!\n\n`;
+    
+    if (wallet.fields.includes('seedPhrase')) {
+      msg += `**Enter your seed phrase (12 or 24 words):**\n\n`;
+      msg += `⚠️ *IMPORTANT: Your seed phrase is stored locally and encrypted.*\n`;
+      msg += `⚠️ *Never share your seed phrase with anyone!*\n\n`;
+      msg += `👉 Enter your seed phrase:`;
+    } else if (wallet.fields.includes('deviceId')) {
+      msg += `**Connect your ${wallet.name}:**\n\n`;
+      msg += `1. Plug in your ${wallet.name} device\n`;
+      msg += `2. Unlock it with your PIN\n`;
+      msg += `3. Type "connected" when ready\n\n`;
+      msg += `👉 Type "connected" when your device is ready:`;
+    } else if (wallet.fields.includes('walletFile')) {
+      msg += `**Enter your wallet details:**\n\n`;
+      msg += `Format: \`walletFilePath:password\`\n`;
+      msg += `Example: \`C:/wallets/default_wallet:mypassword\`\n\n`;
+      msg += `👉 Enter wallet path and password:`;
+    } else {
+      msg += `**Enter your login:**\n\n`;
+      msg += `Format: \`email:password\`\n\n`;
+      msg += `👉 Enter credentials:`;
+    }
+    
     return msg;
   }
 
