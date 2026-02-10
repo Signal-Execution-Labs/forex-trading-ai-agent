@@ -704,8 +704,9 @@
       }
     }
     
-    // ========== CHAT HISTORY PERSISTENCE ==========
+    // ========== CHAT HISTORY & ONBOARDING PERSISTENCE ==========
     const CHAT_STORAGE_KEY = 'kit_chat_history';
+    const ONBOARDING_KEY = 'kit_onboarded';
     const MAX_STORED_MESSAGES = 100;
     
     function saveChatHistory() {
@@ -747,11 +748,40 @@
       return false;
     }
     
-    // Override addMessage to save history
+    // Check onboarding status from server
+    async function checkOnboardingStatus() {
+      try {
+        const res = await fetch('/api/status');
+        const data = await res.json();
+        
+        if (data.onboarded) {
+          localStorage.setItem(ONBOARDING_KEY, 'true');
+          if (data.user?.name) {
+            document.getElementById('userName').textContent = data.user.name;
+          }
+        } else {
+          localStorage.removeItem(ONBOARDING_KEY);
+        }
+        
+        return data.onboarded;
+      } catch (e) {
+        console.log('Failed to check onboarding status:', e);
+        return localStorage.getItem(ONBOARDING_KEY) === 'true';
+      }
+    }
+    
+    // Override addMessage to save history and check for onboarding completion
     const originalAddMessage = addMessage;
     addMessage = function(type, content, showTime = true) {
       const result = originalAddMessage(type, content, showTime);
       saveChatHistory();
+      
+      // Check if onboarding just completed
+      if (type === 'kit' && (content.includes('CONFIGURATION COMPLETE') || content.includes('Setup complete'))) {
+        localStorage.setItem(ONBOARDING_KEY, 'true');
+        checkOnboardingStatus(); // Refresh to get user name
+      }
+      
       return result;
     };
     
@@ -827,25 +857,32 @@
     });
     sendBtn.addEventListener('click', sendMessage);
     
-    // Load chat history before connecting
-    const hadHistory = loadChatHistory();
-    
-    // Start connection
-    connect();
-    
-    // If we loaded history, don't show welcome message again
-    if (hadHistory) {
-      ws.onopen = () => {
-        connected = true;
-        statusBadge.textContent = '● Online';
-        statusBadge.style.background = 'rgba(0,255,136,0.2)';
-        statusBadge.style.color = '#00ff88';
-        chatStatus.textContent = 'Connected';
-        chatInput.disabled = false;
-        sendBtn.disabled = false;
-        ws.send(JSON.stringify({ type: 'status_request' }));
-      };
-    }
+    // Initialize: check onboarding + load chat history
+    (async () => {
+      const isOnboarded = await checkOnboardingStatus();
+      const hadHistory = loadChatHistory();
+      
+      // Start connection
+      connect();
+      
+      // If we loaded history, don't show welcome message again
+      if (hadHistory) {
+        ws.onopen = () => {
+          connected = true;
+          statusBadge.textContent = '● Online';
+          statusBadge.style.background = 'rgba(0,255,136,0.2)';
+          statusBadge.style.color = '#00ff88';
+          chatStatus.textContent = 'Connected';
+          chatInput.disabled = false;
+          sendBtn.disabled = false;
+          ws.send(JSON.stringify({ type: 'status_request' }));
+        };
+      } else if (!isOnboarded) {
+        // First time user - show onboarding prompt
+        messages.innerHTML = '';
+        addMessage('kit', '👋 Welcome! I\\'m K.I.T., your autonomous financial agent.\\n\\n🚀 **Let\\'s get started!** Type `start` or `setup` to begin the onboarding wizard.', false);
+      }
+    })();
     
     // Auto-refresh status every 5 seconds
     setInterval(refreshStatus, 5000);

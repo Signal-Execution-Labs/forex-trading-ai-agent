@@ -189,6 +189,7 @@ export class GatewayServer extends EventEmitter {
           health: this.getHealth(),
           wsUrl: `ws://${this.config.host}:${this.config.port}`,
           // Dashboard data
+          onboarded: dashboardData.onboarded,
           portfolio: dashboardData.portfolio,
           skillsActive: dashboardData.skillsActive,
           skillsTotal: dashboardData.skillsTotal,
@@ -917,6 +918,7 @@ export class GatewayServer extends EventEmitter {
   private getDashboardData(): any {
     const fs = require('fs');
     const configPath = path.join(this.config.stateDir, 'config.json');
+    const onboardingPath = path.join(this.config.stateDir, 'onboarding.json');
     // Skills can be in multiple locations
     const possibleSkillsDirs = [
       path.join(__dirname, '..', '..', 'skills'),           // From dist/src/gateway
@@ -929,6 +931,7 @@ export class GatewayServer extends EventEmitter {
     let config: any = {};
     let user: any = null;
     let channels: any = {};
+    let onboarded = false;
     
     if (fs.existsSync(configPath)) {
       try {
@@ -936,18 +939,22 @@ export class GatewayServer extends EventEmitter {
         // User can be in different places
         user = config.user || { name: config.userName || config.name };
         channels = config.channels || {};
+        onboarded = config.onboarded === true;
       } catch (e) {
         console.log('[Dashboard] Error loading config:', e);
       }
     }
     
-    // Also check onboarding state for user name
-    const onboardingPath = path.join(this.config.stateDir, 'onboarding.json');
-    if (fs.existsSync(onboardingPath) && !user?.name) {
+    // Also check onboarding state for user name and completion status
+    if (fs.existsSync(onboardingPath)) {
       try {
         const onboarding = JSON.parse(fs.readFileSync(onboardingPath, 'utf8'));
-        if (onboarding.data?.userName) {
+        if (onboarding.data?.userName && !user?.name) {
           user = { name: onboarding.data.userName };
+        }
+        // Double-check onboarding completion from onboarding.json
+        if (onboarding.completed === true) {
+          onboarded = true;
         }
       } catch {}
     }
@@ -979,6 +986,7 @@ export class GatewayServer extends EventEmitter {
     const whatsappConnected = fs.existsSync(path.join(this.config.stateDir, 'credentials', 'whatsapp', 'creds.json'));
     
     return {
+      onboarded,
       user,
       skillsActive,
       skillsTotal,
@@ -1283,15 +1291,99 @@ export class GatewayServer extends EventEmitter {
     const input = document.getElementById('chatInput');
     let thinking = false;
     
+    // ========== ONBOARDING STATE PERSISTENCE ==========
+    const ONBOARDING_KEY = 'kit_onboarded';
+    const CHAT_HISTORY_KEY = 'kit_chat_history';
+    
+    // Check onboarding status from server on load
+    async function checkOnboardingStatus() {
+      try {
+        const res = await fetch('/api/status');
+        const data = await res.json();
+        
+        if (data.onboarded) {
+          localStorage.setItem(ONBOARDING_KEY, 'true');
+          // Update user name if available
+          if (data.user?.name) {
+            document.querySelector('.user-name').textContent = data.user.name;
+          }
+        } else {
+          localStorage.removeItem(ONBOARDING_KEY);
+        }
+        
+        return data.onboarded;
+      } catch (e) {
+        console.log('Failed to check onboarding status:', e);
+        return localStorage.getItem(ONBOARDING_KEY) === 'true';
+      }
+    }
+    
+    // Load chat history from localStorage
+    function loadChatHistory() {
+      const stored = localStorage.getItem(CHAT_HISTORY_KEY);
+      if (stored) {
+        try {
+          const history = JSON.parse(stored);
+          messages.innerHTML = history.map(h => h.html).join('');
+          messages.scrollTop = messages.scrollHeight;
+          return true;
+        } catch (e) {
+          console.log('Failed to load chat history:', e);
+        }
+      }
+      return false;
+    }
+    
+    // Save chat history to localStorage
+    function saveChatHistory() {
+      const msgEls = messages.querySelectorAll('.message:not(#thinking)');
+      const history = Array.from(msgEls).slice(-50).map(el => ({ html: el.outerHTML }));
+      localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(history));
+    }
+    
+    // Clear chat history (for re-onboarding)
+    function clearChatHistory() {
+      localStorage.removeItem(CHAT_HISTORY_KEY);
+      localStorage.removeItem(ONBOARDING_KEY);
+    }
+    
+    // Initialize on page load
+    (async () => {
+      const isOnboarded = await checkOnboardingStatus();
+      const hasHistory = loadChatHistory();
+      
+      if (!isOnboarded && !hasHistory) {
+        // First time user - show welcome with onboarding prompt
+        messages.innerHTML = '<div class="message kit">K.I.T.: 👋 Welcome! I\\'m K.I.T., your autonomous financial agent.<br><br>🚀 <b>Let\\'s get started!</b> Type <code>start</code> or <code>setup</code> to begin the onboarding wizard.</div>';
+      } else if (isOnboarded && !hasHistory) {
+        // Returning user, no history - show regular welcome
+        messages.innerHTML = '<div class="message kit">K.I.T.: Welcome back! How can I help you today? 🏎️</div>';
+      }
+      // If hasHistory, the loaded history is already displayed
+    })();
+    
     ws.onmessage = (e) => {
       const data = JSON.parse(e.data);
       if (data.type === 'message') {
+        // Remove thinking indicator
+        const thinkingEl = document.getElementById('thinking');
+        if (thinkingEl) thinkingEl.remove();
+        
         messages.innerHTML += '<div class="message kit">K.I.T.: ' + data.content.replace(/\\n/g, '<br>') + '</div>';
         messages.scrollTop = messages.scrollHeight;
         thinking = false;
+        saveChatHistory();
+        
+        // Check if onboarding just completed
+        if (data.content.includes('CONFIGURATION COMPLETE') || data.content.includes('Setup complete')) {
+          localStorage.setItem(ONBOARDING_KEY, 'true');
+          // Refresh status to get user name
+          checkOnboardingStatus();
+        }
       } else if (data.type === 'tool_call') {
         messages.innerHTML += '<div class="message tool">🔧 Using: ' + data.name + '</div>';
         messages.scrollTop = messages.scrollHeight;
+        saveChatHistory();
       } else if (data.type === 'chunk') {
         // Handle streaming chunks
       }
@@ -1305,6 +1397,7 @@ export class GatewayServer extends EventEmitter {
         thinking = true;
         messages.innerHTML += '<div class="message kit" id="thinking">K.I.T.: <em>Thinking...</em></div>';
         messages.scrollTop = messages.scrollHeight;
+        saveChatHistory();
       }
     });
     
