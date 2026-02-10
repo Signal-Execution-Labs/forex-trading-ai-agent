@@ -130,3 +130,11 @@ export {
   memoryListToolDefinition,
   memoryListToolHandler,
 } from './memory-tools';
+
+// Web Tools
+export {
+  webSearchToolDefinition,
+  webSearchToolHandler,
+  webFetchToolDefinition,
+  webFetchToolHandler,
+} from './web-tools';

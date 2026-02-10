@@ -231,6 +231,11 @@ import {
 } from './memory-tools';
 
 import {
+  webSearchToolDefinition, webSearchToolHandler,
+  webFetchToolDefinition, webFetchToolHandler,
+} from './web-tools';
+
+import {
   getBinaryOptionsTools,
   getBinaryOptionsHandlers,
 } from '../binary-options-tools';
@@ -287,6 +292,10 @@ export function createDefaultToolRegistry(workspaceDir?: string): ToolRegistry {
   registry.register(memoryWriteToolDefinition, memoryWriteToolHandler, 'system');
   registry.register(memoryUpdateToolDefinition, memoryUpdateToolHandler, 'system');
   registry.register(memoryListToolDefinition, memoryListToolHandler, 'system');
+
+  // Web tools
+  registry.register(webSearchToolDefinition, webSearchToolHandler, 'utility');
+  registry.register(webFetchToolDefinition, webFetchToolHandler, 'utility');
 
   // Binary Options / BinaryFaster trading tools
   const binaryTools = getBinaryOptionsTools();
