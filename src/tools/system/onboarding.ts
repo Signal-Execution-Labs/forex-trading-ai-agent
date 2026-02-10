@@ -1,6 +1,6 @@
 /**
- * K.I.T. Onboarding System
- * Conversational setup like OpenClaw - with SOUL.md and USER.md
+ * K.I.T. Professional Onboarding System
+ * Enterprise-grade financial agent setup
  */
 
 import * as fs from 'fs';
@@ -14,7 +14,7 @@ const WORKSPACE_DIR = path.join(CONFIG_DIR, 'workspace');
 const ONBOARDING_STATE_PATH = path.join(CONFIG_DIR, 'onboarding.json');
 
 // ============================================================================
-// Onboarding State
+// Types
 // ============================================================================
 
 interface OnboardingState {
@@ -22,197 +22,155 @@ interface OnboardingState {
   completed: boolean;
   currentStep: string;
   completedSteps: string[];
-  data: {
-    // User data
-    userName?: string;
-    tradingExperience?: string;
-    riskTolerance?: string;
-    financialGoals?: string;
-    preferredMarkets?: string[];
-    timezone?: string;
-    // K.I.T. personality
-    kitName?: string;
-    communicationStyle?: string;
-    tradingStyle?: string;
-    // Setup
-    aiProvider?: string;
-    aiApiKey?: string;
-    selectedChannel?: string;
-    channelToken?: string;
-  };
+  data: Record<string, any>;
   startedAt?: string;
   completedAt?: string;
 }
 
-function loadOnboardingState(): OnboardingState {
+// ============================================================================
+// State Management
+// ============================================================================
+
+function loadState(): OnboardingState {
   if (fs.existsSync(ONBOARDING_STATE_PATH)) {
     try {
       return JSON.parse(fs.readFileSync(ONBOARDING_STATE_PATH, 'utf8'));
-    } catch {
-      // ignore
-    }
+    } catch {}
   }
-  return {
-    started: false,
-    completed: false,
-    currentStep: 'welcome',
-    completedSteps: [],
-    data: {},
-  };
+  return { started: false, completed: false, currentStep: 'welcome', completedSteps: [], data: {} };
 }
 
-function saveOnboardingState(state: OnboardingState): void {
-  if (!fs.existsSync(CONFIG_DIR)) {
-    fs.mkdirSync(CONFIG_DIR, { recursive: true });
-  }
-  fs.writeFileSync(ONBOARDING_STATE_PATH, JSON.stringify(state, null, 2), 'utf8');
+function saveState(state: OnboardingState): void {
+  if (!fs.existsSync(CONFIG_DIR)) fs.mkdirSync(CONFIG_DIR, { recursive: true });
+  fs.writeFileSync(ONBOARDING_STATE_PATH, JSON.stringify(state, null, 2));
 }
 
 function loadConfig(): any {
   if (!fs.existsSync(CONFIG_PATH)) return {};
-  try {
-    return JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
-  } catch {
-    return {};
-  }
+  try { return JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8')); } catch { return {}; }
 }
 
 function saveConfig(config: any): void {
-  if (!fs.existsSync(CONFIG_DIR)) {
-    fs.mkdirSync(CONFIG_DIR, { recursive: true });
-  }
-  fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2), 'utf8');
-}
-
-function ensureWorkspace(): void {
-  if (!fs.existsSync(WORKSPACE_DIR)) {
-    fs.mkdirSync(WORKSPACE_DIR, { recursive: true });
-  }
+  if (!fs.existsSync(CONFIG_DIR)) fs.mkdirSync(CONFIG_DIR, { recursive: true });
+  fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
 }
 
 // ============================================================================
-// SOUL.md and USER.md Generation
+// Workspace Files Generation
 // ============================================================================
 
-function generateSoulMd(state: OnboardingState): string {
-  const name = state.data.kitName || 'K.I.T.';
-  const style = state.data.communicationStyle || 'professional';
-  const trading = state.data.tradingStyle || 'balanced';
-  
-  const styleDescriptions: Record<string, string> = {
-    formal: `I communicate in a professional, formal manner. I use proper grammar, avoid slang, and maintain a respectful tone at all times. I present information clearly and systematically.`,
-    casual: `I'm friendly and approachable! I use casual language, occasional emojis, and try to make finance feel less intimidating. I'm like a knowledgeable friend who happens to be great with money.`,
-    professional: `I strike a balance between approachable and professional. I'm friendly but focused, using clear language without being overly formal or too casual.`,
-  };
-  
-  const tradingDescriptions: Record<string, string> = {
-    conservative: `I prioritize capital preservation above all else. I recommend lower-risk investments, diversification, and patience. I'll always err on the side of caution and may talk you out of risky trades.`,
-    balanced: `I take a balanced approach to risk and reward. I believe in calculated risks with proper risk management. I'll present both opportunities and risks clearly, letting you make informed decisions.`,
-    aggressive: `I'm always looking for opportunities to maximize returns. I'm comfortable with higher-risk strategies and will actively seek out trades with strong profit potential. I'll still manage risk, but I lean into opportunities.`,
-  };
+function generateSOUL(state: OnboardingState): string {
+  const style = state.data.tradingStyle || 'balanced';
+  return `# K.I.T. - Knight Industries Trading
 
-  return `# ${name} - Soul Definition
+## Identity
+I am K.I.T., an autonomous AI financial agent. Your wealth is my mission.
 
-## Who I Am
-I am ${name}, your autonomous AI financial agent. I exist to help you build wealth and achieve your financial goals. Your success is my mission.
+## Trading Philosophy: ${style.toUpperCase()}
+${style === 'conservative' ? 'I prioritize capital preservation. Lower risk, steady growth.' : ''}
+${style === 'balanced' ? 'I balance risk and reward. Calculated positions with proper risk management.' : ''}
+${style === 'aggressive' ? 'I seek high-return opportunities. Comfortable with volatility, always managing risk.' : ''}
 
-## My Personality
+## Core Directives
+1. **Protect Capital** - Never risk more than configured limits
+2. **Execute Precisely** - Fast, accurate trade execution
+3. **Report Transparently** - Full visibility into all actions
+4. **Learn Continuously** - Adapt strategies based on performance
 
-### Communication Style
-${styleDescriptions[style] || styleDescriptions.professional}
-
-### Trading Philosophy
-${tradingDescriptions[trading] || tradingDescriptions.balanced}
-
-## Core Values
-
-1. **Your Wealth is My Mission** - Every decision I make is aimed at improving your financial situation
-2. **Transparency** - I always explain my reasoning and never hide risks
-3. **Continuous Learning** - I adapt to market conditions and learn from outcomes
-4. **Respect for Boundaries** - I only act within the autonomy level you've granted me
-
-## How I Work
-
-- I monitor markets and identify opportunities aligned with your goals
-- I can execute trades (with your permission level)
-- I track your portfolio and report on performance
-- I alert you to important market events
-- I learn your preferences over time
-
-## My Boundaries
-
-- I never risk more than you're comfortable with
-- I always explain before taking significant actions
-- I respect your time and won't spam you with notifications
-- I keep your financial data private and secure
+## Boundaries
+- Maximum position size: ${state.data.maxPositionSize || '10'}% of portfolio
+- Daily loss limit: ${state.data.dailyLossLimit || '5'}%
+- Only trade approved assets and markets
+- Always confirm large trades unless in full-auto mode
 
 ---
-*"Your wealth is my mission."*
+*Generated: ${new Date().toISOString()}*
 `;
 }
 
-function generateUserMd(state: OnboardingState): string {
-  const name = state.data.userName || 'User';
-  const experience = state.data.tradingExperience || 'intermediate';
-  const risk = state.data.riskTolerance || 'moderate';
-  const goals = state.data.financialGoals || 'Build long-term wealth';
-  const markets = state.data.preferredMarkets || ['crypto'];
-  const timezone = state.data.timezone || 'UTC';
+function generateUSER(state: OnboardingState): string {
+  return `# User Profile
 
-  const experienceDescriptions: Record<string, string> = {
-    beginner: `New to trading. Needs explanations of basic concepts. Prefers simpler strategies and more guidance.`,
-    intermediate: `Has some trading experience. Understands basic concepts but appreciates insights and analysis.`,
-    advanced: `Experienced trader. Wants concise, data-driven insights without basic explanations.`,
-    expert: `Professional-level knowledge. Wants raw data, technical details, and minimal hand-holding.`,
-  };
-
-  const riskDescriptions: Record<string, string> = {
-    conservative: `Very risk-averse. Prefers stable investments. Max position size: 2-5% of portfolio. Stop-losses required.`,
-    moderate: `Balanced risk appetite. Comfortable with some volatility. Max position size: 5-10% of portfolio.`,
-    aggressive: `High risk tolerance. Comfortable with significant volatility. Max position size: 10-20% of portfolio.`,
-    'very-aggressive': `Very high risk tolerance. Accepts potential for large drawdowns. Can use larger position sizes with proper management.`,
-  };
-
-  return `# ${name} - User Profile
-
-## About You
-- **Name**: ${name}
-- **Timezone**: ${timezone}
+## Identity
+- **Name**: ${state.data.userName || 'Trader'}
+- **Timezone**: ${state.data.timezone || 'UTC'}
 - **Member Since**: ${new Date().toISOString().split('T')[0]}
 
 ## Trading Profile
+- **Experience**: ${state.data.experience || 'Intermediate'}
+- **Risk Tolerance**: ${state.data.riskTolerance || 'Moderate'}
+- **Preferred Markets**: ${(state.data.markets || ['crypto', 'forex']).join(', ')}
 
-### Experience Level
-**${experience.charAt(0).toUpperCase() + experience.slice(1)}**
-${experienceDescriptions[experience] || experienceDescriptions.intermediate}
+## Goals
+${state.data.goals || 'Build wealth through automated trading'}
 
-### Risk Tolerance
-**${risk.charAt(0).toUpperCase() + risk.slice(1)}**
-${riskDescriptions[risk] || riskDescriptions.moderate}
-
-### Financial Goals
-${goals}
-
-### Preferred Markets
-${markets.map(m => `- ${m.charAt(0).toUpperCase() + m.slice(1)}`).join('\n')}
-
-## Preferences
-
-### Notifications
-- Market alerts: Yes
-- Trade confirmations: Yes
-- Daily summary: Yes
-- Weekly report: Yes
-
-### Trading Hours
-- Active hours: Based on ${timezone}
-- Prefer not to trade: Late night
-
-## Notes
-*Add any personal notes or preferences here*
+## Autonomy Level
+- **Mode**: ${state.data.autonomyLevel || 'semi-auto'}
+- Semi-auto: K.I.T. suggests, you approve
+- Full-auto: K.I.T. executes within limits
 
 ---
-*Profile created: ${new Date().toISOString()}*
+*Generated: ${new Date().toISOString()}*
+`;
+}
+
+function generateAGENTS(state: OnboardingState): string {
+  return `# K.I.T. Operating Instructions
+
+## On Every Session
+1. Read SOUL.md - Your directives
+2. Read USER.md - Your user's profile
+3. Check memory/YYYY-MM-DD.md for recent context
+4. Load MEMORY.md for long-term knowledge
+
+## Memory Protocol
+- **Daily logs**: memory/YYYY-MM-DD.md
+- **Long-term**: MEMORY.md (curated, important info)
+- Always search memory before answering historical questions
+
+## Trading Protocol
+1. Check market conditions before trading
+2. Verify risk parameters
+3. Log all trades to memory
+4. Report significant events to user
+
+## Available Skills (37+)
+Run \`skills_list\` to see all available trading skills.
+
+Categories:
+- Trading: binary-options, metatrader, auto-trader, signal-copier
+- Analysis: market-analysis, sentiment-analyzer, whale-tracker
+- Portfolio: portfolio-tracker, rebalancer, dividend-manager
+- DeFi: defi-connector, arbitrage-finder, yield farming
+- Risk: risk-calculator, lot-size-calculator, alert-system
+- Reporting: tax-tracker, trade-journal, performance-report
+
+## Channels
+- Telegram, WhatsApp, Discord, Slack, Signal, and more
+- Run \`status\` to check connected channels
+`;
+}
+
+function generateMEMORY(state: OnboardingState): string {
+  return `# K.I.T. Long-Term Memory
+
+## User Profile
+- Name: ${state.data.userName || 'Trader'}
+- Experience: ${state.data.experience || 'Intermediate'}
+- Risk Tolerance: ${state.data.riskTolerance || 'Moderate'}
+- Markets: ${(state.data.markets || []).join(', ')}
+- Goals: ${state.data.goals || 'Wealth building'}
+
+## Configuration
+- Trading Style: ${state.data.tradingStyle || 'balanced'}
+- Autonomy: ${state.data.autonomyLevel || 'semi-auto'}
+- AI Provider: ${state.data.aiProvider || 'anthropic'}
+
+## Important Notes
+*Add important long-term information here*
+
+---
+*Initialized: ${new Date().toISOString()}*
 `;
 }
 
@@ -220,700 +178,394 @@ ${markets.map(m => `- ${m.charAt(0).toUpperCase() + m.slice(1)}`).join('\n')}
 // Onboarding Steps
 // ============================================================================
 
-interface OnboardingStep {
+interface Step {
   id: string;
-  title: string;
-  description: string;
   prompt: string;
   options?: { value: string; label: string }[];
-  validate?: (input: string) => { valid: boolean; error?: string };
-  process: (input: string, state: OnboardingState, config: any) => { 
-    nextStep?: string;
-    message: string;
-    complete?: boolean;
-  };
+  process: (input: string, state: OnboardingState, config: any) => { nextStep?: string; message: string; complete?: boolean };
 }
 
-const ONBOARDING_STEPS: OnboardingStep[] = [
-  // ========================================
-  // Step 1: Welcome
-  // ========================================
+const STEPS: Step[] = [
   {
     id: 'welcome',
-    title: 'Welcome to K.I.T.',
-    description: 'Your autonomous AI financial agent',
     prompt: `
-🤖 **Welcome to K.I.T.!**
-*(Knight Industries Trading)*
+🤖 **K.I.T. - Knight Industries Trading**
+*Enterprise-Grade Autonomous Financial Agent*
 
-I'm your autonomous AI financial agent, ready to help you build wealth.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Let's get to know you! **What should I call you?**
+Welcome. I am K.I.T., your autonomous financial agent.
+
+My capabilities:
+• 37+ trading skills across all markets
+• Automated execution with risk management
+• Multi-exchange portfolio tracking
+• Real-time market analysis & alerts
+
+**What should I call you?**
     `.trim(),
-    process: (input, state, config) => {
-      const name = input.trim() || 'Boss';
-      state.data.userName = name;
-      saveOnboardingState(state);
-      
-      return {
-        nextStep: 'financial_goals',
-        message: `Nice to meet you, **${name}**! 🤝`,
-      };
+    process: (input, state) => {
+      state.data.userName = input.trim() || 'Trader';
+      return { nextStep: 'goals', message: `Welcome, **${state.data.userName}**. Let's configure your trading environment.` };
     },
   },
-
-  // ========================================
-  // Step 2: Financial Goals
-  // ========================================
+  
   {
-    id: 'financial_goals',
-    title: 'Financial Goals',
-    description: 'What are you trying to achieve?',
+    id: 'goals',
     prompt: `
-💰 **Was sind deine finanziellen Ziele?**
+💰 **Financial Objectives**
 
-Erzähl mir in ein paar Worten, was du erreichen möchtest:
-- Langfristiger Vermögensaufbau?
-- Passives Einkommen generieren?
-- Aktiv traden für schnelle Gewinne?
-- Für etwas Bestimmtes sparen?
+What are your primary goals?
 
-Schreib einfach frei, ich verstehe dich:
+1. **Wealth Building** - Long-term portfolio growth
+2. **Passive Income** - Dividends, yield, staking
+3. **Active Trading** - Short-term profit opportunities
+4. **Diversification** - Multi-asset portfolio management
+5. **All of the above**
+
+Select (1-5):
     `.trim(),
-    process: (input, state, config) => {
-      state.data.financialGoals = input.trim() || 'Vermögensaufbau';
-      saveOnboardingState(state);
-      
-      return {
-        nextStep: 'trading_experience',
-        message: `Verstanden! "${state.data.financialGoals}" - Daran arbeiten wir zusammen! 📈`,
+    process: (input, state) => {
+      const goals: Record<string, string> = {
+        '1': 'Long-term wealth building and portfolio growth',
+        '2': 'Passive income through dividends, yield farming, and staking',
+        '3': 'Active trading for short-term profit opportunities',
+        '4': 'Portfolio diversification across multiple asset classes',
+        '5': 'Comprehensive wealth management - growth, income, and trading',
       };
+      state.data.goals = goals[input] || goals['5'];
+      return { nextStep: 'experience', message: `Objective: ${state.data.goals}` };
     },
   },
-
-  // ========================================
-  // Step 3: Trading Experience
-  // ========================================
+  
   {
-    id: 'trading_experience',
-    title: 'Trading Experience',
-    description: 'How experienced are you?',
+    id: 'experience',
     prompt: `
-📚 **Wie viel Erfahrung hast du mit Trading?**
+📊 **Trading Experience**
 
-1. **Anfänger** - Ich bin neu und möchte lernen
-2. **Fortgeschritten** - Ich kenne die Basics
-3. **Erfahren** - Ich trade schon länger aktiv
-4. **Profi** - Trading ist mein Job/Hauptbeschäftigung
+Your experience level determines how I communicate:
 
-Wähle 1-4:
+1. **Beginner** - New to trading, need guidance
+2. **Intermediate** - Know the basics, some experience
+3. **Advanced** - Active trader, understand markets
+4. **Professional** - Full-time trader/fund manager
+
+Select (1-4):
     `.trim(),
-    options: [
-      { value: 'beginner', label: 'Anfänger' },
-      { value: 'intermediate', label: 'Fortgeschritten' },
-      { value: 'advanced', label: 'Erfahren' },
-      { value: 'expert', label: 'Profi' },
-    ],
-    validate: (input) => {
-      const choice = parseInt(input);
-      if (isNaN(choice) || choice < 1 || choice > 4) {
-        return { valid: false, error: 'Bitte wähle 1, 2, 3 oder 4' };
-      }
-      return { valid: true };
-    },
-    process: (input, state, config) => {
-      const levels = ['beginner', 'intermediate', 'advanced', 'expert'];
-      const levelNames = ['Anfänger', 'Fortgeschritten', 'Erfahren', 'Profi'];
-      const choice = parseInt(input) - 1;
-      
-      state.data.tradingExperience = levels[choice];
-      saveOnboardingState(state);
-      
-      return {
-        nextStep: 'risk_tolerance',
-        message: `${levelNames[choice]} - Perfekt, ich passe meine Erklärungen entsprechend an! 📖`,
-      };
+    process: (input, state) => {
+      const exp = ['beginner', 'intermediate', 'advanced', 'professional'][parseInt(input) - 1] || 'intermediate';
+      state.data.experience = exp;
+      return { nextStep: 'risk', message: `Experience level: ${exp}` };
     },
   },
-
-  // ========================================
-  // Step 4: Risk Tolerance
-  // ========================================
+  
   {
-    id: 'risk_tolerance',
-    title: 'Risk Tolerance',
-    description: 'How much risk can you handle?',
+    id: 'risk',
     prompt: `
-⚖️ **Wie risikofreudig bist du?**
+⚖️ **Risk Profile**
 
-1. **Konservativ** - Sicherheit geht vor, lieber langsam und stetig
-2. **Moderat** - Ausgewogenes Risiko, ich kann Schwankungen aushalten
-3. **Aggressiv** - Ich will hohe Renditen, auch wenn's mal runter geht
-4. **Sehr aggressiv** - Vollgas! Ich kann große Schwankungen verkraften
+How much risk can you tolerate?
 
-Wähle 1-4:
+1. **Conservative** - Capital preservation priority. Max 2% per trade.
+2. **Moderate** - Balanced approach. Max 5% per trade.
+3. **Aggressive** - Higher risk tolerance. Max 10% per trade.
+4. **Very Aggressive** - Maximum opportunity seeking. Up to 20% per trade.
+
+Select (1-4):
     `.trim(),
-    options: [
-      { value: 'conservative', label: 'Konservativ' },
-      { value: 'moderate', label: 'Moderat' },
-      { value: 'aggressive', label: 'Aggressiv' },
-      { value: 'very-aggressive', label: 'Sehr aggressiv' },
-    ],
-    validate: (input) => {
-      const choice = parseInt(input);
-      if (isNaN(choice) || choice < 1 || choice > 4) {
-        return { valid: false, error: 'Bitte wähle 1, 2, 3 oder 4' };
-      }
-      return { valid: true };
-    },
-    process: (input, state, config) => {
+    process: (input, state) => {
       const risks = ['conservative', 'moderate', 'aggressive', 'very-aggressive'];
-      const riskNames = ['Konservativ', 'Moderat', 'Aggressiv', 'Sehr aggressiv'];
-      const choice = parseInt(input) - 1;
-      
-      state.data.riskTolerance = risks[choice];
-      saveOnboardingState(state);
-      
-      return {
-        nextStep: 'preferred_markets',
-        message: `${riskNames[choice]} - Ich werde meine Empfehlungen entsprechend anpassen! 🎯`,
-      };
+      const limits = ['2', '5', '10', '20'];
+      const idx = parseInt(input) - 1;
+      state.data.riskTolerance = risks[idx] || 'moderate';
+      state.data.maxPositionSize = limits[idx] || '5';
+      return { nextStep: 'markets', message: `Risk profile: ${state.data.riskTolerance} (max ${state.data.maxPositionSize}% per position)` };
     },
   },
-
-  // ========================================
-  // Step 5: Preferred Markets
-  // ========================================
+  
   {
-    id: 'preferred_markets',
-    title: 'Preferred Markets',
-    description: 'Which markets interest you?',
+    id: 'markets',
     prompt: `
-🌍 **Welche Märkte interessieren dich?**
+🌍 **Target Markets**
 
-Wähle alle, die zutreffen (z.B. "1,2,3" oder "1 3 4"):
+Which markets do you want to trade? (Select multiple: e.g., "1,2,3")
 
 1. **Crypto** - Bitcoin, Ethereum, Altcoins
-2. **Forex** - Währungspaare (EUR/USD, etc.)
-3. **Aktien** - Stocks, ETFs
-4. **Rohstoffe** - Gold, Öl, etc.
-5. **Optionen** - Derivate, Binary Options
+2. **Forex** - Currency pairs (EUR/USD, GBP/USD)
+3. **Stocks** - Equities, ETFs
+4. **Options** - Derivatives, Binary Options
+5. **Commodities** - Gold, Oil, Silver
+6. **DeFi** - Yield farming, liquidity provision
 
-Deine Wahl:
+Select (e.g., 1,2,4):
     `.trim(),
-    process: (input, state, config) => {
-      const marketMap: Record<string, string> = {
-        '1': 'crypto',
-        '2': 'forex',
-        '3': 'stocks',
-        '4': 'commodities',
-        '5': 'options',
-      };
-      
-      const marketNames: Record<string, string> = {
-        'crypto': 'Crypto',
-        'forex': 'Forex',
-        'stocks': 'Aktien',
-        'commodities': 'Rohstoffe',
-        'options': 'Optionen',
-      };
-      
-      // Parse input like "1,2,3" or "1 2 3" or "123"
-      const numbers = input.replace(/[,\s]+/g, '').split('');
-      const markets = numbers
-        .map(n => marketMap[n])
-        .filter(Boolean);
-      
-      if (markets.length === 0) {
-        markets.push('crypto'); // Default
-      }
-      
-      state.data.preferredMarkets = markets;
-      saveOnboardingState(state);
-      
-      const selectedNames = markets.map(m => marketNames[m]).join(', ');
-      
-      return {
-        nextStep: 'timezone',
-        message: `Super! Ich fokussiere mich auf: **${selectedNames}** 📊`,
-      };
+    process: (input, state) => {
+      const marketMap: Record<string, string> = { '1': 'crypto', '2': 'forex', '3': 'stocks', '4': 'options', '5': 'commodities', '6': 'defi' };
+      const markets = input.replace(/[,\s]+/g, '').split('').map(n => marketMap[n]).filter(Boolean);
+      state.data.markets = markets.length > 0 ? markets : ['crypto', 'forex'];
+      return { nextStep: 'autonomy', message: `Markets: ${state.data.markets.join(', ')}` };
     },
   },
+  
+  {
+    id: 'autonomy',
+    prompt: `
+🤖 **Autonomy Level**
 
-  // ========================================
-  // Step 6: Timezone
-  // ========================================
+How much control should K.I.T. have?
+
+1. **Manual** - I suggest, you execute everything
+2. **Semi-Auto** - I execute small trades, confirm large ones
+3. **Full-Auto** - I manage everything within your risk limits
+
+Select (1-3):
+    `.trim(),
+    process: (input, state) => {
+      const levels = ['manual', 'semi-auto', 'full-auto'];
+      state.data.autonomyLevel = levels[parseInt(input) - 1] || 'semi-auto';
+      return { nextStep: 'timezone', message: `Autonomy: ${state.data.autonomyLevel}` };
+    },
+  },
+  
   {
     id: 'timezone',
-    title: 'Timezone',
-    description: 'When are you active?',
     prompt: `
-🕐 **In welcher Zeitzone bist du?**
+🕐 **Timezone**
 
-1. **Europe/Berlin** (CET/CEST)
-2. **Europe/London** (GMT/BST)
-3. **America/New_York** (EST/EDT)
-4. **America/Los_Angeles** (PST/PDT)
-5. **Asia/Tokyo** (JST)
-6. **UTC**
+1. Europe/Berlin (CET)
+2. Europe/London (GMT)
+3. America/New_York (EST)
+4. America/Los_Angeles (PST)
+5. Asia/Tokyo (JST)
+6. UTC
 
-Oder schreib deine Zeitzone direkt (z.B. "Europe/Vienna"):
+Select (1-6) or enter custom (e.g., "Europe/Vienna"):
     `.trim(),
-    process: (input, state, config) => {
-      const timezoneMap: Record<string, string> = {
-        '1': 'Europe/Berlin',
-        '2': 'Europe/London',
-        '3': 'America/New_York',
-        '4': 'America/Los_Angeles',
-        '5': 'Asia/Tokyo',
-        '6': 'UTC',
-      };
-      
-      let timezone = timezoneMap[input.trim()] || input.trim() || 'Europe/Berlin';
-      
-      state.data.timezone = timezone;
-      saveOnboardingState(state);
-      
-      return {
-        nextStep: 'kit_personality',
-        message: `Zeitzone gesetzt: **${timezone}** ⏰`,
-      };
+    process: (input, state) => {
+      const tzMap: Record<string, string> = { '1': 'Europe/Berlin', '2': 'Europe/London', '3': 'America/New_York', '4': 'America/Los_Angeles', '5': 'Asia/Tokyo', '6': 'UTC' };
+      state.data.timezone = tzMap[input] || input.trim() || 'UTC';
+      return { nextStep: 'ai_provider', message: `Timezone: ${state.data.timezone}` };
     },
   },
-
-  // ========================================
-  // Step 7: K.I.T. Personality
-  // ========================================
-  {
-    id: 'kit_personality',
-    title: 'K.I.T. Personality',
-    description: 'How should I communicate?',
-    prompt: `
-🤖 **Jetzt zu mir! Wie soll ich mit dir kommunizieren?**
-
-1. **Formal** - Professionell, respektvoll, sachlich
-2. **Casual** - Locker, freundschaftlich, mit Emojis 😎
-3. **Ausgewogen** - Mix aus professionell und freundlich
-
-Wähle 1-3:
-    `.trim(),
-    options: [
-      { value: 'formal', label: 'Formal' },
-      { value: 'casual', label: 'Casual' },
-      { value: 'professional', label: 'Ausgewogen' },
-    ],
-    validate: (input) => {
-      const choice = parseInt(input);
-      if (isNaN(choice) || choice < 1 || choice > 3) {
-        return { valid: false, error: 'Bitte wähle 1, 2 oder 3' };
-      }
-      return { valid: true };
-    },
-    process: (input, state, config) => {
-      const styles = ['formal', 'casual', 'professional'];
-      const styleNames = ['Formal', 'Casual', 'Ausgewogen'];
-      const choice = parseInt(input) - 1;
-      
-      state.data.communicationStyle = styles[choice];
-      saveOnboardingState(state);
-      
-      return {
-        nextStep: 'kit_trading_style',
-        message: `${styleNames[choice]} - So kommuniziere ich ab jetzt! 💬`,
-      };
-    },
-  },
-
-  // ========================================
-  // Step 8: K.I.T. Trading Style
-  // ========================================
-  {
-    id: 'kit_trading_style',
-    title: 'K.I.T. Trading Style',
-    description: 'How aggressive should I be?',
-    prompt: `
-📈 **Und beim Trading - wie aggressiv soll ich sein?**
-
-1. **Konservativ** - Ich warne dich vor Risiken, empfehle sichere Optionen
-2. **Ausgewogen** - Ich zeige Chancen UND Risiken, du entscheidest
-3. **Aggressiv** - Ich suche aktiv nach Chancen, bin optimistisch
-
-Wähle 1-3:
-    `.trim(),
-    options: [
-      { value: 'conservative', label: 'Konservativ' },
-      { value: 'balanced', label: 'Ausgewogen' },
-      { value: 'aggressive', label: 'Aggressiv' },
-    ],
-    validate: (input) => {
-      const choice = parseInt(input);
-      if (isNaN(choice) || choice < 1 || choice > 3) {
-        return { valid: false, error: 'Bitte wähle 1, 2 oder 3' };
-      }
-      return { valid: true };
-    },
-    process: (input, state, config) => {
-      const styles = ['conservative', 'balanced', 'aggressive'];
-      const styleNames = ['Konservativ', 'Ausgewogen', 'Aggressiv'];
-      const choice = parseInt(input) - 1;
-      
-      state.data.tradingStyle = styles[choice];
-      state.data.kitName = 'K.I.T.';
-      saveOnboardingState(state);
-      
-      return {
-        nextStep: 'ai_provider',
-        message: `${styleNames[choice]} - So gehe ich an Trading heran! 🎰`,
-      };
-    },
-  },
-
-  // ========================================
-  // Step 9: AI Provider
-  // ========================================
+  
   {
     id: 'ai_provider',
-    title: 'AI Provider Setup',
-    description: 'Configure your AI model provider',
     prompt: `
-🧠 **AI Provider Setup**
+🧠 **AI Provider**
 
-Für meine Intelligenz brauche ich einen AI API-Key. Welchen Anbieter nutzt du?
+Which AI provider for K.I.T.'s intelligence?
 
-1. **Anthropic** (Claude) - Empfohlen
+1. **Anthropic** (Claude) - Recommended
 2. **OpenAI** (GPT-4)
-3. **OpenRouter** (Mehrere Modelle)
-4. **Überspringen** (später einrichten)
+3. **OpenRouter** (Multiple models)
+4. **Skip** (Configure later)
 
-Wähle 1-4:
+Select (1-4):
     `.trim(),
-    validate: (input) => {
-      const choice = parseInt(input);
-      if (isNaN(choice) || choice < 1 || choice > 4) {
-        return { valid: false, error: 'Bitte wähle 1, 2, 3 oder 4' };
+    process: (input, state) => {
+      if (input === '4') {
+        return { nextStep: 'channel_select', message: 'AI provider skipped. Configure later with `kit config`' };
       }
-      return { valid: true };
-    },
-    process: (input, state, config) => {
-      const choice = parseInt(input);
-      
-      if (choice === 4) {
-        return {
-          nextStep: 'channel_choice',
-          message: `Kein Problem! Du kannst AI später einrichten.`,
-        };
-      }
-      
-      const providers: Record<number, string> = {
-        1: 'anthropic',
-        2: 'openai',
-        3: 'openrouter',
-      };
-      
-      state.data.aiProvider = providers[choice];
-      saveOnboardingState(state);
-      
-      return {
-        nextStep: 'ai_key',
-        message: `Super! Jetzt brauche ich deinen ${providers[choice].toUpperCase()} API-Key.`,
-      };
+      const providers = ['anthropic', 'openai', 'openrouter'];
+      state.data.aiProvider = providers[parseInt(input) - 1] || 'anthropic';
+      return { nextStep: 'ai_key', message: `Provider: ${state.data.aiProvider}` };
     },
   },
-
-  // ========================================
-  // Step 10: AI API Key
-  // ========================================
+  
   {
     id: 'ai_key',
-    title: 'AI API Key',
-    description: 'Enter your AI provider API key',
     prompt: `
-🔑 **Gib deinen API-Key ein**
+🔑 **API Key**
 
-Füge deinen API-Key hier ein. Er wird sicher gespeichert.
-(Beginnt mit "sk-" für OpenAI/Anthropic oder "sk-or-" für OpenRouter)
+Enter your ${'{provider}'} API key:
+(Keys are stored locally and never transmitted)
     `.trim(),
-    validate: (input) => {
-      const key = input.trim();
-      if (!key || key.length < 10) {
-        return { valid: false, error: 'Bitte gib einen gültigen API-Key ein' };
-      }
-      return { valid: true };
-    },
     process: (input, state, config) => {
       const key = input.trim();
+      if (key.length < 10) {
+        return { nextStep: 'channel_select', message: 'Invalid key. Skipping - configure later.' };
+      }
       const provider = state.data.aiProvider || 'anthropic';
-      
-      // Save to config
       config.ai = config.ai || { providers: {} };
-      config.ai.providers = config.ai.providers || {};
-      config.ai.providers[provider] = {
-        apiKey: key,
-        enabled: true,
-      };
+      config.ai.providers[provider] = { apiKey: key, enabled: true };
       config.ai.defaultProvider = provider;
-      saveConfig(config);
-      
-      // Also set env var
-      const envVar = `${provider.toUpperCase()}_API_KEY`;
-      process.env[envVar] = key;
-      
-      state.data.aiApiKey = key.substring(0, 8) + '****';
-      saveOnboardingState(state);
-      
-      return {
-        nextStep: 'channel_choice',
-        message: `✅ API-Key gespeichert! ${provider} ist jetzt aktiv.`,
-      };
+      process.env[`${provider.toUpperCase()}_API_KEY`] = key;
+      return { nextStep: 'channel_select', message: `✅ ${provider} API key configured` };
     },
   },
-
-  // ========================================
-  // Step 11: Channel Choice
-  // ========================================
+  
   {
-    id: 'channel_choice',
-    title: 'Communication Channel',
-    description: 'How do you want to communicate?',
+    id: 'channel_select',
     prompt: `
-📱 **How do you want to communicate with me?**
+📱 **Communication Channels**
 
-1. **Telegram** - Most popular, works on mobile & desktop (needs bot token)
-2. **WhatsApp** - Scan QR code like WhatsApp Web (no API needed!)
-3. **Discord** - Great for communities
-4. **Dashboard only** - Web interface at http://localhost:18799
-5. **Set up later**
+How do you want to communicate with K.I.T.?
 
-Choose 1-5:
+**Ready:**
+1. Telegram - Bot token from @BotFather
+2. WhatsApp - Scan QR code (like WhatsApp Web)
+3. Discord - Bot token from Discord Developer Portal
+
+**Beta:**
+4. Slack - Workspace integration
+5. Signal - Encrypted messaging
+
+**Other:**
+6. Dashboard only (http://localhost:18799)
+7. Configure channels later
+
+Select (1-7):
     `.trim(),
-    validate: (input) => {
+    process: (input, state) => {
       const choice = parseInt(input);
-      if (isNaN(choice) || choice < 1 || choice > 5) {
-        return { valid: false, error: 'Please choose 1, 2, 3, 4, or 5' };
+      if (choice === 6 || choice === 7) {
+        return { nextStep: 'trading_style', message: choice === 6 ? 'Using dashboard only' : 'Channels skipped - configure later with CLI' };
       }
-      return { valid: true };
-    },
-    process: (input, state, config) => {
-      const choice = parseInt(input);
-      
-      if (choice === 4 || choice === 5) {
-        return {
-          nextStep: 'save_files',
-          message: choice === 4 
-            ? `Perfect! You can reach me anytime at http://localhost:18799`
-            : `No problem! You can set up channels later with the CLI.`,
-        };
-      }
+      const channels: Record<number, string> = { 1: 'telegram', 2: 'whatsapp', 3: 'discord', 4: 'slack', 5: 'signal' };
+      state.data.selectedChannel = channels[choice] || 'telegram';
       
       if (choice === 2) {
-        // WhatsApp - special flow
-        state.data.selectedChannel = 'whatsapp';
-        saveOnboardingState(state);
-        return {
-          nextStep: 'whatsapp_setup',
-          message: `Great choice! WhatsApp is easy - just scan a QR code!`,
-        };
+        return { nextStep: 'whatsapp_info', message: 'WhatsApp selected' };
       }
-      
-      const channels: Record<number, string> = { 1: 'telegram', 3: 'discord' };
-      state.data.selectedChannel = channels[choice];
-      saveOnboardingState(state);
-      
-      return {
-        nextStep: 'channel_token',
-        message: `Great choice! Let me help you set up ${channels[choice]}.`,
-      };
+      return { nextStep: 'channel_token', message: `${state.data.selectedChannel} selected` };
     },
   },
-
-  // ========================================
-  // Step 11b: WhatsApp Setup
-  // ========================================
-  {
-    id: 'whatsapp_setup',
-    title: 'WhatsApp Setup',
-    description: 'Connect via WhatsApp Web QR code',
-    prompt: `
-📱 **WhatsApp Setup**
-
-WhatsApp uses the same technology as WhatsApp Web - just scan a QR code!
-
-**To connect:**
-1. Run \`kit whatsapp login\` in your terminal
-2. Open WhatsApp on your phone
-3. Go to **Settings → Linked Devices → Link a Device**
-4. Scan the QR code that appears
-5. Restart K.I.T. with \`kit start\`
-
-**Optional: Enter your phone number** (E.164 format, e.g., +1234567890)
-This will be added to the allowlist so only you can message K.I.T.
-
-Enter your phone number (or press Enter to skip):
-    `.trim(),
-    process: (input, state, config) => {
-      const phone = input.trim();
-      
-      // Save to config
-      config.channels = config.channels || {};
-      config.channels.whatsapp = {
-        enabled: true,
-        allowedNumbers: phone ? [phone] : [],
-      };
-      saveConfig(config);
-      
-      saveOnboardingState(state);
-      
-      return {
-        nextStep: 'save_files',
-        message: phone 
-          ? `✅ WhatsApp configured! Allowlist: ${phone}\n\nRemember to run \`kit whatsapp login\` to scan the QR code!`
-          : `✅ WhatsApp configured!\n\nRemember to run \`kit whatsapp login\` to scan the QR code!`,
-      };
-    },
-  },
-
-  // ========================================
-  // Step 12: Channel Token
-  // ========================================
+  
   {
     id: 'channel_token',
-    title: 'Channel Setup',
-    description: 'Set up your communication channel',
     prompt: `
 🔧 **Channel Setup**
 
-**Für Telegram:**
-1. Öffne Telegram und suche @BotFather
-2. Sende /newbot und folge den Anweisungen
-3. Kopiere den Bot-Token
+Enter your bot token:
 
-**Für Discord:**
-1. Gehe zu discord.com/developers/applications
-2. Erstelle eine neue Application
-3. Füge einen Bot hinzu und kopiere den Token
-
-Füge deinen Bot-Token hier ein:
+**Telegram:** Get from @BotFather → /newbot
+**Discord:** Developer Portal → Bot → Token
+**Slack:** App Settings → OAuth Tokens
     `.trim(),
-    validate: (input) => {
-      const token = input.trim();
-      if (!token || token.length < 20) {
-        return { valid: false, error: 'Bitte gib einen gültigen Bot-Token ein' };
-      }
-      return { valid: true };
-    },
     process: (input, state, config) => {
       const token = input.trim();
-      const channel = state.data.selectedChannel || 'telegram';
-      
-      // Save to config
+      const channel = state.data.selectedChannel;
+      if (token.length < 20) {
+        return { nextStep: 'trading_style', message: 'Invalid token. Skipping channel setup.' };
+      }
       config.channels = config.channels || {};
-      config.channels[channel] = {
-        type: channel,
-        enabled: true,
-        credentials: { token },
-      };
-      saveConfig(config);
-      
-      state.data.channelToken = token.substring(0, 10) + '****';
-      saveOnboardingState(state);
-      
-      const message = channel === 'telegram'
-        ? `✅ Telegram Bot konfiguriert! Suche jetzt deinen Bot in Telegram und sende /start.`
-        : `✅ Discord Bot konfiguriert! Nutze den OAuth2 URL Generator, um den Bot einzuladen.`;
-      
-      return {
-        nextStep: 'save_files',
-        message,
-      };
+      config.channels[channel] = { enabled: true, token };
+      return { nextStep: 'trading_style', message: `✅ ${channel} configured` };
     },
   },
-
-  // ========================================
-  // Step 13: Save Files (SOUL.md, USER.md)
-  // ========================================
+  
   {
-    id: 'save_files',
-    title: 'Saving Configuration',
-    description: 'Creating your profile files',
-    prompt: '', // Not shown
+    id: 'whatsapp_info',
+    prompt: `
+📱 **WhatsApp Setup**
+
+WhatsApp requires scanning a QR code (like WhatsApp Web).
+
+After onboarding, run:
+\`kit whatsapp login\`
+
+Then scan the QR with:
+WhatsApp → Settings → Linked Devices
+
+**Enter your phone number** (for allowlist, e.g., +1234567890):
+Or press Enter to skip:
+    `.trim(),
     process: (input, state, config) => {
-      // Ensure workspace exists
-      ensureWorkspace();
+      const phone = input.trim();
+      config.channels = config.channels || {};
+      config.channels.whatsapp = { enabled: true, allowedNumbers: phone ? [phone] : [] };
+      return { nextStep: 'trading_style', message: phone ? `✅ WhatsApp configured. Allowlist: ${phone}` : '✅ WhatsApp configured. Run `kit whatsapp login` to connect.' };
+    },
+  },
+  
+  {
+    id: 'trading_style',
+    prompt: `
+📈 **K.I.T. Trading Style**
+
+How should K.I.T. approach trading?
+
+1. **Conservative** - Focus on risk, prefer safer opportunities
+2. **Balanced** - Equal weight to risk and opportunity
+3. **Aggressive** - Seek high-return opportunities
+
+Select (1-3):
+    `.trim(),
+    process: (input, state) => {
+      const styles = ['conservative', 'balanced', 'aggressive'];
+      state.data.tradingStyle = styles[parseInt(input) - 1] || 'balanced';
+      return { nextStep: 'finalize', message: `Trading style: ${state.data.tradingStyle}` };
+    },
+  },
+  
+  {
+    id: 'finalize',
+    prompt: '',
+    process: (input, state, config) => {
+      // Create workspace
+      if (!fs.existsSync(WORKSPACE_DIR)) fs.mkdirSync(WORKSPACE_DIR, { recursive: true });
+      if (!fs.existsSync(path.join(WORKSPACE_DIR, 'memory'))) fs.mkdirSync(path.join(WORKSPACE_DIR, 'memory'), { recursive: true });
       
-      // Generate and save SOUL.md
-      const soulContent = generateSoulMd(state);
-      fs.writeFileSync(path.join(WORKSPACE_DIR, 'SOUL.md'), soulContent, 'utf8');
+      // Generate files
+      fs.writeFileSync(path.join(WORKSPACE_DIR, 'SOUL.md'), generateSOUL(state));
+      fs.writeFileSync(path.join(WORKSPACE_DIR, 'USER.md'), generateUSER(state));
+      fs.writeFileSync(path.join(WORKSPACE_DIR, 'AGENTS.md'), generateAGENTS(state));
+      fs.writeFileSync(path.join(WORKSPACE_DIR, 'MEMORY.md'), generateMEMORY(state));
       
-      // Generate and save USER.md
-      const userContent = generateUserMd(state);
-      fs.writeFileSync(path.join(WORKSPACE_DIR, 'USER.md'), userContent, 'utf8');
-      
-      // Save user preferences to config
+      // Save user config
       config.user = {
         name: state.data.userName,
         timezone: state.data.timezone,
-        tradingExperience: state.data.tradingExperience,
+        experience: state.data.experience,
         riskTolerance: state.data.riskTolerance,
-        preferredMarkets: state.data.preferredMarkets,
-        goals: state.data.financialGoals,
+        markets: state.data.markets,
+        goals: state.data.goals,
+        autonomyLevel: state.data.autonomyLevel,
       };
-      
-      config.agent = config.agent || {};
-      config.agent.name = state.data.kitName || 'K.I.T.';
-      config.agent.communicationStyle = state.data.communicationStyle;
-      config.agent.tradingStyle = state.data.tradingStyle;
-      
+      config.trading = {
+        style: state.data.tradingStyle,
+        maxPositionSize: parseFloat(state.data.maxPositionSize || '5'),
+      };
+      config.onboarded = true;
+      config.version = '2.0.0';
       saveConfig(config);
       
-      return {
-        nextStep: 'complete',
-        message: `📁 Dateien gespeichert:\n- SOUL.md (Meine Persönlichkeit)\n- USER.md (Dein Profil)\n- config.json (Einstellungen)`,
-      };
-    },
-  },
-
-  // ========================================
-  // Step 14: Complete
-  // ========================================
-  {
-    id: 'complete',
-    title: 'Setup Complete',
-    description: 'Onboarding finished!',
-    prompt: '',
-    process: (input, state, config) => {
       state.completed = true;
       state.completedAt = new Date().toISOString();
-      saveOnboardingState(state);
-      
-      const userName = state.data.userName || 'Boss';
-      const markets = (state.data.preferredMarkets || ['crypto']).join(', ');
+      saveState(state);
       
       return {
         complete: true,
         message: `
-🎉 **Setup abgeschlossen, ${userName}!**
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ **K.I.T. CONFIGURATION COMPLETE**
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Ich bin jetzt konfiguriert und bereit, dir beim Vermögensaufbau zu helfen.
+**Profile:** ${state.data.userName}
+**Markets:** ${(state.data.markets || []).join(', ')}
+**Risk:** ${state.data.riskTolerance} (${state.data.maxPositionSize}% max position)
+**Autonomy:** ${state.data.autonomyLevel}
+**Style:** ${state.data.tradingStyle}
 
-**Dein Profil:**
-- 🎯 Ziel: ${state.data.financialGoals || 'Vermögensaufbau'}
-- 📊 Märkte: ${markets}
-- ⚖️ Risiko: ${state.data.riskTolerance || 'moderat'}
-- 💬 Stil: ${state.data.communicationStyle || 'professionell'}
+**Files Created:**
+• SOUL.md - Agent directives
+• USER.md - Your profile
+• AGENTS.md - Operating instructions
+• MEMORY.md - Long-term memory
 
-**Schnellbefehle:**
-- \`status\` - System-Status prüfen
-- \`skills_list\` - Verfügbare Features anzeigen
-- \`portfolio\` - Portfolio anzeigen
+**Next Steps:**
+1. Run \`kit start\` to launch the gateway
+2. Open http://localhost:18799 for dashboard
+${state.data.selectedChannel === 'whatsapp' ? '3. Run `kit whatsapp login` to connect WhatsApp' : ''}
+${state.data.selectedChannel === 'telegram' ? '3. Message your Telegram bot to start trading' : ''}
 
-**Was jetzt?**
-Frag mich einfach was! Zum Beispiel:
-- "Analysiere BTC"
-- "Zeig mir mein Portfolio"
-- "Was sind gute Trading-Möglichkeiten?"
+**Commands:**
+• \`kit status\` - Check system status
+• \`kit onboard\` - Re-run setup to change settings
+• \`kit doctor\` - Diagnose issues
 
----
-*"Dein Vermögen ist meine Mission."* 🚀
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+*"Your wealth is my mission."* 🚀
         `.trim(),
       };
     },
@@ -921,204 +573,107 @@ Frag mich einfach was! Zum Beispiel:
 ];
 
 // ============================================================================
-// Onboarding Start Tool
+// Tool Definitions
 // ============================================================================
 
 export const onboardingStartToolDefinition: ToolDefinition = {
   name: 'onboarding_start',
-  description: 'Start the K.I.T. onboarding/setup process. Creates SOUL.md (K.I.T. personality) and USER.md (user profile).',
+  description: 'Start or restart K.I.T. onboarding. Use reset=true to reconfigure.',
   parameters: {
     type: 'object',
     properties: {
-      reset: {
-        type: 'boolean',
-        description: 'Reset onboarding state and start fresh',
-      },
+      reset: { type: 'boolean', description: 'Reset and start fresh' },
     },
     required: [],
   },
 };
 
-export const onboardingStartToolHandler: ToolHandler = async (args, context) => {
+export const onboardingStartToolHandler: ToolHandler = async (args) => {
   const { reset = false } = args as { reset?: boolean };
-  
-  let state = loadOnboardingState();
+  let state = loadState();
   
   if (reset || !state.started) {
-    state = {
-      started: true,
-      completed: false,
-      currentStep: 'welcome',
-      completedSteps: [],
-      data: {},
-      startedAt: new Date().toISOString(),
-    };
-    saveOnboardingState(state);
+    state = { started: true, completed: false, currentStep: 'welcome', completedSteps: [], data: {}, startedAt: new Date().toISOString() };
+    saveState(state);
   }
   
   if (state.completed && !reset) {
-    return {
-      status: 'completed',
-      message: 'Onboarding bereits abgeschlossen! Nutze reset=true um neu zu starten.',
-      completedAt: state.completedAt,
-      userData: state.data,
-    };
+    return { status: 'completed', message: 'Onboarding complete. Use reset=true to reconfigure.', data: state.data };
   }
   
-  const currentStep = ONBOARDING_STEPS.find(s => s.id === state.currentStep);
-  if (!currentStep) {
-    return { error: 'Ungültiger Onboarding-Status' };
+  const step = STEPS.find(s => s.id === state.currentStep);
+  if (!step) return { error: 'Invalid state' };
+  
+  let prompt = step.prompt;
+  if (prompt.includes('{provider}')) {
+    prompt = prompt.replace('{provider}', state.data.aiProvider || 'AI');
   }
   
-  return {
-    status: 'in_progress',
-    currentStep: currentStep.id,
-    title: currentStep.title,
-    prompt: currentStep.prompt,
-    options: currentStep.options,
-    completedSteps: state.completedSteps,
-    totalSteps: ONBOARDING_STEPS.length,
-    progress: Math.round((state.completedSteps.length / ONBOARDING_STEPS.length) * 100),
-  };
+  return { status: 'in_progress', currentStep: step.id, prompt, progress: Math.round((state.completedSteps.length / STEPS.length) * 100) };
 };
-
-// ============================================================================
-// Onboarding Continue Tool
-// ============================================================================
 
 export const onboardingContinueToolDefinition: ToolDefinition = {
   name: 'onboarding_continue',
-  description: 'Continue onboarding with user input',
+  description: 'Continue onboarding with user response',
   parameters: {
     type: 'object',
     properties: {
-      input: {
-        type: 'string',
-        description: 'User\'s response to the current step',
-      },
+      input: { type: 'string', description: 'User response' },
     },
     required: ['input'],
   },
 };
 
-export const onboardingContinueToolHandler: ToolHandler = async (args, context) => {
+export const onboardingContinueToolHandler: ToolHandler = async (args) => {
   const { input } = args as { input: string };
-  
-  const state = loadOnboardingState();
-  
-  if (!state.started) {
-    return {
-      error: 'Onboarding nicht gestartet. Nutze onboarding_start zuerst.',
-    };
-  }
-  
-  if (state.completed) {
-    return {
-      status: 'completed',
-      message: 'Onboarding bereits abgeschlossen!',
-    };
-  }
-  
-  const currentStep = ONBOARDING_STEPS.find(s => s.id === state.currentStep);
-  if (!currentStep) {
-    return { error: 'Ungültiger Onboarding-Status' };
-  }
-  
-  // Validate input
-  if (currentStep.validate) {
-    const validation = currentStep.validate(input);
-    if (!validation.valid) {
-      return {
-        status: 'validation_error',
-        error: validation.error,
-        retry: true,
-        prompt: currentStep.prompt,
-        options: currentStep.options,
-      };
-    }
-  }
-  
-  // Process input
+  const state = loadState();
   const config = loadConfig();
-  const result = currentStep.process(input, state, config);
   
-  // Update state
-  state.completedSteps.push(currentStep.id);
-  if (result.nextStep) {
-    state.currentStep = result.nextStep;
-  }
-  saveOnboardingState(state);
+  if (!state.started) return { error: 'Run onboarding_start first' };
+  if (state.completed) return { status: 'completed', message: 'Already complete' };
   
-  // If next step has no prompt (auto-execute), run it
-  const nextStep = ONBOARDING_STEPS.find(s => s.id === state.currentStep);
+  const step = STEPS.find(s => s.id === state.currentStep);
+  if (!step) return { error: 'Invalid state' };
+  
+  const result = step.process(input, state, config);
+  state.completedSteps.push(step.id);
+  if (result.nextStep) state.currentStep = result.nextStep;
+  saveState(state);
+  saveConfig(config);
+  
+  // Auto-execute steps without prompts
+  const nextStep = STEPS.find(s => s.id === state.currentStep);
   if (nextStep && !nextStep.prompt) {
-    // Auto-execute steps without prompts
     const autoResult = nextStep.process('', state, config);
     state.completedSteps.push(nextStep.id);
-    if (autoResult.nextStep) {
-      state.currentStep = autoResult.nextStep;
-    }
-    saveOnboardingState(state);
-    
-    // Get the actual next step
-    const actualNextStep = ONBOARDING_STEPS.find(s => s.id === state.currentStep);
-    
-    return {
-      status: autoResult.complete ? 'completed' : 'in_progress',
-      message: result.message + '\n\n' + autoResult.message,
-      currentStep: state.currentStep,
-      nextPrompt: actualNextStep?.prompt,
-      nextOptions: actualNextStep?.options,
-      completedSteps: state.completedSteps,
-      progress: Math.round((state.completedSteps.length / ONBOARDING_STEPS.length) * 100),
-    };
+    saveState(state);
+    saveConfig(config);
+    return { status: autoResult.complete ? 'completed' : 'in_progress', message: result.message + '\n\n' + autoResult.message };
   }
   
-  return {
-    status: result.complete ? 'completed' : 'in_progress',
-    message: result.message,
-    currentStep: state.currentStep,
-    nextPrompt: nextStep?.prompt,
-    nextOptions: nextStep?.options,
-    completedSteps: state.completedSteps,
-    progress: Math.round((state.completedSteps.length / ONBOARDING_STEPS.length) * 100),
-  };
+  let prompt = nextStep?.prompt || '';
+  if (prompt.includes('{provider}')) {
+    prompt = prompt.replace('{provider}', state.data.aiProvider || 'AI');
+  }
+  
+  return { status: result.complete ? 'completed' : 'in_progress', message: result.message, nextPrompt: prompt, progress: Math.round((state.completedSteps.length / STEPS.length) * 100) };
 };
-
-// ============================================================================
-// Onboarding Status Tool
-// ============================================================================
 
 export const onboardingStatusToolDefinition: ToolDefinition = {
   name: 'onboarding_status',
-  description: 'Check onboarding progress and user data',
-  parameters: {
-    type: 'object',
-    properties: {},
-    required: [],
-  },
+  description: 'Check onboarding status and user configuration',
+  parameters: { type: 'object', properties: {}, required: [] },
 };
 
-export const onboardingStatusToolHandler: ToolHandler = async (args, context) => {
-  const state = loadOnboardingState();
-  
-  const currentStep = ONBOARDING_STEPS.find(s => s.id === state.currentStep);
-  
+export const onboardingStatusToolHandler: ToolHandler = async () => {
+  const state = loadState();
   return {
     started: state.started,
     completed: state.completed,
     currentStep: state.currentStep,
-    currentStepTitle: currentStep?.title,
-    completedSteps: state.completedSteps,
-    totalSteps: ONBOARDING_STEPS.length,
-    progress: Math.round((state.completedSteps.length / ONBOARDING_STEPS.length) * 100),
+    progress: Math.round((state.completedSteps.length / STEPS.length) * 100),
     userData: state.data,
-    startedAt: state.startedAt,
-    completedAt: state.completedAt,
     workspaceDir: WORKSPACE_DIR,
-    filesCreated: {
-      soulMd: fs.existsSync(path.join(WORKSPACE_DIR, 'SOUL.md')),
-      userMd: fs.existsSync(path.join(WORKSPACE_DIR, 'USER.md')),
-    },
+    configPath: CONFIG_PATH,
   };
 };

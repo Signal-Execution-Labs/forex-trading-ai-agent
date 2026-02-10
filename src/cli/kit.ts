@@ -55,22 +55,22 @@ program
   .option('-t, --token <token>', 'Gateway auth token')
   .action(async (options) => {
     const { createGatewayServer } = await import('../gateway/server');
-    const { loadConfig } = await import('../config');
+    const { loadConfig, DEFAULT_CONFIG } = await import('../config');
     
     // Load config and merge with CLI options
     const config = loadConfig();
     
     const gatewayConfig = {
-      port: parseInt(options.port, 10) || config.gateway.port,
-      host: options.host || config.gateway.host,
-      token: options.token || config.gateway.token,
+      port: parseInt(options.port, 10) || config.gateway?.port || 18799,
+      host: options.host || config.gateway?.host || '127.0.0.1',
+      token: options.token || config.gateway?.token,
       stateDir: KIT_HOME,
       workspaceDir: path.join(KIT_HOME, 'workspace'),
-      agent: config.agent,
-      heartbeat: config.heartbeat,
-      cron: config.cron,
-      memory: config.memory,
-    };
+      agent: config.agent || DEFAULT_CONFIG.agent,
+      heartbeat: config.heartbeat || DEFAULT_CONFIG.heartbeat,
+      cron: config.cron || DEFAULT_CONFIG.cron,
+      memory: config.memory || DEFAULT_CONFIG.memory,
+    } as any;
     
     if (options.detach) {
       // Run in background using spawn
@@ -122,7 +122,7 @@ program
       const config = loadConfig();
       const ws = await import('ws');
       
-      const client = new ws.default(`ws://${config.gateway.host}:${config.gateway.port}`);
+      const client = new ws.default(`ws://${config.gateway?.host || '127.0.0.1'}:${config.gateway?.port || 18799}`);
       
       await new Promise<void>((resolve, reject) => {
         const timeout = setTimeout(() => {
@@ -205,7 +205,7 @@ program
     const config = loadConfig();
     
     const dashboardPort = parseInt(options.port, 10);
-    const gatewayUrl = `ws://${config.gateway.host}:${config.gateway.port}`;
+    const gatewayUrl = `ws://${config.gateway?.host || '127.0.0.1'}:${config.gateway?.port || 18799}`;
     
     console.log('🎛️  Starting K.I.T. Dashboard...');
     console.log(`   Gateway: ${gatewayUrl}`);

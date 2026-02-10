@@ -103,18 +103,18 @@ export async function startKit(overrides?: {
   const config = loadConfig();
   
   const gateway = createGatewayServer({
-    port: overrides?.port || config.gateway.port,
-    host: config.gateway.host,
-    token: config.gateway.token,
+    port: overrides?.port || config.gateway?.port || 18799,
+    host: config.gateway?.host || '127.0.0.1',
+    token: config.gateway?.token,
     agent: {
-      id: config.agent.id,
-      name: overrides?.agentName || config.agent.name,
-      model: overrides?.model || config.agent.model,
+      id: config.agent?.id || 'main',
+      name: overrides?.agentName || config.agent?.name || 'K.I.T.',
+      model: overrides?.model || config.agent?.model,
     },
-    heartbeat: config.heartbeat,
-    cron: config.cron,
-    memory: config.memory,
-  });
+    heartbeat: config.heartbeat || { enabled: true, every: '30m' },
+    cron: config.cron || { enabled: true },
+    memory: config.memory || {},
+  } as any);
   
   await gateway.start();
   
