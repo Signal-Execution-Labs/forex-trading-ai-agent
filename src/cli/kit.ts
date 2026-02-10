@@ -21,7 +21,8 @@ import * as os from 'os';
 
 const program = new Command();
 const KIT_HOME = path.join(os.homedir(), '.kit');
-const VERSION = '1.0.0';
+const VERSION = '2.0.0';
+const GITHUB_REPO = 'kayzaa/k.i.t.-bot';
 
 program
   .name('kit')
@@ -491,6 +492,45 @@ Set with: kit models --set anthropic/claude-opus-4-5-20251101
       // TODO: Save to config
     } else {
       program.commands.find(c => c.name() === 'models')?.help();
+    }
+  });
+
+// ═══════════════════════════════════════════════════════════════
+// VERSION (with update check)
+// ═══════════════════════════════════════════════════════════════
+program
+  .command('version')
+  .description('Show version and check for updates')
+  .option('-c, --check', 'Check for updates')
+  .action(async (options) => {
+    console.log(`\n🤖 K.I.T. - Knight Industries Trading`);
+    console.log(`   Version: ${VERSION}`);
+    console.log(`   Node: ${process.version}`);
+    console.log(`   Platform: ${os.platform()} ${os.arch()}`);
+    console.log(`   GitHub: https://github.com/${GITHUB_REPO}\n`);
+    
+    if (options.check) {
+      console.log('🔍 Checking for updates...');
+      try {
+        const https = await import('https');
+        const data = await new Promise<string>((resolve, reject) => {
+          https.get(`https://raw.githubusercontent.com/${GITHUB_REPO}/main/package.json`, (res) => {
+            let data = '';
+            res.on('data', chunk => data += chunk);
+            res.on('end', () => resolve(data));
+            res.on('error', reject);
+          }).on('error', reject);
+        });
+        const { version: latest } = JSON.parse(data);
+        if (latest !== VERSION) {
+          console.log(`   ⬆️  Update available: ${latest}`);
+          console.log(`   Run: cd ~/.kit && git pull && npm run build\n`);
+        } else {
+          console.log(`   ✅ You're on the latest version!\n`);
+        }
+      } catch (err) {
+        console.log(`   ⚠️  Could not check for updates\n`);
+      }
     }
   });
 
