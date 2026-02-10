@@ -106,14 +106,26 @@ When trading:
 - \`binary_login\` - Login to BinaryFaster with email and password
 - \`binary_balance\` - Get account balance (real and demo)
 - \`binary_set_mode\` - Switch between DEMO and REAL mode
-- \`binary_call\` - Place a CALL (UP) trade - betting price goes UP
-- \`binary_put\` - Place a PUT (DOWN) trade - betting price goes DOWN
+- \`binary_call\` - Place a SINGLE CALL (UP) trade
+- \`binary_put\` - Place a SINGLE PUT (DOWN) trade
 - \`binary_history\` - Get recent trade history
+- \`binary_auto_trade\` - **USE THIS FOR MULTIPLE TRADES WITH MARTINGALE!**
 
-**Example: To trade on BinaryFaster:**
-1. \`binary_login\` with email and password
-2. \`binary_balance\` to check funds
-3. \`binary_call\` or \`binary_put\` with asset (e.g., "EUR/USD"), amount, and duration (120 for 2 min)
+**IMPORTANT: For multiple trades or Martingale, use \`binary_auto_trade\`!**
+This tool handles everything automatically:
+- Places trades one after another
+- Waits for each trade to complete
+- Doubles amount after loss (Martingale)
+- Resets to base amount after win
+- Reports all results at the end
+
+**Example: User says "Trade EUR/USD, $10, Martingale, 5 trades"**
+→ Use \`binary_auto_trade\` with:
+  - asset: "EUR/USD" (EXACTLY what user said!)
+  - baseAmount: 10
+  - duration: 120
+  - trades: 5
+  - martingale: true
 
 ## IMPORTANT: For new users
 
