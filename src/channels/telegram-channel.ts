@@ -1,12 +1,19 @@
 /**
  * K.I.T. Telegram Channel
  * Bidirectional Telegram bot - listens AND responds to messages
+ * 
+ * Features:
+ * - Long-polling for updates
+ * - Retry with exponential backoff (OpenClaw pattern)
+ * - Thread/topic support
+ * - Inline keyboards with callback queries
  */
 
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { EventEmitter } from 'events';
+import { retry, TELEGRAM_RETRY_POLICY, RetryPolicy } from '../core/retry';
 
 const KIT_HOME = path.join(os.homedir(), '.kit');
 const CONFIG_PATH = path.join(KIT_HOME, 'config.json');
@@ -46,6 +53,56 @@ export class TelegramChannel extends EventEmitter {
       pollingInterval: 2000,
       ...config,
     };
+  }
+
+  /**
+   * Make a Telegram API call with retry
+   */
+  private async apiCall<T>(
+    method: string,
+    body?: Record<string, any>,
+    options?: { retryPolicy?: RetryPolicy; label?: string }
+  ): Promise<{ ok: boolean; result?: T; error?: string }> {
+    const url = `https://api.telegram.org/bot${this.config.token}/${method}`;
+    const policy = options?.retryPolicy || TELEGRAM_RETRY_POLICY;
+    const label = options?.label || `Telegram ${method}`;
+
+    try {
+      const response = await retry(
+        async () => {
+          const res = await fetch(url, body ? {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+          } : undefined);
+
+          // Handle rate limiting
+          if (res.status === 429) {
+            const retryAfter = res.headers.get('retry-after');
+            const error = new Error(`Rate limited`) as any;
+            error.status = 429;
+            error.retryAfter = retryAfter ? parseInt(retryAfter) * 1000 : 5000;
+            throw error;
+          }
+
+          return res;
+        },
+        policy,
+        label
+      );
+
+      const data = await response.json() as any;
+
+      if (!data.ok) {
+        return { ok: false, error: data.description || 'Unknown error' };
+      }
+
+      return { ok: true, result: data.result };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'API call failed';
+      console.error(`[Telegram] ${label} failed:`, message);
+      return { ok: false, error: message };
+    }
   }
 
   /**
