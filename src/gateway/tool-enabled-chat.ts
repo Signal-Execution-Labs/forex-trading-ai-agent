@@ -349,6 +349,63 @@ export class ToolEnabledChatHandler {
   }
 
   /**
+   * Auto-detect API key type from user message and save it
+   */
+  private detectAndSaveApiKey(message: string): { provider: string; key: string } | null {
+    const trimmed = message.trim();
+    
+    // Detect key patterns - order matters! More specific patterns first
+    const patterns: { pattern: RegExp; provider: string; envVar: string }[] = [
+      { pattern: /^sk-ant-[a-zA-Z0-9_-]{20,}$/, provider: 'Anthropic', envVar: 'ANTHROPIC_API_KEY' },
+      { pattern: /^sk-proj-[a-zA-Z0-9_-]{20,}$/, provider: 'OpenAI', envVar: 'OPENAI_API_KEY' },
+      { pattern: /^sk-[a-zA-Z0-9_-]{20,}$/, provider: 'OpenAI', envVar: 'OPENAI_API_KEY' },
+      { pattern: /^gsk_[a-zA-Z0-9]{20,}$/, provider: 'Groq', envVar: 'GROQ_API_KEY' },
+      { pattern: /^xai-[a-zA-Z0-9_-]{20,}$/, provider: 'xAI', envVar: 'XAI_API_KEY' },
+      { pattern: /^AIza[a-zA-Z0-9_-]{20,}$/, provider: 'Google', envVar: 'GOOGLE_API_KEY' },
+    ];
+
+    for (const { pattern, provider, envVar } of patterns) {
+      if (pattern.test(trimmed)) {
+        // Save to environment (runtime)
+        process.env[envVar] = trimmed;
+        
+        // Save to .env file for persistence
+        try {
+          const workspaceDir = process.env.KIT_WORKSPACE || path.join(os.homedir(), '.kit');
+          const envFilePath = path.join(workspaceDir, '.env');
+          
+          let envContent = '';
+          if (fs.existsSync(envFilePath)) {
+            envContent = fs.readFileSync(envFilePath, 'utf-8');
+          }
+          
+          // Update or add the key
+          const regex = new RegExp(`^${envVar}=.*$`, 'm');
+          if (regex.test(envContent)) {
+            envContent = envContent.replace(regex, `${envVar}=${trimmed}`);
+          } else {
+            envContent += `\n${envVar}=${trimmed}`;
+          }
+          
+          // Ensure workspace exists
+          if (!fs.existsSync(workspaceDir)) {
+            fs.mkdirSync(workspaceDir, { recursive: true });
+          }
+          
+          fs.writeFileSync(envFilePath, envContent.trim() + '\n');
+          console.log(`[K.I.T.] Saved ${provider} API key to ${envFilePath}`);
+        } catch (error) {
+          console.error('[K.I.T.] Failed to save API key to .env:', error);
+        }
+        
+        return { provider, key: trimmed };
+      }
+    }
+    
+    return null;
+  }
+
+  /**
    * Process a chat message with tool support
    */
   async processMessage(
@@ -361,21 +418,52 @@ export class ToolEnabledChatHandler {
     // Get or create conversation history
     let history = this.conversationHistory.get(sessionId) || [];
     
+    // =========================================================================
+    // AUTO-DETECT API KEY IN USER MESSAGE
+    // =========================================================================
+    const detectedKey = this.detectAndSaveApiKey(userMessage);
+    if (detectedKey) {
+      const successMessage = `✅ **${detectedKey.provider} API Key detected and saved!**
+
+Your ${detectedKey.provider} key has been configured. K.I.T. is now ready!
+
+What would you like to do?
+- "show my portfolio" - See your balances
+- "connect telegram" - Set up Telegram notifications  
+- "trade EUR/USD" - Start trading
+- "onboard" - Complete setup wizard`;
+      history.push({ role: 'user', content: '[API Key provided]' });
+      history.push({ role: 'assistant', content: successMessage });
+      this.conversationHistory.set(sessionId, history);
+      return successMessage;
+    }
+    
     // Add user message
     history.push({ role: 'user', content: userMessage });
 
-    // Get API key
+    // Get API key from multiple sources
     const anthropicKey = process.env.ANTHROPIC_API_KEY;
     const openaiKey = process.env.OPENAI_API_KEY;
+    const googleKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
+    const groqKey = process.env.GROQ_API_KEY;
+    const xaiKey = process.env.XAI_API_KEY;
 
-    if (!anthropicKey && !openaiKey) {
-      const noKeyMessage = `I need an AI API key to respond intelligently. 
+    if (!anthropicKey && !openaiKey && !googleKey && !groqKey && !xaiKey) {
+      const noKeyMessage = `🔑 **I need an AI API key to respond intelligently.**
 
-You can set one up by telling me your API key, or use these commands:
-- \`config_set ai.providers.anthropic.apiKey YOUR_KEY\`
-- Or set the ANTHROPIC_API_KEY environment variable
+**Just paste your API key below!** I'll auto-detect the provider.
 
-Would you like me to help you get started with setup?`;
+**Supported:**
+• **OpenAI** - starts with \`sk-\` or \`sk-proj-\`
+• **Anthropic** - starts with \`sk-ant-\`
+• **Google/Gemini** - starts with \`AIza\`
+• **Groq** - starts with \`gsk_\`
+• **xAI** - starts with \`xai-\`
+
+Or set manually:
+\`config_set ai.providers.openai.apiKey YOUR_KEY\`
+
+💡 **Just paste your key and I'll do the rest!**`;
       history.push({ role: 'assistant', content: noKeyMessage });
       this.conversationHistory.set(sessionId, history);
       return noKeyMessage;
