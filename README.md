@@ -148,6 +148,9 @@ kit trade buy BTC/USDT 100 --demo
 | 📰 **News Integration** | Sentiment analysis and event tracking |
 | 💬 **Multi-Channel** | Control via Telegram, Discord, CLI |
 | 🛠️ **Developer SDK** | Build your own trading bots & apps |
+| 📜 **Pine Script Generator** | Create TradingView indicators & strategies |
+| 👥 **Social Trading** | Copy signals from bots & top traders |
+| 🐦 **Twitter Integration** | Auto-post signals & analysis to Twitter/X |
 
 ---
 
@@ -159,6 +162,95 @@ kit trade buy BTC/USDT 100 --demo
 | 💱 **Forex** | MetaTrader 4/5, RoboForex, IC Markets, OANDA, Pepperstone, XM | ✅ Ready |
 | 📈 **Stocks** | Interactive Brokers, Alpaca | 🚧 Beta |
 | 🏦 **DeFi** | Uniswap, Aave, Lido | 📋 Planned |
+
+---
+
+## 🆕 New Skills
+
+### 📜 TradingView Script Generator
+
+Generate Pine Script v5 code for TradingView from simple descriptions:
+
+```bash
+# Generate RSI indicator
+kit pine indicator --type rsi --name "My RSI"
+
+# Generate MA crossover strategy
+kit pine strategy --name "MA Cross" --indicators "ema:9,ema:21" --entry "cross_above" --exit "cross_below"
+
+# Generate from description
+kit pine describe "Create a strategy that buys when RSI is below 30"
+```
+
+**Features:**
+- Natural language → Pine Script conversion
+- Indicator templates (RSI, MACD, Bollinger, EMA)
+- Strategy templates with TP/SL
+- Auto-generate K.I.T. webhook alerts
+
+👉 See [TradingView Script Skill](skills/tradingview-script/SKILL.md)
+
+---
+
+### 👥 Social Trading
+
+Copy trades from signal providers, Telegram bots, and top traders:
+
+```bash
+# Add a signal source
+kit social add telegram @CryptoSignalsVIP
+
+# List sources
+kit social sources
+
+# View performance
+kit social stats
+```
+
+**Supported Sources:**
+- 📱 Telegram channels & bots
+- 💬 Discord servers
+- 🐦 Twitter/X accounts
+- 🔗 Custom webhooks
+- 📊 Binance Copy Trading
+
+**Features:**
+- Universal signal parser (multiple formats)
+- Risk-adjusted position sizing
+- Duplicate detection
+- Performance tracking per source
+
+👉 See [Social Trading Skill](skills/social-trading/SKILL.md)
+
+---
+
+### 🐦 Twitter Posting
+
+Automatically share signals and analysis on Twitter/X:
+
+```bash
+# Post a signal
+kit twitter signal BTC/USDT LONG 45000 --tp 47000 --sl 44000
+
+# Post analysis
+kit twitter analysis ETH/USDT --timeframe 4H
+
+# Post custom tweet
+kit twitter post "Market update..." --image chart.png
+```
+
+**Auto-Post Features:**
+- 📈 Trading signals with charts
+- 📊 Technical analysis summaries
+- 📅 Daily/weekly performance reports
+- ⚠️ Market alerts
+
+**Safety:**
+- Rate limiting (max posts per hour/day)
+- Content validation
+- Automatic disclaimer inclusion
+
+👉 See [Twitter Posting Skill](skills/twitter-posting/SKILL.md)
 
 ---
 
@@ -180,7 +272,10 @@ kit/
 │   ├── auto-trader/          # Strategy Execution
 │   ├── metatrader/           # MT4/MT5 Integration
 │   ├── signal-copier/        # Copy Trading
-│   └── backtester/           # Historical Testing
+│   ├── backtester/           # Historical Testing
+│   ├── tradingview-script/   # Pine Script Generator 🆕
+│   ├── social-trading/       # Social Copy Trading 🆕
+│   └── twitter-posting/      # Twitter Integration 🆕
 │
 ├── workspace/            # Your Agent's Home
 │   ├── SOUL.md           # K.I.T.'s Personality
@@ -304,6 +399,9 @@ See the [examples/](examples/) folder:
 - `basic-bot.ts` - Simple trading bot
 - `signal-copier-example.ts` - Copy signals from Telegram
 - `portfolio-tracker-example.ts` - Track portfolio across exchanges
+- `tradingview-script-example.ts` - Generate Pine Script indicators & strategies 🆕
+- `social-trading-example.ts` - Copy trades from bots & signal providers 🆕
+- `twitter-posting-example.ts` - Auto-post signals & analysis to Twitter 🆕
 
 ---
 
