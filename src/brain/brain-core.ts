@@ -12,7 +12,7 @@
  */
 
 import { EventEmitter } from 'events';
-import { GoalParser, ParsedGoal } from './goal-parser';
+import { GoalParser, ParsedGoal, UserGoal as GoalParserUserGoal } from './goal-parser';
 import { DecisionEngine } from './decision-engine';
 import { AutonomyManager } from './autonomy-manager';
 import {
@@ -63,7 +63,7 @@ export class BrainCore extends EventEmitter {
   private autonomyManager: AutonomyManager;
   
   private state: BrainState;
-  private analysisTimer?: NodeJS.Timer;
+  private analysisTimer?: ReturnType<typeof setInterval>;
   private portfolioValue: number = 0;
   
   constructor(config: BrainConfig = {}) {
@@ -470,5 +470,3 @@ export class BrainCore extends EventEmitter {
 export function createBrainCore(config?: BrainConfig): BrainCore {
   return new BrainCore(config);
 }
-
-export { BrainConfig, BrainState };

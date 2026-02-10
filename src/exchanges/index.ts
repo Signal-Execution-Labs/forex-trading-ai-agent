@@ -26,4 +26,9 @@ export {
   type Position
 } from './exchange-manager';
 
-export { BinaryFasterExchange } from './binaryfaster';
+export { 
+  BinaryFasterClient as BinaryFasterExchange,
+  BinaryFasterConfig,
+  ASSETS as BinaryFasterAssets,
+  DURATIONS as BinaryFasterDurations
+} from './binaryfaster';
