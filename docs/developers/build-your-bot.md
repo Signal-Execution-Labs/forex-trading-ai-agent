@@ -23,7 +23,7 @@ K.I.T. is not just a trading bot - it's a **framework** like OpenClaw. You can:
 mkdir my-trading-bot
 cd my-trading-bot
 npm init -y
-npm install @binaryfaster/kit typescript ts-node
+npm install kit-trading typescript ts-node
 ```
 
 ### Step 2: Configure TypeScript
@@ -45,7 +45,7 @@ npm install @binaryfaster/kit typescript ts-node
 
 ```typescript
 // src/bot.ts
-import { createBot, RSIStrategy } from '@binaryfaster/kit';
+import { createBot, RSIStrategy } from 'kit-trading';
 
 const bot = createBot({
   name: 'MyRSIBot',
@@ -127,7 +127,7 @@ npx ts-node src/bot.ts
 
 ```typescript
 // src/strategies/my-strategy.ts
-import { Strategy, Candle, Signal, Indicators } from '@binaryfaster/kit';
+import { Strategy, Candle, Signal, Indicators } from 'kit-trading';
 
 export class MyStrategy extends Strategy {
   name = 'My Super Strategy';

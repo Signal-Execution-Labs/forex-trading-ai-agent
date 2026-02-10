@@ -817,7 +817,7 @@ Get memory file.
 ### JavaScript/TypeScript
 
 ```typescript
-import { KitClient } from '@binaryfaster/kit';
+import { KitClient } from 'kit-trading';
 
 const client = new KitClient({ url: 'ws://localhost:18799' });
 await client.connect();

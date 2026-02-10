@@ -115,12 +115,12 @@ After installation:
 ## Docker (Alternative)
 
 ```bash
-docker pull binaryfaster/kit:latest
+docker pull kayzaa/kit:latest
 docker run -d \
   -v ~/.kit:/root/.kit \
   -e ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY \
   --name kit \
-  binaryfaster/kit:latest
+  kayzaa/kit:latest
 ```
 
 ## Troubleshooting

@@ -231,7 +231,7 @@ my-skill/
 
 ```typescript
 // index.ts
-import { Skill, SkillContext } from '@binaryfaster/kit';
+import { Skill, SkillContext } from 'kit-trading';
 
 export default class MySkill implements Skill {
   id = 'my-skill';
@@ -262,7 +262,7 @@ export default class MySkill implements Skill {
 
 ```bash
 # From npm
-kit skills install @binaryfaster/kit-skill-myskill
+kit skills install kit-skill-myskill
 
 # Local
 kit skills install ./path/to/my-skill

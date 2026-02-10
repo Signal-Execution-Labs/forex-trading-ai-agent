@@ -17,7 +17,7 @@ Want to see K.I.T. in action right away? Let's go!
 ## Step 1: Install (1 minute)
 
 ```bash
-npm install -g @binaryfaster/kit
+npm install -g kit-trading
 ```
 
 Verify installation:
