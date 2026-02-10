@@ -1,24 +1,24 @@
 ---
-summary: "K.I.T. auf Windows 10/11 installieren - Schritt für Schritt"
+summary: "Install K.I.T. on Windows 10/11 - Step by Step"
 title: "Windows Installation Guide"
 read_when:
-  - Windows 10/11 Installation
-  - Erste Installation auf Windows
-  - Windows Setup Guide
+  - Windows 10/11 installation
+  - First installation on Windows
+  - Windows setup guide
 ---
 
 # Windows Installation Guide 🪟
 
-Komplette Anleitung für K.I.T. auf Windows 10/11.
+Complete guide for K.I.T. on Windows 10/11.
 
-**Zeitaufwand:** ~15 Minuten
+**Time required:** ~15 minutes
 
 ---
 
-## 📋 Übersicht
+## 📋 Overview
 
-| Komponente | Version | Download |
-|------------|---------|----------|
+| Component | Version | Download |
+|-----------|---------|----------|
 | Node.js | 20+ LTS | [nodejs.org](https://nodejs.org) |
 | Python | 3.10+ | [python.org](https://python.org) |
 | Git | Latest | [git-scm.com](https://git-scm.com) |
@@ -28,12 +28,12 @@ Komplette Anleitung für K.I.T. auf Windows 10/11.
 
 ## 🚀 Quick Install (PowerShell)
 
-Für erfahrene Nutzer - alles in einem Script:
+For experienced users - all in one script:
 
 ```powershell
-# Als Administrator ausführen!
+# Run as Administrator!
 
-# 1. Chocolatey installieren (Package Manager)
+# 1. Install Chocolatey (Package Manager)
 Set-ExecutionPolicy Bypass -Scope Process -Force
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
 iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
@@ -41,7 +41,7 @@ iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocola
 # 2. Dependencies
 choco install nodejs-lts python git -y
 
-# 3. K.I.T. klonen und installieren
+# 3. Clone and install K.I.T.
 cd ~
 git clone https://github.com/kayzaa/k.i.t.-bot.git
 cd k.i.t.-bot
@@ -51,158 +51,158 @@ npm run build
 # 4. Python dependencies
 pip install MetaTrader5 pandas numpy
 
-# 5. Testen
+# 5. Test
 npx tsc --noEmit
 npm test
 ```
 
 ---
 
-## 📦 Schritt 1: Node.js installieren
+## 📦 Step 1: Install Node.js
 
 ### Download
 
-1. Öffne [nodejs.org](https://nodejs.org/en/download/)
-2. Klicke auf **"Windows Installer (.msi)"** - LTS Version
-3. Starte den Installer
+1. Go to [nodejs.org](https://nodejs.org/en/download/)
+2. Click **"Windows Installer (.msi)"** - LTS Version
+3. Run the installer
 
 ### Installation
 
 1. **Welcome** → Next
-2. **License** → Akzeptieren → Next
-3. **Destination** → Standard lassen → Next
-4. **Custom Setup** → Standard → Next
-5. **Tools for Native Modules** → ✅ Checkbox aktivieren! → Next
-6. **Install** → Warten...
+2. **License** → Accept → Next
+3. **Destination** → Leave default → Next
+4. **Custom Setup** → Default → Next
+5. **Tools for Native Modules** → ✅ Check the box! → Next
+6. **Install** → Wait...
 7. **Finish**
 
-### Prüfen
+### Verify
 
-Neue PowerShell öffnen:
+Open new PowerShell:
 
 ```powershell
-node --version    # Sollte v20.x.x oder höher zeigen
-npm --version     # Sollte 10.x.x zeigen
+node --version    # Should show v20.x.x or higher
+npm --version     # Should show 10.x.x
 ```
 
 ---
 
-## 🐍 Schritt 2: Python installieren
+## 🐍 Step 2: Install Python
 
 ### Download
 
-1. Öffne [python.org/downloads](https://www.python.org/downloads/)
-2. Klicke auf **"Download Python 3.12.x"** (oder neueste Version)
-3. Starte den Installer
+1. Go to [python.org/downloads](https://www.python.org/downloads/)
+2. Click **"Download Python 3.12.x"** (or latest version)
+3. Run the installer
 
 ### Installation
 
-⚠️ **WICHTIG:** Beim ersten Screen:
+⚠️ **IMPORTANT:** On the first screen:
 
-- [x] ✅ **"Add Python to PATH"** - MUSS aktiviert sein!
+- [x] ✅ **"Add Python to PATH"** - MUST be checked!
 - [x] ✅ **"Install launcher for all users"**
 
-Dann:
-1. Klicke **"Customize installation"**
-2. Optional Features: Alle aktiviert lassen → Next
+Then:
+1. Click **"Customize installation"**
+2. Optional Features: Leave all checked → Next
 3. Advanced Options:
    - [x] Install for all users
    - [x] Add Python to environment variables
    - [x] Precompile standard library
-4. **Install** → Warten...
-5. **"Disable path length limit"** → Klicken (falls angezeigt)
+4. **Install** → Wait...
+5. **"Disable path length limit"** → Click (if shown)
 6. **Close**
 
-### Prüfen
+### Verify
 
-Neue PowerShell öffnen:
+Open new PowerShell:
 
 ```powershell
-python --version    # Sollte Python 3.12.x zeigen
-pip --version       # Sollte pip 24.x zeigen
+python --version    # Should show Python 3.12.x
+pip --version       # Should show pip 24.x
 ```
 
-**Falls "python" nicht erkannt wird:**
+**If "python" not recognized:**
 
 ```powershell
-# Python zum PATH hinzufügen
+# Add Python to PATH
 $pythonPath = "$env:LOCALAPPDATA\Programs\Python\Python312"
 $env:Path = "$pythonPath;$pythonPath\Scripts;$env:Path"
 
-# Permanent speichern
+# Save permanently
 [Environment]::SetEnvironmentVariable("Path", $env:Path, "User")
 ```
 
 ---
 
-## 📥 Schritt 3: Git installieren
+## 📥 Step 3: Install Git
 
 ### Download
 
-1. Öffne [git-scm.com/download/win](https://git-scm.com/download/win)
-2. Download startet automatisch
-3. Starte den Installer
+1. Go to [git-scm.com/download/win](https://git-scm.com/download/win)
+2. Download starts automatically
+3. Run the installer
 
 ### Installation
 
-Standard-Optionen sind OK. Wichtig:
+Default options are OK. Important:
 
-- **Default editor:** VS Code (oder dein bevorzugter Editor)
+- **Default editor:** VS Code (or your preferred editor)
 - **PATH environment:** "Git from the command line and also from 3rd-party software" ✅
 - **HTTPS transport:** Use the OpenSSL library
 - **Line ending:** Checkout Windows-style, commit Unix-style
 
-### Prüfen
+### Verify
 
 ```powershell
-git --version    # Sollte git version 2.x.x zeigen
+git --version    # Should show git version 2.x.x
 ```
 
 ---
 
-## 🤖 Schritt 4: K.I.T. installieren
+## 🤖 Step 4: Install K.I.T.
 
-### Repository klonen
+### Clone Repository
 
 ```powershell
-# In ein Verzeichnis deiner Wahl
-cd C:\Users\$env:USERNAME\Projects    # Oder: cd ~
+# To a directory of your choice
+cd C:\Users\$env:USERNAME\Projects    # Or: cd ~
 
-# K.I.T. klonen
+# Clone K.I.T.
 git clone https://github.com/kayzaa/k.i.t.-bot.git
 cd k.i.t.-bot
 ```
 
-### Dependencies installieren
+### Install Dependencies
 
 ```powershell
 # Node.js packages
 npm install
 
-# Dauer: 1-3 Minuten je nach Internet
+# Duration: 1-3 minutes depending on internet
 ```
 
-### TypeScript kompilieren
+### Compile TypeScript
 
 ```powershell
 # Build
 npm run build
 
-# Type-Check (sollte keine Fehler zeigen)
+# Type check (should show no errors)
 npx tsc --noEmit
 ```
 
-### Tests ausführen
+### Run Tests
 
 ```powershell
 npm test
 ```
 
-✅ Erwartete Ausgabe: `31 passed`
+✅ Expected output: `31 passed`
 
 ---
 
-## 🐍 Schritt 5: Python Skills einrichten
+## 🐍 Step 5: Set Up Python Skills
 
 ### MetaTrader 5 Library
 
@@ -210,20 +210,20 @@ npm test
 pip install MetaTrader5 pandas numpy
 ```
 
-### Optionale Libraries
+### Optional Libraries
 
 ```powershell
-# Für erweiterte Features
+# For extended features
 pip install psutil requests flask
 
-# Für Machine Learning
+# For Machine Learning
 pip install scikit-learn tensorflow
 
-# Für Technical Analysis
+# For Technical Analysis
 pip install ta-lib
 ```
 
-### Prüfen
+### Verify
 
 ```powershell
 python -c "import MetaTrader5 as mt5; print(f'MT5 Library OK')"
@@ -232,41 +232,41 @@ python -c "import pandas; print(f'Pandas OK')"
 
 ---
 
-## ⚙️ Schritt 6: Konfiguration
+## ⚙️ Step 6: Configuration
 
-### Umgebungsvariablen setzen
+### Set Environment Variables
 
-**Option A: PowerShell (temporär)**
+**Option A: PowerShell (temporary)**
 
 ```powershell
 $env:ANTHROPIC_API_KEY = "sk-ant-xxx..."
 $env:KIT_HOME = "C:\Users\$env:USERNAME\.kit"
 ```
 
-**Option B: Permanent (empfohlen)**
+**Option B: Permanent (recommended)**
 
-1. Windows-Suche → "Umgebungsvariablen"
-2. "Umgebungsvariablen bearbeiten" öffnen
-3. Unter "Benutzervariablen" → "Neu":
+1. Windows Search → "Environment Variables"
+2. Open "Edit environment variables"
+3. Under "User variables" → "New":
    - Name: `ANTHROPIC_API_KEY`
-   - Wert: `sk-ant-xxx...`
-4. Noch eine:
+   - Value: `sk-ant-xxx...`
+4. Another one:
    - Name: `KIT_HOME`
-   - Wert: `C:\Users\DeinName\.kit`
+   - Value: `C:\Users\YourName\.kit`
 
-### Config erstellen
+### Create Config
 
 ```powershell
-# Config-Verzeichnis erstellen
+# Create config directory
 mkdir -Force $env:USERPROFILE\.kit
 
-# Beispiel-Config kopieren
+# Copy example config
 Copy-Item "examples\kit.config.example.json" "$env:USERPROFILE\.kit\config.json"
 ```
 
 ---
 
-## 🧪 Schritt 7: Installation testen
+## 🧪 Step 7: Test Installation
 
 ### TypeScript Check
 
@@ -275,7 +275,7 @@ cd C:\Users\$env:USERNAME\Projects\k.i.t.-bot
 npx tsc --noEmit
 ```
 
-✅ Keine Ausgabe = Keine Fehler = Perfekt!
+✅ No output = No errors = Perfect!
 
 ### Unit Tests
 
@@ -283,7 +283,7 @@ npx tsc --noEmit
 npm test
 ```
 
-✅ Erwartete Ausgabe:
+✅ Expected output:
 ```
  ✓ tests/config.test.ts (9 tests)
  ✓ tests/logger.test.ts (8 tests)
@@ -293,9 +293,9 @@ npm test
       Tests  31 passed (31)
 ```
 
-### MT5 Verbindung (optional)
+### MT5 Connection (optional)
 
-Falls MetaTrader 5 installiert ist:
+If MetaTrader 5 is installed:
 
 ```powershell
 cd skills\metatrader
@@ -304,26 +304,26 @@ python examples\quick_test.py
 
 ---
 
-## 🖥️ Schritt 8: Dashboard starten
+## 🖥️ Step 8: Start Dashboard
 
 ```powershell
-# Dashboard auf Port 3000 starten
+# Start dashboard on port 3000
 npm run dashboard
 
-# Browser öffnet automatisch http://localhost:3000
+# Browser opens automatically at http://localhost:3000
 ```
 
 ---
 
-## 🔧 Nützliche PowerShell Aliases
+## 🔧 Useful PowerShell Aliases
 
-Füge zu deinem PowerShell-Profil hinzu:
+Add to your PowerShell profile:
 
 ```powershell
-# Profil öffnen
+# Open profile
 notepad $PROFILE
 
-# Aliases hinzufügen:
+# Add aliases:
 function kit { cd C:\Users\$env:USERNAME\Projects\k.i.t.-bot; npm run $args }
 function kit-test { cd C:\Users\$env:USERNAME\Projects\k.i.t.-bot; npm test }
 function kit-build { cd C:\Users\$env:USERNAME\Projects\k.i.t.-bot; npm run build }
@@ -333,38 +333,38 @@ function kit-build { cd C:\Users\$env:USERNAME\Projects\k.i.t.-bot; npm run buil
 
 ## 🚨 Troubleshooting
 
-### Problem: "npm" wird nicht erkannt
+### Problem: "npm" not recognized
 
-**Lösung:**
-1. Schließe alle PowerShell-Fenster
-2. Öffne neue PowerShell
-3. Nochmal testen
+**Solution:**
+1. Close all PowerShell windows
+2. Open new PowerShell
+3. Test again
 
-Falls immer noch nicht:
+If still not working:
 ```powershell
-# Node.js PATH manuell hinzufügen
+# Add Node.js PATH manually
 $env:Path += ";C:\Program Files\nodejs"
 ```
 
-### Problem: "python" wird nicht erkannt
+### Problem: "python" not recognized
 
-**Lösung:**
+**Solution:**
 ```powershell
-# Python PATH prüfen
+# Check Python PATH
 where.exe python
 
-# Falls leer, manuell hinzufügen
+# If empty, add manually
 $env:Path += ";C:\Users\$env:USERNAME\AppData\Local\Programs\Python\Python312"
 ```
 
-### Problem: "npm install" Fehler
+### Problem: "npm install" errors
 
-**Lösung:**
+**Solution:**
 ```powershell
-# Cache leeren
+# Clear cache
 npm cache clean --force
 
-# Node modules löschen und neu installieren
+# Delete node modules and reinstall
 Remove-Item -Recurse -Force node_modules
 Remove-Item package-lock.json
 npm install
@@ -372,83 +372,83 @@ npm install
 
 ### Problem: TypeScript Errors
 
-**Lösung:**
+**Solution:**
 ```powershell
-# Prüfe TypeScript Version
+# Check TypeScript version
 npx tsc --version
 
-# Node modules neu installieren
+# Reinstall node modules
 Remove-Item -Recurse -Force node_modules
 npm install
 npx tsc --noEmit
 ```
 
-### Problem: Tests schlagen fehl
+### Problem: Tests fail
 
-**Lösung:**
+**Solution:**
 ```powershell
-# Verbose output für Details
+# Verbose output for details
 npm test -- --reporter=verbose
 
-# Einzelnen Test laufen lassen
+# Run single test
 npm test -- tests/config.test.ts
 ```
 
-### Problem: MetaTrader5 Import Fehler
+### Problem: MetaTrader5 Import Error
 
-**Lösung:**
+**Solution:**
 ```powershell
-# 64-bit Python prüfen (MT5 braucht 64-bit!)
+# Check 64-bit Python (MT5 needs 64-bit!)
 python -c "import sys; print(sys.maxsize > 2**32)"
-# Muss "True" ausgeben
+# Must output "True"
 
-# Falls False: 64-bit Python installieren
+# If False: Install 64-bit Python
 ```
 
-### Problem: Execution Policy Fehler
+### Problem: Execution Policy Error
 
-**Lösung:**
+**Solution:**
 ```powershell
-# Als Admin:
+# As Admin:
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
 
 ---
 
-## 📋 Installations-Checkliste
+## 📋 Installation Checklist
 
-### Basis
-- [ ] Node.js 20+ installiert → `node --version`
-- [ ] npm funktioniert → `npm --version`
-- [ ] Python 3.10+ installiert → `python --version`
-- [ ] pip funktioniert → `pip --version`
-- [ ] Git installiert → `git --version`
+### Basic
+- [ ] Node.js 20+ installed → `node --version`
+- [ ] npm works → `npm --version`
+- [ ] Python 3.10+ installed → `python --version`
+- [ ] pip works → `pip --version`
+- [ ] Git installed → `git --version`
 
 ### K.I.T.
-- [ ] Repository geklont
-- [ ] `npm install` erfolgreich
-- [ ] `npm run build` erfolgreich
-- [ ] `npx tsc --noEmit` keine Fehler
-- [ ] `npm test` alle Tests passed
+- [ ] Repository cloned
+- [ ] `npm install` successful
+- [ ] `npm run build` successful
+- [ ] `npx tsc --noEmit` no errors
+- [ ] `npm test` all tests passed
 
 ### Python Skills
-- [ ] `pip install MetaTrader5` erfolgreich
-- [ ] `import MetaTrader5` funktioniert
+- [ ] `pip install MetaTrader5` successful
+- [ ] `import MetaTrader5` works
 
 ### Optional
-- [ ] MT5 Terminal installiert
-- [ ] MT5 Demo Account erstellt
-- [ ] Algo-Trading aktiviert
-- [ ] Dashboard läuft
+- [ ] MT5 Terminal installed
+- [ ] MT5 Demo Account created
+- [ ] Algo trading enabled
+- [ ] Dashboard running
 
 ---
 
-## 🎯 Nächste Schritte
+## 🎯 Next Steps
 
-1. **[Exchange verbinden](/start/exchanges)** - Binance, Kraken, etc.
-2. **[MT5 Setup](/start/windows-vps)** - MetaTrader 5 für Forex
-3. **[Erster Trade](/start/first-trade)** - Demo Trade ausführen
-4. **[Konfiguration](/start/configuration)** - K.I.T. anpassen
+1. **[Connect Exchange](/start/exchanges)** - Binance, Kraken, etc.
+2. **[MT5 Setup](/start/windows-vps)** - MetaTrader 5 for Forex
+3. **[First Trade](/start/first-trade)** - Execute demo trade
+4. **[Configuration](/start/configuration)** - Customize K.I.T.
 
 ---
 
@@ -463,5 +463,5 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ---
 
 **Version:** 1.0.0  
-**Erstellt:** 2026-02-10  
-**Autor:** K.I.T. [Sprint-Agent]
+**Created:** 2026-02-10  
+**Author:** K.I.T. [Sprint-Agent]

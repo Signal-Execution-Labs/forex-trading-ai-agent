@@ -1,23 +1,23 @@
 ---
-summary: "Exchanges mit K.I.T. verbinden"
+summary: "Connect exchanges with K.I.T."
 read_when:
-  - Exchange-APIs einrichten
-  - Neue Börse hinzufügen
-title: "Exchanges verbinden"
+  - Set up exchange APIs
+  - Add new exchange
+title: "Connect Exchanges"
 ---
 
-# Exchanges verbinden
+# Connect Exchanges
 
-K.I.T. unterstützt alle großen Crypto-Exchanges und MetaTrader für Forex. Dieser Guide zeigt, wie du sie sicher verbindest.
+K.I.T. supports all major crypto exchanges and MetaTrader for Forex. This guide shows how to connect them securely.
 
-## Unterstützte Exchanges
+## Supported Exchanges
 
-| Exchange | Typ | Features |
-|----------|-----|----------|
+| Exchange | Type | Features |
+|----------|------|----------|
 | Binance | Crypto | Spot, Futures, Margin |
 | Kraken | Crypto | Spot, Futures |
 | Coinbase | Crypto | Spot |
-| MetaTrader 4/5 | Forex | CFDs, Forex, Indizes |
+| MetaTrader 4/5 | Forex | CFDs, Forex, Indices |
 | Bybit | Crypto | Spot, Derivatives |
 | KuCoin | Crypto | Spot, Futures |
 | OKX | Crypto | Spot, Derivatives |
@@ -25,34 +25,34 @@ K.I.T. unterstützt alle großen Crypto-Exchanges und MetaTrader für Forex. Die
 ## Quick Setup
 
 <Steps>
-  <Step title="Exchange auswählen">
+  <Step title="Select exchange">
     ```bash
     kit exchanges add
     ```
     
-    Interaktiver Wizard zur Exchange-Auswahl.
+    Interactive wizard for exchange selection.
   </Step>
   
-  <Step title="API-Key erstellen">
-    Erstelle einen API-Key auf der Exchange mit:
-    - ✅ Lesen (Read)
+  <Step title="Create API key">
+    Create an API key on the exchange with:
+    - ✅ Read
     - ✅ Trading (Trade)
-    - ❌ Withdrawal (NIEMALS!)
+    - ❌ Withdrawal (NEVER!)
     
-    Optional: IP-Whitelist für mehr Sicherheit.
+    Optional: IP whitelist for more security.
   </Step>
   
-  <Step title="Credentials speichern">
+  <Step title="Save credentials">
     ```bash
     kit exchanges add binance \
       --api-key "your_api_key" \
       --secret "your_api_secret"
     ```
     
-    Die Credentials werden verschlüsselt in `~/.kit/exchanges/` gespeichert.
+    Credentials are stored encrypted in `~/.kit/exchanges/`.
   </Step>
   
-  <Step title="Verbindung testen">
+  <Step title="Test connection">
     ```bash
     kit exchanges test binance
     ```
@@ -62,26 +62,26 @@ K.I.T. unterstützt alle großen Crypto-Exchanges und MetaTrader für Forex. Die
 ## Binance Setup
 
 <AccordionGroup>
-  <Accordion title="1. API-Key erstellen">
-    1. Gehe zu [Binance API Management](https://www.binance.com/en/my/settings/api-management)
-    2. Klicke "Create API"
-    3. Wähle "System generated"
-    4. Aktiviere:
+  <Accordion title="1. Create API key">
+    1. Go to [Binance API Management](https://www.binance.com/en/my/settings/api-management)
+    2. Click "Create API"
+    3. Choose "System generated"
+    4. Enable:
        - ✅ Enable Reading
        - ✅ Enable Spot & Margin Trading
        - ✅ Enable Futures (optional)
-    5. **WICHTIG:** Aktiviere NICHT "Enable Withdrawals"
-    6. Optional: IP-Restriction hinzufügen
+    5. **IMPORTANT:** Do NOT enable "Enable Withdrawals"
+    6. Optional: Add IP restriction
   </Accordion>
   
-  <Accordion title="2. K.I.T. konfigurieren">
+  <Accordion title="2. Configure K.I.T.">
     ```bash
     kit exchanges add binance \
       --api-key "vmPUZE6mv9SD5VNHk4..." \
       --secret "NhqPtmdSJYdKjVHjA7PZj..."
     ```
     
-    Oder manuell in `~/.kit/exchanges/binance.json`:
+    Or manually in `~/.kit/exchanges/binance.json`:
     ```json
     {
       "apiKey": "vmPUZE6mv9SD5VNHk4...",
@@ -96,11 +96,11 @@ K.I.T. unterstützt alle großen Crypto-Exchanges und MetaTrader für Forex. Die
   </Accordion>
   
   <Accordion title="3. Testnet (Paper Trading)">
-    Für risikofreies Testen:
+    For risk-free testing:
     
-    1. Gehe zu [Binance Testnet](https://testnet.binance.vision/)
-    2. Erstelle Testnet API-Keys
-    3. Konfiguriere mit `--testnet`:
+    1. Go to [Binance Testnet](https://testnet.binance.vision/)
+    2. Create testnet API keys
+    3. Configure with `--testnet`:
     
     ```bash
     kit exchanges add binance \
@@ -114,19 +114,19 @@ K.I.T. unterstützt alle großen Crypto-Exchanges und MetaTrader für Forex. Die
 ## Kraken Setup
 
 <AccordionGroup>
-  <Accordion title="1. API-Key erstellen">
-    1. Gehe zu [Kraken Security](https://www.kraken.com/u/security/api)
-    2. Klicke "Add key"
-    3. Setze Berechtigungen:
+  <Accordion title="1. Create API key">
+    1. Go to [Kraken Security](https://www.kraken.com/u/security/api)
+    2. Click "Add key"
+    3. Set permissions:
        - ✅ Query Funds
        - ✅ Query Open Orders & Trades
        - ✅ Query Closed Orders & Trades
        - ✅ Create & Modify Orders
        - ✅ Cancel/Close Orders
-    4. **NICHT aktivieren:** Withdraw Funds
+    4. **NOT enable:** Withdraw Funds
   </Accordion>
   
-  <Accordion title="2. K.I.T. konfigurieren">
+  <Accordion title="2. Configure K.I.T.">
     ```bash
     kit exchanges add kraken \
       --api-key "KRAKEN_API_KEY" \
@@ -138,18 +138,18 @@ K.I.T. unterstützt alle großen Crypto-Exchanges und MetaTrader für Forex. Die
 ## Coinbase Setup
 
 <AccordionGroup>
-  <Accordion title="1. API-Key erstellen">
-    1. Gehe zu [Coinbase API Settings](https://www.coinbase.com/settings/api)
-    2. Klicke "New API Key"
-    3. Wähle Wallets/Accounts
-    4. Berechtigungen:
+  <Accordion title="1. Create API key">
+    1. Go to [Coinbase API Settings](https://www.coinbase.com/settings/api)
+    2. Click "New API Key"
+    3. Select wallets/accounts
+    4. Permissions:
        - ✅ wallet:accounts:read
        - ✅ wallet:trades:create
        - ✅ wallet:trades:read
-    5. NICHT: wallet:withdrawals
+    5. NOT: wallet:withdrawals
   </Accordion>
   
-  <Accordion title="2. K.I.T. konfigurieren">
+  <Accordion title="2. Configure K.I.T.">
     ```bash
     kit exchanges add coinbase \
       --api-key "API_KEY" \
@@ -160,20 +160,20 @@ K.I.T. unterstützt alle großen Crypto-Exchanges und MetaTrader für Forex. Die
 
 ## MetaTrader Setup
 
-Für Forex und CFD-Trading über MetaTrader:
+For Forex and CFD trading via MetaTrader:
 
 <AccordionGroup>
-  <Accordion title="1. MT4/MT5 vorbereiten">
-    1. Öffne MetaTrader
+  <Accordion title="1. Prepare MT4/MT5">
+    1. Open MetaTrader
     2. Tools → Options → Expert Advisors
-    3. Aktiviere:
+    3. Enable:
        - ✅ Allow automated trading
        - ✅ Allow DLL imports
        - ✅ Allow WebRequest for listed URLs
-    4. Füge K.I.T. Server-URL hinzu
+    4. Add K.I.T. server URL
   </Accordion>
   
-  <Accordion title="2. K.I.T. Bridge installieren">
+  <Accordion title="2. Install K.I.T. Bridge">
     ```bash
     kit exchanges add metatrader \
       --terminal-path "C:\Program Files\MetaTrader 5" \
@@ -181,15 +181,15 @@ Für Forex und CFD-Trading über MetaTrader:
       --server "YourBroker-Server"
     ```
     
-    K.I.T. installiert automatisch den EA (Expert Advisor).
+    K.I.T. automatically installs the EA (Expert Advisor).
   </Accordion>
   
-  <Accordion title="3. Verbindung testen">
+  <Accordion title="3. Test connection">
     ```bash
     kit exchanges test metatrader
     
     # Output:
-    ✅ MetaTrader 5 verbunden
+    ✅ MetaTrader 5 connected
     Account: 12345678
     Balance: €10,000.00
     Leverage: 1:30
@@ -199,7 +199,7 @@ Für Forex und CFD-Trading über MetaTrader:
 
 ## Multi-Exchange Setup
 
-K.I.T. kann mehrere Exchanges gleichzeitig nutzen:
+K.I.T. can use multiple exchanges simultaneously:
 
 ```json
 {
@@ -223,59 +223,59 @@ K.I.T. kann mehrere Exchanges gleichzeitig nutzen:
 }
 ```
 
-## Exchange-Befehle
+## Exchange Commands
 
 ```bash
-# Alle Exchanges anzeigen
+# Show all exchanges
 kit exchanges list
 
-# Status prüfen
+# Check status
 kit exchanges status
 
-# Balance abrufen
+# Get balance
 kit exchanges balance binance
 
-# Exchange deaktivieren
+# Disable exchange
 kit exchanges disable kraken
 
-# Exchange entfernen
+# Remove exchange
 kit exchanges remove coinbase
 
-# API-Key rotieren
+# Rotate API key
 kit exchanges rotate-key binance
 ```
 
-## Sicherheits-Best-Practices
+## Security Best Practices
 
 <Warning>
-**NIEMALS Withdrawal-Berechtigungen aktivieren!**
-K.I.T. benötigt keine Auszahlungsberechtigung.
+**NEVER enable withdrawal permissions!**
+K.I.T. does not need withdrawal permissions.
 </Warning>
 
 <Tip>
-**Sicherheits-Checkliste:**
-1. ✅ Nur Read + Trade Berechtigungen
-2. ✅ IP-Whitelist wenn möglich
-3. ✅ 2FA auf Exchange aktiviert
-4. ✅ API-Keys regelmäßig rotieren
-5. ✅ Separate API-Keys für K.I.T.
-6. ❌ KEINE Withdrawal-Berechtigung
+**Security Checklist:**
+1. ✅ Only Read + Trade permissions
+2. ✅ IP whitelist if possible
+3. ✅ 2FA enabled on exchange
+4. ✅ Rotate API keys regularly
+5. ✅ Separate API keys for K.I.T.
+6. ❌ NO withdrawal permission
 </Tip>
 
-## Fehlerbehebung
+## Troubleshooting
 
 <AccordionGroup>
   <Accordion title="Invalid API Key">
-    - API-Key korrekt kopiert? (keine Leerzeichen)
-    - Berechtigungen ausreichend?
-    - IP-Whitelist konfiguriert?
+    - API key copied correctly? (no spaces)
+    - Permissions sufficient?
+    - IP whitelist configured?
     
     ```bash
     kit exchanges test binance --verbose
     ```
   </Accordion>
   
-  <Accordion title="Timestamp Fehler">
+  <Accordion title="Timestamp Error">
     ```bash
     kit config set exchanges.binance.options.adjustForTimeDifference true
     kit config set exchanges.binance.options.recvWindow 60000
@@ -283,7 +283,7 @@ K.I.T. benötigt keine Auszahlungsberechtigung.
   </Accordion>
   
   <Accordion title="Rate Limit Exceeded">
-    K.I.T. handhabt Rate-Limits automatisch. Falls trotzdem Probleme:
+    K.I.T. handles rate limits automatically. If still problems:
     
     ```bash
     kit config set exchanges.binance.rateLimit 500
@@ -291,16 +291,16 @@ K.I.T. benötigt keine Auszahlungsberechtigung.
   </Accordion>
 </AccordionGroup>
 
-## Nächste Schritte
+## Next Steps
 
 <Columns>
-  <Card title="Erster Trade" href="/start/first-trade" icon="trending-up">
-    Deinen ersten Trade durchführen.
+  <Card title="First Trade" href="/start/first-trade" icon="trending-up">
+    Execute your first trade.
   </Card>
   <Card title="Exchange Details" href="/exchanges/binance" icon="building">
-    Detaillierte Exchange-Dokumentation.
+    Detailed exchange documentation.
   </Card>
-  <Card title="API-Key Sicherheit" href="/security/api-keys" icon="shield">
-    Best Practices für API-Keys.
+  <Card title="API Key Security" href="/security/api-keys" icon="shield">
+    Best practices for API keys.
   </Card>
 </Columns>

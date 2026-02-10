@@ -1,94 +1,94 @@
 ---
-summary: "Deinen ersten Trade mit K.I.T. durchführen"
+summary: "Execute your first trade with K.I.T."
 read_when:
-  - Erster Trade mit K.I.T.
-  - Trading-Grundlagen verstehen
-title: "Erster Trade"
+  - First trade with K.I.T.
+  - Understand trading basics
+title: "First Trade"
 ---
 
-# Erster Trade
+# First Trade
 
-Dieser Guide führt dich durch deinen ersten Trade mit K.I.T. — vom Market-Check bis zur Order-Ausführung.
+This guide walks you through your first trade with K.I.T. — from market check to order execution.
 
 <Warning>
-**Starte im Paper-Trading!** Teste K.I.T. zuerst mit virtuellem Geld:
+**Start with paper trading!** Test K.I.T. with virtual money first:
 ```bash
 kit config set trading.paperTrading true
 ```
 </Warning>
 
-## Voraussetzungen
+## Prerequisites
 
 <Check>
-- K.I.T. installiert (`kit --version`)
-- Exchange verbunden (`kit exchanges status`)
-- Channel konfiguriert (optional, für Telegram-Befehle)
+- K.I.T. installed (`kit --version`)
+- Exchange connected (`kit exchanges status`)
+- Channel configured (optional, for Telegram commands)
 </Check>
 
-## 1. Markt-Übersicht
+## 1. Market Overview
 
 <Steps>
-  <Step title="Portfolio-Status prüfen">
+  <Step title="Check portfolio status">
     ```bash
     kit portfolio
     ```
     
-    Oder via Telegram:
+    Or via Telegram:
     ```
-    📊 "Zeig mein Portfolio"
+    📊 "Show my portfolio"
     ```
     
     Output:
     ```
-    💰 Portfolio Übersicht
+    💰 Portfolio Overview
     ─────────────────────────
-    Total: $10,245.32 (+2.3% heute)
+    Total: $10,245.32 (+2.3% today)
     
     Assets:
     • USDT: $5,000.00 (48.8%)
     • BTC:  $3,245.32 (31.7%)
     • ETH:  $2,000.00 (19.5%)
     
-    Offene Positionen: 0
+    Open Positions: 0
     ```
   </Step>
   
-  <Step title="Markt analysieren">
+  <Step title="Analyze market">
     ```bash
     kit analyze BTC/USDT
     ```
     
-    Oder:
+    Or:
     ```
-    📈 "Analysiere BTC"
+    📈 "Analyze BTC"
     ```
     
     Output:
     ```
-    📊 BTC/USDT Analyse
+    📊 BTC/USDT Analysis
     ─────────────────────────
-    Preis: $67,432.50 (+1.2%)
+    Price: $67,432.50 (+1.2%)
     24h Vol: $28.5B
     
-    Technische Indikatoren:
+    Technical Indicators:
     • RSI (14): 58 (Neutral)
     • MACD: Bullish Crossover
-    • MA50: $65,200 (Preis drüber ✅)
-    • MA200: $52,400 (Preis drüber ✅)
+    • MA50: $65,200 (Price above ✅)
+    • MA200: $52,400 (Price above ✅)
     
     Support: $65,000 | Resistance: $70,000
     
-    K.I.T. Einschätzung: 🟢 Bullish Bias
-    Empfehlung: Long bei Pullback zu $66,000
+    K.I.T. Assessment: 🟢 Bullish Bias
+    Recommendation: Long on pullback to $66,000
     ```
   </Step>
 </Steps>
 
-## 2. Order platzieren
+## 2. Place Order
 
 ### Market Order
 
-Sofortige Ausführung zum aktuellen Preis:
+Immediate execution at current price:
 
 ```bash
 kit buy BTC/USDT 100 --type market
@@ -96,12 +96,12 @@ kit buy BTC/USDT 100 --type market
 
 Via Telegram:
 ```
-🛒 "Kaufe BTC für 100 USDT"
+🛒 "Buy BTC for 100 USDT"
 ```
 
 ### Limit Order
 
-Ausführung bei bestimmtem Preis:
+Execution at specified price:
 
 ```bash
 kit buy BTC/USDT 100 --price 66000
@@ -109,10 +109,10 @@ kit buy BTC/USDT 100 --price 66000
 
 Via Telegram:
 ```
-📝 "Kaufe BTC für 100 USDT bei 66000"
+📝 "Buy BTC for 100 USDT at 66000"
 ```
 
-### Mit Stop-Loss und Take-Profit
+### With Stop-Loss and Take-Profit
 
 ```bash
 kit buy BTC/USDT 100 --price 66000 --stop-loss 64000 --take-profit 72000
@@ -120,31 +120,31 @@ kit buy BTC/USDT 100 --price 66000 --stop-loss 64000 --take-profit 72000
 
 Via Telegram:
 ```
-🎯 "Kaufe BTC für 100$ bei 66k, SL 64k, TP 72k"
+🎯 "Buy BTC for $100 at 66k, SL 64k, TP 72k"
 ```
 
-## 3. Trade-Bestätigung
+## 3. Trade Confirmation
 
-Wenn `confirmTrades: true` aktiviert ist:
+When `confirmTrades: true` is enabled:
 
 ```
-⚠️ Trade-Bestätigung
+⚠️ Trade Confirmation
 ─────────────────────────
-Aktion: KAUFEN
-Paar: BTC/USDT
-Betrag: 100 USDT
-Typ: Limit Order
-Preis: $66,000
+Action: BUY
+Pair: BTC/USDT
+Amount: 100 USDT
+Type: Limit Order
+Price: $66,000
 Stop-Loss: $64,000 (-3.03%)
 Take-Profit: $72,000 (+9.09%)
 Risk/Reward: 1:3
 
-Gebühren (geschätzt): ~$0.10
+Fees (estimated): ~$0.10
 
-[✅ Bestätigen] [❌ Abbrechen]
+[✅ Confirm] [❌ Cancel]
 ```
 
-## 4. Position überwachen
+## 4. Monitor Position
 
 ```bash
 kit positions
@@ -152,26 +152,26 @@ kit positions
 
 Via Telegram:
 ```
-📋 "Zeig offene Positionen"
+📋 "Show open positions"
 ```
 
 Output:
 ```
-📈 Offene Positionen (1)
+📈 Open Positions (1)
 ─────────────────────────
 BTC/USDT Long
 • Entry: $66,000
-• Aktuell: $67,200 (+1.82%)
-• Größe: 0.00151 BTC ($100)
+• Current: $67,200 (+1.82%)
+• Size: 0.00151 BTC ($100)
 • PnL: +$1.82
 • SL: $64,000 | TP: $72,000
 
-⏱️ Geöffnet: vor 2 Stunden
+⏱️ Opened: 2 hours ago
 ```
 
-## 5. Position schließen
+## 5. Close Position
 
-### Manuell
+### Manual
 
 ```bash
 kit sell BTC/USDT --all
@@ -179,10 +179,10 @@ kit sell BTC/USDT --all
 
 Via Telegram:
 ```
-💰 "Verkaufe alle BTC"
+💰 "Sell all BTC"
 ```
 
-### Teilverkauf
+### Partial Sale
 
 ```bash
 kit sell BTC/USDT 50%
@@ -190,109 +190,109 @@ kit sell BTC/USDT 50%
 
 Via Telegram:
 ```
-💰 "Verkaufe 50% meiner BTC"
+💰 "Sell 50% of my BTC"
 ```
 
-## Trade-Workflow Übersicht
+## Trade Workflow Overview
 
 ```mermaid
 flowchart TD
-    A[Markt analysieren] --> B{Signal?}
-    B -->|Ja| C[Position kalkulieren]
-    B -->|Nein| A
-    C --> D[Order mit SL/TP]
-    D --> E[Bestätigung]
-    E --> F[Ausführung]
-    F --> G[Überwachung]
-    G --> H{Exit-Signal?}
-    H -->|SL/TP erreicht| I[Auto-Close]
-    H -->|Manuell| J[Position schließen]
-    H -->|Nein| G
+    A[Analyze Market] --> B{Signal?}
+    B -->|Yes| C[Calculate Position]
+    B -->|No| A
+    C --> D[Order with SL/TP]
+    D --> E[Confirmation]
+    E --> F[Execution]
+    F --> G[Monitor]
+    G --> H{Exit Signal?}
+    H -->|SL/TP hit| I[Auto-Close]
+    H -->|Manual| J[Close Position]
+    H -->|No| G
 ```
 
-## Beispiel-Session
+## Example Session
 
-Hier eine komplette Trading-Session via Telegram:
+Here's a complete trading session via Telegram:
 
 ```
-Du: "Wie sieht ETH aus?"
+You: "How does ETH look?"
 
-K.I.T.: 📊 ETH/USDT Analyse
-Preis: $3,456.78 (-0.5%)
-RSI: 35 (Überverkauft)
-MACD: Bearish, aber abflachend
-Support bei $3,400
+K.I.T.: 📊 ETH/USDT Analysis
+Price: $3,456.78 (-0.5%)
+RSI: 35 (Oversold)
+MACD: Bearish, but flattening
+Support at $3,400
 
-🟡 Neutral - Möglicher Bounce bei Support
+🟡 Neutral - Possible bounce at support
 
-Du: "Setze Alert bei 3400"
+You: "Set alert at 3400"
 
-K.I.T.: ✅ Alert gesetzt: ETH/USDT bei $3,400
+K.I.T.: ✅ Alert set: ETH/USDT at $3,400
 
---- 2 Stunden später ---
+--- 2 hours later ---
 
-K.I.T.: 🔔 ALERT: ETH/USDT hat $3,400 erreicht!
-Aktueller RSI: 28 (Stark überverkauft)
-Volumen steigt.
+K.I.T.: 🔔 ALERT: ETH/USDT reached $3,400!
+Current RSI: 28 (Strongly oversold)
+Volume rising.
 
-Du: "Kaufe ETH für 200$ mit 3% SL"
+You: "Buy ETH for $200 with 3% SL"
 
-K.I.T.: ⚠️ Trade-Bestätigung:
-KAUFEN ETH/USDT
+K.I.T.: ⚠️ Trade Confirmation:
+BUY ETH/USDT
 $200 @ Market
 SL: $3,298 (-3%)
-[✅ Bestätigen]
+[✅ Confirm]
 
-Du: ✅
+You: ✅
 
-K.I.T.: ✅ Order ausgeführt!
-Gekauft: 0.058 ETH @ $3,412
-SL aktiv bei $3,298
+K.I.T.: ✅ Order executed!
+Bought: 0.058 ETH @ $3,412
+SL active at $3,298
 
---- Nächster Tag ---
+--- Next day ---
 
 K.I.T.: 📈 Position Update
 ETH/USDT: +5.2% ($3,590)
 PnL: +$10.40 🟢
 
-Möchtest du:
-• Trailing Stop aktivieren?
-• Take-Profit setzen?
-• Position vergrößern?
+Would you like to:
+• Activate trailing stop?
+• Set take-profit?
+• Add to position?
 ```
 
-## Häufige Befehle
+## Common Commands
 
-| Aktion | CLI | Telegram |
+| Action | CLI | Telegram |
 |--------|-----|----------|
-| Kaufen | `kit buy BTC 100` | "Kaufe BTC für 100$" |
-| Verkaufen | `kit sell BTC --all` | "Verkaufe alle BTC" |
-| Analyse | `kit analyze ETH` | "Analysiere ETH" |
-| Portfolio | `kit portfolio` | "Zeig Portfolio" |
-| Positionen | `kit positions` | "Offene Positionen" |
-| Alert | `kit alert BTC 70000` | "Alert bei BTC 70k" |
+| Buy | `kit buy BTC 100` | "Buy BTC for $100" |
+| Sell | `kit sell BTC --all` | "Sell all BTC" |
+| Analysis | `kit analyze ETH` | "Analyze ETH" |
+| Portfolio | `kit portfolio` | "Show portfolio" |
+| Positions | `kit positions` | "Open positions" |
+| Alert | `kit alert BTC 70000` | "Alert at BTC 70k" |
 
 ## Best Practices
 
 <Tip>
-**Für Anfänger:**
-1. Starte mit Paper-Trading
-2. Kleine Positionsgrößen (max 5% pro Trade)
-3. Immer Stop-Loss setzen
-4. Nicht mehr als 3 offene Positionen
-5. Führe ein Trading-Journal
+**For Beginners:**
+1. Start with paper trading
+2. Small position sizes (max 5% per trade)
+3. Always set stop-loss
+4. No more than 3 open positions
+5. Keep a trading journal
 </Tip>
 
-## Nächste Schritte
+## Next Steps
 
 <Columns>
-  <Card title="Risiko-Management" href="/concepts/risk-management" icon="shield">
-    Position-Sizing und Stop-Loss Strategien.
+  <Card title="Risk Management" href="/concepts/risk-management" icon="shield">
+    Position sizing and stop-loss strategies.
   </Card>
   <Card title="Auto-Trader" href="/skills/auto-trader" icon="bot">
-    Automatische Trading-Strategien einrichten.
+    Set up automatic trading strategies.
   </Card>
-  <Card title="Alert-System" href="/skills/alert-system" icon="bell">
-    Intelligente Alerts konfigurieren.
+  <Card title="Alert System" href="/skills/alert-system" icon="bell">
+    Configure intelligent alerts.
   </Card>
 </Columns>

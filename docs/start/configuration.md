@@ -1,16 +1,16 @@
 ---
-summary: "K.I.T. Konfiguration und Einstellungen"
+summary: "K.I.T. configuration and settings"
 read_when:
-  - Konfiguration anpassen
-  - Neue Exchanges oder Channels einrichten
-title: "Konfiguration"
+  - Customize configuration
+  - Set up new exchanges or channels
+title: "Configuration"
 ---
 
-# Konfiguration
+# Configuration
 
-K.I.T. wird über `~/.kit/config.json` konfiguriert. Dieser Guide erklärt alle Optionen.
+K.I.T. is configured via `~/.kit/config.json`. This guide explains all options.
 
-## Konfigurationsdatei
+## Configuration File
 
 <Tabs>
   <Tab title="Minimal">
@@ -29,7 +29,7 @@ K.I.T. wird über `~/.kit/config.json` konfiguriert. Dieser Guide erklärt alle 
     ```
   </Tab>
   
-  <Tab title="Vollständig">
+  <Tab title="Complete">
     ```json
     {
       "ai": {
@@ -83,47 +83,47 @@ K.I.T. wird über `~/.kit/config.json` konfiguriert. Dieser Guide erklärt alle 
   </Tab>
 </Tabs>
 
-## KI-Provider
+## AI Provider
 
 ```json
 {
   "ai": {
-    "provider": "anthropic",      // oder "openai", "openrouter"
+    "provider": "anthropic",      // or "openai", "openrouter"
     "apiKey": "sk-ant-...",
     "model": "claude-sonnet-4-20250514",
     "maxTokens": 4096,
-    "temperature": 0.3           // Niedriger = konsistentere Antworten
+    "temperature": 0.3           // Lower = more consistent responses
   }
 }
 ```
 
-Unterstützte Provider:
-- **Anthropic**: Claude-Modelle (empfohlen)
+Supported providers:
+- **Anthropic**: Claude models (recommended)
 - **OpenAI**: GPT-4, GPT-3.5
-- **OpenRouter**: Verschiedene Modelle
+- **OpenRouter**: Various models
 
-## Exchange-Konfiguration
+## Exchange Configuration
 
 ```json
 {
   "exchanges": {
     "binance": {
       "enabled": true,
-      "testnet": false,           // true für Paper-Trading
-      "apiKey": "...",            // Oder in ~/.kit/exchanges/binance.json
+      "testnet": false,           // true for paper trading
+      "apiKey": "...",            // Or in ~/.kit/exchanges/binance.json
       "apiSecret": "...",
       "defaultPairs": ["BTC/USDT", "ETH/USDT"],
-      "rateLimit": 1200           // Requests pro Minute
+      "rateLimit": 1200           // Requests per minute
     }
   }
 }
 ```
 
 <Tip>
-Speichere API-Keys separat in `~/.kit/exchanges/<exchange>.json` für bessere Sicherheit.
+Store API keys separately in `~/.kit/exchanges/<exchange>.json` for better security.
 </Tip>
 
-## Channel-Konfiguration
+## Channel Configuration
 
 ```json
 {
@@ -145,37 +145,37 @@ Speichere API-Keys separat in `~/.kit/exchanges/<exchange>.json` für bessere Si
 }
 ```
 
-## Risiko-Management
+## Risk Management
 
 ```json
 {
   "risk": {
-    "maxPositionSize": 0.1,       // Max 10% pro Position
-    "maxDailyLoss": 0.05,         // Max 5% Tagesverlust
-    "maxWeeklyLoss": 0.15,        // Max 15% Wochenverlust
-    "stopLossDefault": 0.02,      // 2% Stop-Loss
-    "takeProfitDefault": 0.06,    // 6% Take-Profit (3:1 Ratio)
-    "maxOpenPositions": 5,        // Max offene Positionen
-    "maxLeverage": 3,             // Max Hebel
+    "maxPositionSize": 0.1,       // Max 10% per position
+    "maxDailyLoss": 0.05,         // Max 5% daily loss
+    "maxWeeklyLoss": 0.15,        // Max 15% weekly loss
+    "stopLossDefault": 0.02,      // 2% stop-loss
+    "takeProfitDefault": 0.06,    // 6% take-profit (3:1 ratio)
+    "maxOpenPositions": 5,        // Max open positions
+    "maxLeverage": 3,             // Max leverage
     "trailingStop": {
       "enabled": true,
-      "activation": 0.02,         // Aktivierung bei 2% Gewinn
-      "distance": 0.01            // 1% Abstand
+      "activation": 0.02,         // Activation at 2% profit
+      "distance": 0.01            // 1% distance
     }
   }
 }
 ```
 
-## Trading-Einstellungen
+## Trading Settings
 
 ```json
 {
   "trading": {
-    "paperTrading": false,        // Paper-Trading Modus
-    "confirmTrades": true,        // Bestätigung vor Trade
+    "paperTrading": false,        // Paper trading mode
+    "confirmTrades": true,        // Confirmation before trade
     "minTradeSize": 10,           // Minimum in USD
     "maxTradeSize": 1000,         // Maximum in USD
-    "slippage": 0.001,            // 0.1% Slippage-Toleranz
+    "slippage": 0.001,            // 0.1% slippage tolerance
     "orderTypes": {
       "defaultEntry": "limit",
       "defaultExit": "market"
@@ -188,14 +188,14 @@ Speichere API-Keys separat in `~/.kit/exchanges/<exchange>.json` für bessere Si
 }
 ```
 
-## Alert-Konfiguration
+## Alert Configuration
 
 ```json
 {
   "alerts": {
-    "priceChange": 0.05,          // 5% Preisänderung
-    "volumeSpike": 3,             // 3x normales Volumen
-    "trendChange": true,          // Trend-Änderungen
+    "priceChange": 0.05,          // 5% price change
+    "volumeSpike": 3,             // 3x normal volume
+    "trendChange": true,          // Trend changes
     "indicators": {
       "rsi": {
         "overbought": 70,
@@ -213,62 +213,62 @@ Speichere API-Keys separat in `~/.kit/exchanges/<exchange>.json` für bessere Si
 }
 ```
 
-## CLI-Konfiguration
+## CLI Configuration
 
 ```bash
-# Konfiguration anzeigen
+# Show configuration
 kit config show
 
-# Einzelne Werte setzen
+# Set individual values
 kit config set risk.maxPositionSize 0.05
 kit config set trading.paperTrading true
 
-# Exchange hinzufügen
+# Add exchange
 kit config add-exchange kraken
 
-# Konfiguration validieren
+# Validate configuration
 kit config validate
 ```
 
-## Umgebungsvariablen
+## Environment Variables
 
-Überschreiben Werte aus `config.json`:
+Override values from `config.json`:
 
-| Variable | Beschreibung |
-|----------|--------------|
-| `KIT_HOME` | Konfigurationsverzeichnis |
-| `KIT_CONFIG` | Alternativer Pfad zur config.json |
-| `ANTHROPIC_API_KEY` | AI-Provider Key |
-| `KIT_TESTNET` | Force Testnet-Modus |
-| `KIT_LOG_LEVEL` | Log-Level (debug/info/warn/error) |
+| Variable | Description |
+|----------|-------------|
+| `KIT_HOME` | Configuration directory |
+| `KIT_CONFIG` | Alternative path to config.json |
+| `ANTHROPIC_API_KEY` | AI provider key |
+| `KIT_TESTNET` | Force testnet mode |
+| `KIT_LOG_LEVEL` | Log level (debug/info/warn/error) |
 
-## Profile
+## Profiles
 
-Mehrere Konfigurationen verwalten:
+Manage multiple configurations:
 
 ```bash
-# Profil erstellen
+# Create profile
 kit config profile create aggressive
 kit config profile create conservative
 
-# Profil wechseln
+# Switch profile
 kit config profile use aggressive
 
-# Profil-spezifische Einstellungen
+# Profile-specific settings
 kit config set --profile aggressive risk.maxPositionSize 0.2
 kit config set --profile conservative risk.maxPositionSize 0.05
 ```
 
-## Nächste Schritte
+## Next Steps
 
 <Columns>
-  <Card title="Exchanges verbinden" href="/start/exchanges" icon="link">
-    API-Keys einrichten und Börsen verbinden.
+  <Card title="Connect Exchanges" href="/start/exchanges" icon="link">
+    Set up API keys and connect exchanges.
   </Card>
-  <Card title="Erster Trade" href="/start/first-trade" icon="trending-up">
-    Trading starten.
+  <Card title="First Trade" href="/start/first-trade" icon="trending-up">
+    Start trading.
   </Card>
-  <Card title="Risiko-Management" href="/concepts/risk-management" icon="shield">
-    Risiko-Einstellungen verstehen.
+  <Card title="Risk Management" href="/concepts/risk-management" icon="shield">
+    Understand risk settings.
   </Card>
 </Columns>

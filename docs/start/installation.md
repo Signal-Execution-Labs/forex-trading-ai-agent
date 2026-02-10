@@ -1,36 +1,36 @@
 ---
-summary: "K.I.T. installieren und einrichten"
+summary: "Install and set up K.I.T."
 read_when:
-  - Erste Installation von K.I.T.
-  - Neuinstallation oder Update
+  - First installation of K.I.T.
+  - Reinstallation or update
 title: "Installation"
 ---
 
 # Installation
 
-Ziel: K.I.T. von Null auf lauffähig in wenigen Minuten.
+Goal: Get K.I.T. from zero to running in minutes.
 
 <Info>
-Schnellster Weg zum Trading: Starte mit dem Demo-Modus ohne echte Exchange-Verbindung.
+Fastest way to trading: Start with demo mode without real exchange connection.
 ```bash
 kit demo
 ```
 </Info>
 
-## Voraussetzungen
+## Prerequisites
 
-- **Node.js 22** oder neuer
-- **npm** oder **yarn**
-- **Git** (optional, für Entwicklung)
+- **Node.js 22** or newer
+- **npm** or **yarn**
+- **Git** (optional, for development)
 
 <Tip>
-Prüfe deine Node-Version mit `node --version`.
+Check your Node version with `node --version`.
 </Tip>
 
 ## Installation
 
 <Steps>
-  <Step title="K.I.T. global installieren">
+  <Step title="Install K.I.T. globally">
     <Tabs>
       <Tab title="npm">
         ```bash
@@ -42,7 +42,7 @@ Prüfe deine Node-Version mit `node --version`.
         yarn global add kit-trading@latest
         ```
       </Tab>
-      <Tab title="Aus Source">
+      <Tab title="From Source">
         ```bash
         git clone https://github.com/binaryfaster/kit-bot.git
         cd kit-bot
@@ -53,49 +53,49 @@ Prüfe deine Node-Version mit `node --version`.
     </Tabs>
   </Step>
   
-  <Step title="Installation prüfen">
+  <Step title="Verify installation">
     ```bash
     kit --version
     kit doctor
     ```
   </Step>
   
-  <Step title="Erstkonfiguration">
+  <Step title="Initial configuration">
     ```bash
     kit init
     ```
     
-    Der Wizard führt dich durch:
-    - API-Key Konfiguration (Anthropic/OpenAI)
-    - Exchange-Auswahl
-    - Channel-Konfiguration
+    The wizard guides you through:
+    - API key configuration (Anthropic/OpenAI)
+    - Exchange selection
+    - Channel configuration
   </Step>
 </Steps>
 
-## Systemanforderungen
+## System Requirements
 
-| Komponente | Minimum | Empfohlen |
-|------------|---------|-----------|
+| Component | Minimum | Recommended |
+|-----------|---------|-------------|
 | RAM | 2 GB | 4 GB |
 | Disk | 500 MB | 2 GB |
 | CPU | 2 Cores | 4 Cores |
-| OS | Windows 10, macOS 10.15, Ubuntu 20.04 | Aktuell |
+| OS | Windows 10, macOS 10.15, Ubuntu 20.04 | Latest |
 
-## Verzeichnisstruktur
+## Directory Structure
 
-Nach der Installation:
+After installation:
 
 ```
 ~/.kit/
-├── config.json          # Hauptkonfiguration
-├── exchanges/           # Exchange-Credentials (verschlüsselt)
-├── strategies/          # Deine Trading-Strategien
-├── logs/                # Log-Dateien
-├── data/                # Marktdaten-Cache
-└── backtest/            # Backtesting-Ergebnisse
+├── config.json          # Main configuration
+├── exchanges/           # Exchange credentials (encrypted)
+├── strategies/          # Your trading strategies
+├── logs/                # Log files
+├── data/                # Market data cache
+└── backtest/            # Backtesting results
 ```
 
-## Umgebungsvariablen
+## Environment Variables
 
 <Tabs>
   <Tab title="Windows (PowerShell)">
@@ -123,32 +123,32 @@ docker run -d \
   binaryfaster/kit:latest
 ```
 
-## Fehlerbehebung
+## Troubleshooting
 
 <AccordionGroup>
-  <Accordion title="npm install schlägt fehl">
+  <Accordion title="npm install fails">
     ```bash
-    # Cache leeren
+    # Clear cache
     npm cache clean --force
     
-    # Mit Adminrechten (Windows)
+    # With admin rights (Windows)
     npm install -g kit-trading --force
     ```
   </Accordion>
   
   <Accordion title="kit command not found">
     ```bash
-    # npm bin-Verzeichnis prüfen
+    # Check npm bin directory
     npm config get prefix
     
-    # PATH ergänzen (Linux/macOS)
+    # Add to PATH (Linux/macOS)
     export PATH="$(npm config get prefix)/bin:$PATH"
     ```
   </Accordion>
   
   <Accordion title="Permission denied">
     ```bash
-    # Linux/macOS: ohne sudo installieren
+    # Linux/macOS: install without sudo
     npm config set prefix ~/.npm-global
     export PATH=~/.npm-global/bin:$PATH
     npm install -g kit-trading
@@ -156,27 +156,27 @@ docker run -d \
   </Accordion>
 </AccordionGroup>
 
-## Nächste Schritte
+## Next Steps
 
 <Columns>
-  <Card title="Konfiguration" href="/start/configuration" icon="settings">
-    K.I.T. für deine Bedürfnisse anpassen.
+  <Card title="Configuration" href="/start/configuration" icon="settings">
+    Customize K.I.T. for your needs.
   </Card>
-  <Card title="Exchanges verbinden" href="/start/exchanges" icon="link">
-    Börsen-APIs einrichten.
+  <Card title="Connect Exchanges" href="/start/exchanges" icon="link">
+    Set up exchange APIs.
   </Card>
-  <Card title="Erster Trade" href="/start/first-trade" icon="trending-up">
-    Deinen ersten Trade durchführen.
+  <Card title="First Trade" href="/start/first-trade" icon="trending-up">
+    Execute your first trade.
   </Card>
 </Columns>
 
-## Deinstallation
+## Uninstallation
 
 ```bash
 npm uninstall -g kit-trading
-rm -rf ~/.kit  # Konfiguration löschen (optional)
+rm -rf ~/.kit  # Delete configuration (optional)
 ```
 
 <Warning>
-Das Löschen von `~/.kit` entfernt alle Konfigurationen, Strategien und gecachte Daten.
+Deleting `~/.kit` removes all configurations, strategies, and cached data.
 </Warning>

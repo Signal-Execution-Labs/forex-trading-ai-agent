@@ -1,52 +1,52 @@
 ---
-summary: "K.I.T. in 5 Minuten zum Laufen bringen"
+summary: "Get K.I.T. running in 5 minutes"
 read_when:
-  - Schnellstart ohne Details
-  - Erste Demo sehen
+  - Quick start without details
+  - See first demo
 title: "Quickstart"
 ---
 
-# 🚀 Quickstart - K.I.T. in 5 Minuten
+# 🚀 Quickstart - K.I.T. in 5 Minutes
 
-Du willst K.I.T. sofort in Aktion sehen? Los geht's!
+Want to see K.I.T. in action right away? Let's go!
 
 <Info>
-**Keine Exchange-API nötig!** Für diese Demo nutzen wir den Sandbox-Modus.
+**No exchange API needed!** For this demo we use sandbox mode.
 </Info>
 
-## Schritt 1: Installieren (1 Minute)
+## Step 1: Install (1 minute)
 
 ```bash
 npm install -g @binaryfaster/kit
 ```
 
-Prüfe die Installation:
+Verify installation:
 ```bash
 kit --version
 # K.I.T. v1.0.0 🚗
 ```
 
-## Schritt 2: Initialisieren (30 Sekunden)
+## Step 2: Initialize (30 seconds)
 
 ```bash
 kit init --demo
 ```
 
-Das erstellt ein Workspace mit Demo-Konfiguration:
+This creates a workspace with demo configuration:
 ```
 ~/.kit/
-├── config.json       # ✅ Demo-Einstellungen
-├── exchanges/        # ✅ Sandbox-Exchange
-└── workspace/        # ✅ Agent-Dateien
+├── config.json       # ✅ Demo settings
+├── exchanges/        # ✅ Sandbox exchange
+└── workspace/        # ✅ Agent files
 ```
 
-## Schritt 3: Gateway starten (30 Sekunden)
+## Step 3: Start Gateway (30 seconds)
 
 ```bash
 kit gateway start
 ```
 
-Du siehst:
+You'll see:
 ```
 🚀 K.I.T. Gateway started on 127.0.0.1:18800
 📊 Skills loaded: exchange-connector, portfolio-tracker, market-analysis
@@ -54,14 +54,14 @@ Du siehst:
 ✅ Ready for action!
 ```
 
-## Schritt 4: Erste Befehle (3 Minuten)
+## Step 4: First Commands (3 minutes)
 
-### Portfolio checken
+### Check Portfolio
 ```bash
 kit portfolio
 ```
 
-Ausgabe:
+Output:
 ```
 📊 Portfolio Snapshot
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -73,12 +73,12 @@ Assets:
 Positions: None
 ```
 
-### Marktdaten abrufen
+### Get Market Data
 ```bash
 kit market BTC/USDT
 ```
 
-Ausgabe:
+Output:
 ```
 📈 BTC/USDT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -89,12 +89,12 @@ Low:     $65,800.00
 Volume:  $2.5B
 ```
 
-### Analyse durchführen
+### Run Analysis
 ```bash
 kit analyze BTC/USDT
 ```
 
-Ausgabe:
+Output:
 ```
 🔍 BTC/USDT Analysis
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -108,12 +108,12 @@ Signal: BUY
 Confidence: 72%
 ```
 
-### Demo-Trade ausführen
+### Execute Demo Trade
 ```bash
 kit trade buy BTC/USDT 100 --demo
 ```
 
-Ausgabe:
+Output:
 ```
 ✅ Order Executed (Demo)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -126,7 +126,7 @@ Total:     $100.00
 Fee:       $0.10 (0.1%)
 ```
 
-### Portfolio erneut checken
+### Check Portfolio Again
 ```bash
 kit portfolio
 ```
@@ -144,66 +144,66 @@ Positions:
   BTC/USDT Long  +$0.10 (+0.1%)
 ```
 
-## 🎉 Geschafft!
+## 🎉 Done!
 
-Du hast gerade:
-- ✅ K.I.T. installiert
-- ✅ Das Gateway gestartet
-- ✅ Marktdaten abgerufen
-- ✅ Eine Analyse durchgeführt
-- ✅ Einen Demo-Trade ausgeführt
+You just:
+- ✅ Installed K.I.T.
+- ✅ Started the gateway
+- ✅ Retrieved market data
+- ✅ Ran an analysis
+- ✅ Executed a demo trade
 
-## Nächste Schritte
+## Next Steps
 
 <Columns>
-  <Card title="Exchange verbinden" href="/start/exchanges" icon="link">
-    Echte Börse anbinden (Binance, Kraken, etc.)
+  <Card title="Connect Exchange" href="/start/exchanges" icon="link">
+    Connect real exchange (Binance, Kraken, etc.)
   </Card>
-  <Card title="Telegram einrichten" href="/channels/telegram" icon="message-circle">
-    K.I.T. per Chat steuern
+  <Card title="Set up Telegram" href="/channels/telegram" icon="message-circle">
+    Control K.I.T. via chat
   </Card>
-  <Card title="Autopilot aktivieren" href="/concepts/autopilot" icon="robot">
-    Automatisiertes Trading
+  <Card title="Activate Autopilot" href="/concepts/autopilot" icon="robot">
+    Automated trading
   </Card>
 </Columns>
 
 ## CLI Cheatsheet
 
-| Befehl | Beschreibung |
-|--------|--------------|
-| `kit gateway start` | Gateway starten |
-| `kit gateway stop` | Gateway stoppen |
-| `kit portfolio` | Portfolio anzeigen |
-| `kit market <pair>` | Preis abrufen |
-| `kit analyze <pair>` | Technische Analyse |
-| `kit trade buy <pair> <amount>` | Kaufen |
-| `kit trade sell <pair> <amount>` | Verkaufen |
-| `kit backtest --strategy <name>` | Backtest starten |
-| `kit help` | Hilfe anzeigen |
+| Command | Description |
+|---------|-------------|
+| `kit gateway start` | Start gateway |
+| `kit gateway stop` | Stop gateway |
+| `kit portfolio` | Show portfolio |
+| `kit market <pair>` | Get price |
+| `kit analyze <pair>` | Technical analysis |
+| `kit trade buy <pair> <amount>` | Buy |
+| `kit trade sell <pair> <amount>` | Sell |
+| `kit backtest --strategy <name>` | Run backtest |
+| `kit help` | Show help |
 
 ## Troubleshooting
 
 <AccordionGroup>
   <Accordion title="kit: command not found">
     ```bash
-    # npm global bin-Pfad zu PATH hinzufügen
+    # Add npm global bin path to PATH
     export PATH="$(npm config get prefix)/bin:$PATH"
     ```
   </Accordion>
   
-  <Accordion title="Gateway startet nicht">
+  <Accordion title="Gateway won't start">
     ```bash
-    # Port prüfen
+    # Check port
     kit gateway status
     
-    # Anderen Port nutzen
+    # Use different port
     KIT_GATEWAY_PORT=18801 kit gateway start
     ```
   </Accordion>
   
-  <Accordion title="Demo-Daten nicht verfügbar">
+  <Accordion title="Demo data not available">
     ```bash
-    # Workspace neu initialisieren
+    # Reinitialize workspace
     kit init --demo --force
     ```
   </Accordion>
@@ -212,5 +212,5 @@ Du hast gerade:
 ---
 
 <Tip>
-**Pro-Tipp:** Nutze `kit --help` für alle verfügbaren Befehle und Optionen.
+**Pro Tip:** Use `kit --help` for all available commands and options.
 </Tip>
