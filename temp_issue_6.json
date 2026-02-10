@@ -1,5 +1,0 @@
-{
-  "title": "[MEDIUM] Unified Portfolio Dashboard - All Assets One View",
-  "body": "## Vision Gap\n\nK.I.T. should show ALL assets across ALL platforms in ONE unified view.\n\n## Current State\n- Portfolio tracker exists but limited\n- No cross-platform aggregation\n- No unified P&L calculation\n\n## Required Features\n\n### Asset Sources\n- CEX balances (Binance, Coinbase, etc.)\n- DEX positions (Uniswap LP, etc.)\n- DeFi positions (Aave, Lido, etc.)\n- MT5 forex positions\n- Stock broker holdings\n- Wallet addresses (ETH, BTC)\n\n### Unified View\n- Total net worth\n- Asset allocation pie chart\n- Daily/Weekly/Monthly P&L\n- Performance by asset class\n- Exposure breakdown\n\n### Commands\n```\nportfolio          - Full portfolio view\nportfolio crypto   - Crypto only\nportfolio defi     - DeFi positions\nportfolio forex    - MT5 positions\nportfolio pnl      - P&L breakdown\n```\n\n## Acceptance Criteria\n- [ ] Shows all assets from all sources\n- [ ] Accurate total net worth\n- [ ] P&L calculation works\n- [ ] Updates in real-time\n\n## Priority: MEDIUM",
-  "labels": ["enhancement"]
-}

@@ -1,5 +1,0 @@
-{
-  "title": "[MEDIUM] Signal Ecosystem Enhancement",
-  "body": "## Vision Gap\n\nVISION describes a full signal ecosystem - current implementation is basic.\n\n## Required Features\n\n### Signal Aggregation\n- Multiple signal sources (Telegram, Discord, APIs)\n- Signal parsing and standardization\n- Duplicate detection\n\n### Performance Tracking\n- Track each signal source's win rate\n- Calculate risk-adjusted returns\n- Auto-rank signal providers\n\n### Copy Trading\n- Follow top performers\n- Configurable copy ratios\n- Risk limits per signal source\n- Blacklist underperformers\n\n### Signal Generation\n- K.I.T. generates own signals\n- Based on AI analysis\n- Shareable with other users\n\n## Acceptance Criteria\n- [ ] Aggregates signals from multiple sources\n- [ ] Tracks signal performance\n- [ ] Auto-copies profitable signals\n- [ ] Generates own signals\n\n## Priority: MEDIUM",
-  "labels": ["enhancement"]
-}

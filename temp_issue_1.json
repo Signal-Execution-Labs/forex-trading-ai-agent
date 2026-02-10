@@ -1,5 +1,0 @@
-{
-  "title": "[CRITICAL] AI Brain - Autonomous Decision Engine",
-  "body": "## Vision Gap\n\nK.I.T. should be a **supernatural financial agent** that autonomously grows wealth.\n\n## Current State\n- Gateway exists but no autonomous decision loop\n- No goal understanding\n- No adaptive strategy selection\n\n## Required Implementation\n\n### 1. Goal Parser\nUser says \"Grow my money safely\" -> K.I.T. understands:\n- Target: Growth\n- Risk: Low\n- Approach: Conservative strategies\n\n### 2. Decision Engine\n- Market analysis -> Signal generation -> Risk check -> Execution\n- Adaptive strategy based on market conditions\n- Learning from past trades\n\n### 3. Autonomous Loop\n- Continuous market monitoring\n- Opportunity detection\n- Autonomous trade execution with configurable limits\n\n## Acceptance Criteria\n- [ ] User can set goals in natural language\n- [ ] K.I.T. autonomously identifies opportunities\n- [ ] Trades execute within risk parameters\n- [ ] Performance tracked and strategies adapted\n\n## Priority: CRITICAL",
-  "labels": ["enhancement", "priority-critical"]
-}

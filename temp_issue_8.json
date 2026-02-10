@@ -1,5 +1,0 @@
-{
-  "title": "[MEDIUM] Real-Time News Trading System",
-  "body": "## Vision Gap\n\nK.I.T. should trade based on news events - current news-tracker is passive.\n\n## Required Features\n\n### News Sources\n- CryptoPanic API\n- NewsAPI\n- Twitter/X sentiment\n- Economic calendar (ForexFactory)\n\n### Analysis\n- Real-time sentiment scoring\n- Impact prediction (high/medium/low)\n- Asset correlation detection\n\n### Automation\n- Pre-programmed event reactions\n- Example: CPI release -> position adjustment\n- Example: Major hack news -> exit affected tokens\n- Configurable response delays\n\n### Safety\n- News verification (multiple sources)\n- Fake news detection\n- Maximum position change per event\n\n## Example Flow\n1. Breaking: Fed raises rates\n2. K.I.T. detects via multiple sources\n3. Impact: HIGH for USD pairs\n4. Action: Adjust forex positions\n5. Alert user of changes made\n\n## Acceptance Criteria\n- [ ] Real-time news ingestion\n- [ ] Sentiment analysis works\n- [ ] Automated responses configurable\n- [ ] Safety limits enforced\n\n## Priority: MEDIUM",
-  "labels": ["enhancement"]
-}
