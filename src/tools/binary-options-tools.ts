@@ -2,107 +2,63 @@
  * K.I.T. Binary Options Tools
  * 
  * Real trading tools for BinaryFaster.com platform
+ * Based on working Python implementation
  */
 
 import { ToolDefinition as ChatToolDef } from '../gateway/chat-manager';
-import * as https from 'https';
-import * as fs from 'fs';
-import * as path from 'path';
 
 // ============================================================================
-// BinaryFaster Client
+// BinaryFaster Client (using fetch)
 // ============================================================================
+
+const API_BASE_URL = 'https://wsauto.binaryfaster.com/automation';
 
 interface BinaryFasterSession {
-  cookies: string[];
-  ssid?: string;
+  apiKey?: string;
   loggedIn: boolean;
   balance?: { real: number; demo: number };
   demoMode: boolean;
+  email?: string;
 }
 
 let session: BinaryFasterSession = {
-  cookies: [],
   loggedIn: false,
   demoMode: false,
 };
 
-async function httpRequest(
-  method: string,
-  hostname: string,
-  path: string,
-  data?: string,
-  headers?: Record<string, string>
-): Promise<{ statusCode: number; body: string; headers: Record<string, string | string[] | undefined> }> {
-  return new Promise((resolve, reject) => {
-    const options = {
-      hostname,
-      path,
-      method,
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        ...(session.cookies.length > 0 ? { Cookie: session.cookies.join('; ') } : {}),
-        ...headers,
-      },
-    };
-
-    const req = https.request(options, (res) => {
-      let body = '';
-      res.on('data', (chunk) => (body += chunk));
-      res.on('end', () => {
-        // Store cookies
-        const setCookies = res.headers['set-cookie'];
-        if (setCookies) {
-          setCookies.forEach((cookie) => {
-            const [nameValue] = cookie.split(';');
-            const existingIndex = session.cookies.findIndex((c) =>
-              c.startsWith(nameValue.split('=')[0] + '=')
-            );
-            if (existingIndex >= 0) {
-              session.cookies[existingIndex] = nameValue;
-            } else {
-              session.cookies.push(nameValue);
-            }
-          });
-        }
-        resolve({ statusCode: res.statusCode || 0, body, headers: res.headers });
-      });
-    });
-
-    req.on('error', reject);
-    if (data) req.write(data);
-    req.end();
-  });
-}
-
 async function binaryFasterLogin(email: string, password: string): Promise<boolean> {
   try {
-    // Step 1: Get initial page for SSID
-    const initResponse = await httpRequest('GET', 'wsauto.binaryfaster.com', '/');
+    console.log(`[BinaryFaster] Logging in as ${email}...`);
     
-    // Extract SSID from cookies
-    const ssidCookie = session.cookies.find((c) => c.startsWith('ssid='));
-    if (ssidCookie) {
-      session.ssid = ssidCookie.split('=')[1];
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent': 'K.I.T./2.0 TradingAgent',
+      },
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (!response.ok) {
+      console.log(`[BinaryFaster] ❌ Login failed: ${response.status}`);
+      return false;
     }
 
-    // Step 2: Login
-    const loginData = `login=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`;
-    const loginResponse = await httpRequest(
-      'POST',
-      'wsauto.binaryfaster.com',
-      '/login/ajax',
-      loginData
-    );
-
-    if (loginResponse.body.includes('success') || loginResponse.body.includes('"result":1')) {
+    const data = await response.json();
+    
+    if (data.api_key) {
+      session.apiKey = data.api_key;
       session.loggedIn = true;
+      session.email = email;
       console.log('[BinaryFaster] ✅ Login successful');
+      
+      // Switch to REAL mode by default
+      await setDemoMode(false);
+      
       return true;
     }
 
-    console.log('[BinaryFaster] ❌ Login failed:', loginResponse.body);
+    console.log('[BinaryFaster] ❌ Login failed: No API key in response');
     return false;
   } catch (error) {
     console.error('[BinaryFaster] Login error:', error);
@@ -111,13 +67,31 @@ async function binaryFasterLogin(email: string, password: string): Promise<boole
 }
 
 async function getBalance(): Promise<{ real: number; demo: number }> {
+  if (!session.apiKey) {
+    return { real: 0, demo: 0 };
+  }
+
   try {
-    const response = await httpRequest('GET', 'wsauto.binaryfaster.com', '/api/profile/balance');
-    const data = JSON.parse(response.body);
+    const response = await fetch(`${API_BASE_URL}/user/balance`, {
+      method: 'GET',
+      headers: {
+        'x-api-key': session.apiKey,
+        'User-Agent': 'K.I.T./2.0 TradingAgent',
+      },
+    });
+
+    if (!response.ok) {
+      console.log(`[BinaryFaster] Balance error: ${response.status}`);
+      return { real: 0, demo: 0 };
+    }
+
+    const data = await response.json();
     session.balance = {
-      real: parseFloat(data.real || data.balance || 0),
+      real: parseFloat(data.balance || data.real || data.amount || 0),
       demo: parseFloat(data.demo || data.demo_balance || 0),
     };
+    
+    console.log(`[BinaryFaster] Balance: Real=$${session.balance.real}, Demo=$${session.balance.demo}`);
     return session.balance;
   } catch (error) {
     console.error('[BinaryFaster] Balance error:', error);
@@ -126,13 +100,20 @@ async function getBalance(): Promise<{ real: number; demo: number }> {
 }
 
 async function setDemoMode(demo: boolean): Promise<boolean> {
+  if (!session.apiKey) {
+    return false;
+  }
+
   try {
-    const response = await httpRequest(
-      'POST',
-      'wsauto.binaryfaster.com',
-      '/api/profile/demo',
-      `demo=${demo ? 1 : 0}`
-    );
+    const endpoint = demo ? '/traderoom/setdemo/1' : '/traderoom/setdemo/0';
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: 'GET',
+      headers: {
+        'x-api-key': session.apiKey,
+        'User-Agent': 'K.I.T./2.0 TradingAgent',
+      },
+    });
+
     session.demoMode = demo;
     console.log(`[BinaryFaster] Mode: ${demo ? 'DEMO' : 'REAL'}`);
     return true;
@@ -148,50 +129,71 @@ async function placeTrade(
   amount: number,
   duration: number
 ): Promise<{ success: boolean; tradeId?: string; message: string }> {
-  try {
-    const endpoint = direction === 'call' ? '/api/trade/call' : '/api/trade/put';
-    const tradeData = `asset_id=${assetId}&amount=${amount}&duration=${duration}`;
-    
-    const response = await httpRequest(
-      'POST',
-      'wsauto.binaryfaster.com',
-      endpoint,
-      tradeData
-    );
+  if (!session.apiKey) {
+    return { success: false, message: 'Not logged in' };
+  }
 
-    const data = JSON.parse(response.body);
-    
-    if (data.success || data.result === 1 || data.trade_id) {
-      console.log(`[BinaryFaster] ✅ ${direction.toUpperCase()} trade placed: $${amount}`);
-      return {
-        success: true,
-        tradeId: data.trade_id || data.id,
-        message: `${direction.toUpperCase()} trade of $${amount} placed successfully`,
-      };
+  try {
+    const payload = {
+      trend: direction === 'call' ? 'up' : 'down',
+      lot: amount,
+      currency_id: assetId,
+      binarytime: duration,
+    };
+
+    console.log(`[BinaryFaster] Opening ${direction.toUpperCase()} trade: $${amount} on asset ${assetId}`);
+
+    const response = await fetch(`${API_BASE_URL}/trades/open`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': session.apiKey,
+        'User-Agent': 'K.I.T./2.0 TradingAgent',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.log(`[BinaryFaster] Trade error: ${response.status} - ${errorText}`);
+      return { success: false, message: `Trade failed: ${response.status}` };
     }
 
+    const data = await response.json();
+    const tradeId = data.trade_id || data.id;
+
+    console.log(`[BinaryFaster] ✅ Trade opened: ID=${tradeId}`);
     return {
-      success: false,
-      message: data.message || data.error || 'Trade failed',
+      success: true,
+      tradeId: String(tradeId),
+      message: `${direction.toUpperCase()} trade of $${amount} placed successfully`,
     };
   } catch (error) {
     console.error('[BinaryFaster] Trade error:', error);
-    return {
-      success: false,
-      message: `Trade error: ${error}`,
-    };
+    return { success: false, message: `Trade error: ${error}` };
   }
 }
 
 async function getTradeHistory(limit: number = 20): Promise<unknown[]> {
+  if (!session.apiKey) {
+    return [];
+  }
+
   try {
-    const response = await httpRequest(
-      'GET',
-      'wsauto.binaryfaster.com',
-      `/api/trade/history?limit=${limit}`
-    );
-    const data = JSON.parse(response.body);
-    return data.trades || data.history || data || [];
+    const response = await fetch(`${API_BASE_URL}/trades/history`, {
+      method: 'GET',
+      headers: {
+        'x-api-key': session.apiKey,
+        'User-Agent': 'K.I.T./2.0 TradingAgent',
+      },
+    });
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const data = await response.json();
+    return Array.isArray(data) ? data.slice(0, limit) : [];
   } catch (error) {
     console.error('[BinaryFaster] History error:', error);
     return [];
@@ -259,7 +261,7 @@ export const BINARY_OPTIONS_TOOLS: ChatToolDef[] = [
         },
         duration: {
           type: 'number',
-          description: 'Trade duration in seconds (60, 120, 180, 300 for 1-5 min)',
+          description: 'Trade duration in seconds (60=1min, 120=2min, 180=3min, 300=5min)',
           default: 120,
         },
       },
@@ -282,7 +284,7 @@ export const BINARY_OPTIONS_TOOLS: ChatToolDef[] = [
         },
         duration: {
           type: 'number',
-          description: 'Trade duration in seconds (60, 120, 180, 300 for 1-5 min)',
+          description: 'Trade duration in seconds (60=1min, 120=2min, 180=3min, 300=5min)',
           default: 120,
         },
       },
@@ -303,40 +305,6 @@ export const BINARY_OPTIONS_TOOLS: ChatToolDef[] = [
       },
     },
   },
-  {
-    name: 'binary_auto_trade',
-    description: 'Start autonomous binary options trading with specified parameters',
-    parameters: {
-      type: 'object',
-      properties: {
-        asset: {
-          type: 'string',
-          description: 'Asset to trade (e.g., EUR/USD)',
-        },
-        amount: {
-          type: 'number',
-          description: 'Base trade amount in USD',
-        },
-        duration: {
-          type: 'number',
-          description: 'Trade duration in seconds',
-          default: 120,
-        },
-        trades: {
-          type: 'number',
-          description: 'Number of trades to execute',
-          default: 10,
-        },
-        strategy: {
-          type: 'string',
-          enum: ['trend', 'martingale', 'random'],
-          description: 'Trading strategy to use',
-          default: 'trend',
-        },
-      },
-      required: ['asset', 'amount'],
-    },
-  },
 ];
 
 // ============================================================================
@@ -348,27 +316,34 @@ const ASSET_IDS: Record<string, number> = {
   'EURUSD': 159,
   'GBP/USD': 160,
   'GBPUSD': 160,
-  'USD/JPY': 161,
-  'USDJPY': 161,
-  'AUD/USD': 162,
-  'AUDUSD': 162,
-  'USD/CAD': 163,
-  'USDCAD': 163,
-  'NZD/USD': 164,
-  'NZDUSD': 164,
+  'AUD/USD': 161,
+  'AUDUSD': 161,
+  'USD/JPY': 162,
+  'USDJPY': 162,
+  'USD/CHF': 163,
+  'USDCHF': 163,
+  'USD/CAD': 164,
+  'USDCAD': 164,
   'BTC/USD': 200,
   'BTCUSD': 200,
   'ETH/USD': 201,
   'ETHUSD': 201,
   'GOLD': 250,
   'XAU/USD': 250,
-  'SILVER': 251,
-  'XAG/USD': 251,
 };
 
 function getAssetId(asset: string): number {
   const normalized = asset.toUpperCase().replace(/\s+/g, '');
   return ASSET_IDS[normalized] || 159; // Default to EUR/USD
+}
+
+function getAssetName(id: number): string {
+  for (const [name, assetId] of Object.entries(ASSET_IDS)) {
+    if (assetId === id && name.includes('/')) {
+      return name;
+    }
+  }
+  return `Asset ${id}`;
 }
 
 // ============================================================================
@@ -426,10 +401,12 @@ export const BINARY_OPTIONS_HANDLERS: Record<string, (args: Record<string, unkno
     
     const demo = args.demo as boolean;
     await setDemoMode(demo);
+    const balance = await getBalance();
     
     return {
       success: true,
       mode: demo ? 'DEMO' : 'REAL',
+      activeBalance: demo ? balance.demo : balance.real,
       message: `✅ Switched to ${demo ? 'DEMO' : 'REAL'} mode`,
     };
   },
@@ -451,11 +428,12 @@ export const BINARY_OPTIONS_HANDLERS: Record<string, (args: Record<string, unkno
     
     return {
       ...result,
-      direction: 'CALL (UP)',
-      asset,
+      direction: 'CALL (UP) 📈',
+      asset: getAssetName(assetId),
+      assetId,
       amount,
-      duration: `${duration} seconds`,
-      mode: session.demoMode ? 'DEMO' : 'REAL',
+      duration: `${duration} seconds (${duration / 60} min)`,
+      mode: session.demoMode ? 'DEMO' : 'REAL 💰',
     };
   },
 
@@ -476,11 +454,12 @@ export const BINARY_OPTIONS_HANDLERS: Record<string, (args: Record<string, unkno
     
     return {
       ...result,
-      direction: 'PUT (DOWN)',
-      asset,
+      direction: 'PUT (DOWN) 📉',
+      asset: getAssetName(assetId),
+      assetId,
       amount,
-      duration: `${duration} seconds`,
-      mode: session.demoMode ? 'DEMO' : 'REAL',
+      duration: `${duration} seconds (${duration / 60} min)`,
+      mode: session.demoMode ? 'DEMO' : 'REAL 💰',
     };
   },
 
@@ -499,76 +478,6 @@ export const BINARY_OPTIONS_HANDLERS: Record<string, (args: Record<string, unkno
       success: true,
       trades: history,
       count: Array.isArray(history) ? history.length : 0,
-    };
-  },
-
-  binary_auto_trade: async (args) => {
-    if (!session.loggedIn) {
-      return {
-        success: false,
-        message: '❌ Not logged in. Use binary_login first.',
-      };
-    }
-    
-    const asset = args.asset as string;
-    const amount = args.amount as number;
-    const duration = (args.duration as number) || 120;
-    const trades = (args.trades as number) || 10;
-    const strategy = (args.strategy as string) || 'trend';
-    const assetId = getAssetId(asset);
-    
-    const results: unknown[] = [];
-    let wins = 0;
-    let losses = 0;
-    let currentAmount = amount;
-    
-    for (let i = 0; i < trades; i++) {
-      // Simple strategy logic
-      let direction: 'call' | 'put' = 'call';
-      
-      if (strategy === 'random') {
-        direction = Math.random() > 0.5 ? 'call' : 'put';
-      } else if (strategy === 'martingale') {
-        // Double after loss
-        if (results.length > 0) {
-          const lastResult = results[results.length - 1] as { success: boolean };
-          if (!lastResult.success) {
-            currentAmount *= 2;
-          } else {
-            currentAmount = amount;
-          }
-        }
-        direction = Math.random() > 0.5 ? 'call' : 'put';
-      } else {
-        // Trend following - alternate
-        direction = i % 2 === 0 ? 'call' : 'put';
-      }
-      
-      const result = await placeTrade(direction, assetId, currentAmount, duration);
-      results.push({
-        trade: i + 1,
-        direction,
-        amount: currentAmount,
-        ...result,
-      });
-      
-      // Wait for trade duration + buffer before next trade
-      await new Promise((resolve) => setTimeout(resolve, (duration + 5) * 1000));
-    }
-    
-    return {
-      success: true,
-      message: `✅ Completed ${trades} trades on ${asset}`,
-      strategy,
-      asset,
-      duration: `${duration} seconds`,
-      mode: session.demoMode ? 'DEMO' : 'REAL',
-      results,
-      summary: {
-        totalTrades: trades,
-        wins,
-        losses,
-      },
     };
   },
 };
