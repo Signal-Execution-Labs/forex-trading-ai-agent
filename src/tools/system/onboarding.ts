@@ -355,20 +355,116 @@ Select (1-6) or enter custom (e.g., "Europe/Vienna"):
 
 Which AI provider for K.I.T.'s intelligence?
 
-1. **Anthropic** (Claude) - Recommended
-2. **OpenAI** (GPT-4)
-3. **OpenRouter** (Multiple models)
-4. **Skip** (Configure later)
+**Cloud Providers:**
+1. **Anthropic** (Claude) - Recommended for trading
+2. **OpenAI** (GPT-4, GPT-4o)
+3. **Google** (Gemini)
+4. **xAI** (Grok)
+5. **Groq** (Fast inference)
+6. **Mistral** (European AI)
 
-Select (1-4):
+**Aggregators:**
+7. **OpenRouter** (Access to 100+ models)
+
+**Local:**
+8. **Ollama** (Run models locally)
+
+9. **Skip** (Configure later)
+
+Select (1-9):
     `.trim(),
     process: (input, state) => {
-      if (input === '4') {
+      if (input === '9') {
         return { nextStep: 'channel_select', message: 'AI provider skipped. Configure later with `kit config`' };
       }
-      const providers = ['anthropic', 'openai', 'openrouter'];
-      state.data.aiProvider = providers[parseInt(input) - 1] || 'anthropic';
-      return { nextStep: 'ai_key', message: `Provider: ${state.data.aiProvider}` };
+      const providers: Record<string, string> = {
+        '1': 'anthropic', '2': 'openai', '3': 'google', '4': 'xai',
+        '5': 'groq', '6': 'mistral', '7': 'openrouter', '8': 'ollama'
+      };
+      state.data.aiProvider = providers[input] || 'anthropic';
+      
+      if (input === '8') {
+        return { nextStep: 'ollama_model', message: 'Ollama selected (local models)' };
+      }
+      return { nextStep: 'ai_model', message: `Provider: ${state.data.aiProvider}` };
+    },
+  },
+  
+  {
+    id: 'ai_model',
+    prompt: `
+🤖 **Model Selection**
+
+Select the model for your provider:
+
+**Anthropic:**
+1. claude-opus-4-5 (Most capable)
+2. claude-sonnet-4 (Balanced)
+3. claude-haiku-3-5 (Fast & cheap)
+
+**OpenAI:**
+4. gpt-4o (Latest)
+5. gpt-4-turbo
+6. gpt-4
+
+**Google:**
+7. gemini-2.0-pro
+8. gemini-1.5-pro
+
+**xAI:**
+9. grok-2
+
+**Groq:**
+10. llama-3.3-70b
+11. mixtral-8x7b
+
+**Mistral:**
+12. mistral-large
+13. mistral-medium
+
+**OpenRouter:**
+14. anthropic/claude-sonnet-4
+15. openai/gpt-4o
+
+Select (1-15) or enter custom model ID:
+    `.trim(),
+    process: (input, state) => {
+      const models: Record<string, string> = {
+        '1': 'claude-opus-4-5-20251101', '2': 'claude-sonnet-4-20250514', '3': 'claude-3-5-haiku-20241022',
+        '4': 'gpt-4o', '5': 'gpt-4-turbo', '6': 'gpt-4',
+        '7': 'gemini-2.0-pro', '8': 'gemini-1.5-pro',
+        '9': 'grok-2',
+        '10': 'llama-3.3-70b-versatile', '11': 'mixtral-8x7b-32768',
+        '12': 'mistral-large-latest', '13': 'mistral-medium-latest',
+        '14': 'anthropic/claude-sonnet-4', '15': 'openai/gpt-4o'
+      };
+      state.data.aiModel = models[input] || input.trim();
+      return { nextStep: 'ai_key', message: `Model: ${state.data.aiModel}` };
+    },
+  },
+  
+  {
+    id: 'ollama_model',
+    prompt: `
+🖥️ **Ollama Local Model**
+
+Enter the Ollama model name you have installed:
+
+Common models:
+- llama3.3 (Latest Llama)
+- codellama (Coding)
+- mistral (General)
+- mixtral (Large)
+- qwen2.5-coder (Coding)
+
+Enter model name (e.g., llama3.3):
+    `.trim(),
+    process: (input, state, config) => {
+      state.data.aiModel = input.trim() || 'llama3.3';
+      config.ai = config.ai || { providers: {} };
+      config.ai.providers.ollama = { enabled: true, model: state.data.aiModel };
+      config.ai.defaultProvider = 'ollama';
+      return { nextStep: 'channel_select', message: `✅ Ollama configured with model: ${state.data.aiModel}` };
     },
   },
   
@@ -377,8 +473,18 @@ Select (1-4):
     prompt: `
 🔑 **API Key**
 
-Enter your ${'{provider}'} API key:
-(Keys are stored locally and never transmitted)
+Enter your API key:
+
+**Where to get it:**
+- Anthropic: https://console.anthropic.com/
+- OpenAI: https://platform.openai.com/api-keys
+- Google: https://aistudio.google.com/app/apikey
+- xAI: https://console.x.ai/
+- Groq: https://console.groq.com/keys
+- Mistral: https://console.mistral.ai/
+- OpenRouter: https://openrouter.ai/keys
+
+Paste your API key:
     `.trim(),
     process: (input, state, config) => {
       const key = input.trim();
@@ -386,11 +492,28 @@ Enter your ${'{provider}'} API key:
         return { nextStep: 'channel_select', message: 'Invalid key. Skipping - configure later.' };
       }
       const provider = state.data.aiProvider || 'anthropic';
+      const model = state.data.aiModel;
+      
       config.ai = config.ai || { providers: {} };
-      config.ai.providers[provider] = { apiKey: key, enabled: true };
+      config.ai.providers[provider] = { apiKey: key, enabled: true, model };
       config.ai.defaultProvider = provider;
-      process.env[`${provider.toUpperCase()}_API_KEY`] = key;
-      return { nextStep: 'channel_select', message: `✅ ${provider} API key configured` };
+      config.ai.defaultModel = model;
+      
+      // Set environment variable
+      const envKeys: Record<string, string> = {
+        'anthropic': 'ANTHROPIC_API_KEY',
+        'openai': 'OPENAI_API_KEY',
+        'google': 'GEMINI_API_KEY',
+        'xai': 'XAI_API_KEY',
+        'groq': 'GROQ_API_KEY',
+        'mistral': 'MISTRAL_API_KEY',
+        'openrouter': 'OPENROUTER_API_KEY'
+      };
+      if (envKeys[provider]) {
+        process.env[envKeys[provider]] = key;
+      }
+      
+      return { nextStep: 'channel_select', message: `✅ ${provider} configured with ${model}` };
     },
   },
   
