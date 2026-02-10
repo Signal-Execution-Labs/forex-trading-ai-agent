@@ -24,3 +24,16 @@ export {
 
 // Agent Runner - The Brain
 export { AgentRunner, createAgentRunner, AgentRunnerConfig, AgentStatus } from './agent-runner';
+
+// Hooks System (OpenClaw-inspired)
+export { 
+  HooksManager, 
+  getHooksManager, 
+  initHooks,
+  createHookEvent,
+  HookEvent,
+  HookHandler,
+  HookMetadata,
+  HookEventType,
+  HookContext,
+} from './hooks';
