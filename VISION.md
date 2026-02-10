@@ -39,6 +39,25 @@ K.I.T. handles everything else. 24/7. Fully autonomous.
 | **Commodities** | Gold, silver, oil |
 | **Options** | Hedging, income strategies |
 
+### 3. Wallet & Payment Integration
+K.I.T. connects to ALL your money - not just trading platforms:
+
+| Category | Services |
+|----------|----------|
+| **Hardware Wallets** | Ledger, Trezor |
+| **Software Wallets** | MetaMask, Electrum, Trust Wallet, Phantom |
+| **Payment Processors** | PayPal, Skrill, Wise, Revolut |
+| **Exchange Pay** | Binance Pay, Coinbase Commerce |
+| **Banks** | Open Banking API integration |
+
+**What this enables:**
+- View total net worth across ALL platforms
+- Move money between wallets/accounts automatically
+- Pay bills and invoices
+- Receive payments (crypto + fiat)
+- Rebalance across platforms
+- Optimize where money should be (yield, safety, liquidity)
+
 ### 3. Intelligence Layer
 - **News Analysis**: React to market-moving events in milliseconds
 - **Sentiment Analysis**: Social media, forums, on-chain data
