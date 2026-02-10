@@ -2,34 +2,34 @@
 
 > Build your own trading bots, apps, and integrations with K.I.T.
 
-K.I.T. ist nicht nur ein Trading-Bot - es ist ein **Framework** zum Entwickeln eigener Trading-Anwendungen.
+K.I.T. is not just a trading bot - it's a **framework** for building your own trading applications.
 
-## 🛠️ Was du bauen kannst
+## What You Can Build
 
-| Projekt-Typ | Beschreibung | Beispiel |
-|-------------|--------------|----------|
-| **Trading Bots** | Automatisierte Strategien | RSI Bot, Grid Bot, DCA Bot |
-| **Signal Apps** | Signal-Provider oder -Empfänger | Telegram Signal Bot |
-| **Portfolio Apps** | Tracking & Analytics | Portfolio Dashboard |
-| **Copy Trading** | Master/Follower Systeme | Social Trading Platform |
-| **Alert Systems** | Preis- und Indikator-Alerts | Discord Alert Bot |
-| **Analytics Tools** | Backtesting, Reporting | Strategy Analyzer |
-| **Arbitrage Bots** | Cross-Exchange Arbitrage | CEX-DEX Arb Bot |
-| **Market Makers** | Liquidity Provision | MM Bot |
+| Project Type | Description | Example |
+|--------------|-------------|---------|
+| **Trading Bots** | Automated strategies | RSI Bot, Grid Bot, DCA Bot |
+| **Signal Apps** | Signal provider or receiver | Telegram Signal Bot |
+| **Portfolio Apps** | Tracking & analytics | Portfolio Dashboard |
+| **Copy Trading** | Master/Follower systems | Social Trading Platform |
+| **Alert Systems** | Price and indicator alerts | Discord Alert Bot |
+| **Analytics Tools** | Backtesting, reporting | Strategy Analyzer |
+| **Arbitrage Bots** | Cross-exchange arbitrage | CEX-DEX Arb Bot |
+| **Market Makers** | Liquidity provision | MM Bot |
 
 ---
 
-## 🚀 Quick Start für Entwickler
+## Quick Start for Developers
 
-### 1. K.I.T. als Library installieren
+### 1. Install K.I.T. as a Library
 
 ```bash
-npm install @binaryfaster/kit
-# oder
-yarn add @binaryfaster/kit
+npm install kit-trading
+# or
+yarn add kit-trading
 ```
 
-### 2. Deinen ersten Bot erstellen
+### 2. Create Your First Bot
 
 ```typescript
 import { 
@@ -37,11 +37,11 @@ import {
   ExchangeManager, 
   Strategy,
   createBot 
-} from '@binaryfaster/kit';
+} from 'kit-trading';
 
-// Einfacher Bot in 10 Zeilen
+// Simple bot in 10 lines
 const bot = createBot({
-  name: 'MeinErsterBot',
+  name: 'MyFirstBot',
   exchange: 'binance',
   strategy: 'rsi-oversold',
   pair: 'BTC/USDT',
@@ -53,49 +53,49 @@ bot.start();
 
 ---
 
-## 📦 SDK Module
+## SDK Modules
 
 ### Core Modules
 
 ```typescript
 import {
-  // 🤖 Agent & Gateway
-  KitAgent,           // AI Agent Kern
+  // Agent & Gateway
+  KitAgent,           // AI Agent Core
   GatewayServer,      // WebSocket Server
   SessionManager,     // Chat Sessions
   
-  // 💱 Exchanges
+  // Exchanges
   ExchangeManager,    // Multi-Exchange Manager
   BinanceConnector,   // Binance API
   KrakenConnector,    // Kraken API
   MT5Connector,       // MetaTrader 5
   
-  // 📊 Trading
+  // Trading
   OrderManager,       // Order Execution
   PositionManager,    // Position Tracking
   RiskManager,        // Risk Controls
   
-  // 📈 Analysis
+  // Analysis
   TechnicalAnalysis,  // TA Indicators
   Backtester,         // Strategy Testing
   
-  // 🔔 Notifications
+  // Notifications
   TelegramChannel,    // Telegram Bot
   DiscordChannel,     // Discord Bot
   WebhookChannel,     // Custom Webhooks
-} from '@binaryfaster/kit';
+} from 'kit-trading';
 ```
 
 ---
 
-## 🔌 Exchange Connectors
+## Exchange Connectors
 
-K.I.T. bietet einheitliche APIs für alle Exchanges:
+K.I.T. provides unified APIs for all exchanges:
 
 ### Crypto Exchanges
 
 ```typescript
-import { ExchangeManager } from '@binaryfaster/kit';
+import { ExchangeManager } from 'kit-trading';
 
 const exchanges = new ExchangeManager();
 
@@ -103,7 +103,7 @@ const exchanges = new ExchangeManager();
 await exchanges.connect('binance', {
   apiKey: process.env.BINANCE_API_KEY,
   secret: process.env.BINANCE_SECRET,
-  testnet: true,  // Testnet für Entwicklung
+  testnet: true,  // Testnet for development
 });
 
 // Kraken
@@ -118,58 +118,37 @@ await exchanges.connect('bybit', {
   secret: process.env.BYBIT_SECRET,
 });
 
-// Einheitliche API für alle
+// Unified API for all
 const balance = await exchanges.get('binance').fetchBalance();
 const ticker = await exchanges.get('kraken').fetchTicker('BTC/USD');
 ```
 
-### Forex Broker (MT4/MT5)
+### Forex Brokers (MT4/MT5)
 
 ```typescript
-import { MT5Connector } from '@binaryfaster/kit';
+import { MT5Connector } from 'kit-trading';
 
 const mt5 = new MT5Connector();
 
 await mt5.connect({
   account: 12345678,
   password: process.env.MT5_PASSWORD,
-  server: 'RoboForex-Demo',  // oder ECN, Pro, etc.
+  server: 'RoboForex-Demo',  // or ECN, Pro, etc.
 });
 
 // Trading
 await mt5.marketOrder('EURUSD', 'buy', 0.1);
 await mt5.limitOrder('GBPUSD', 'sell', 0.1, 1.2650);
 
-// Daten
+// Data
 const candles = await mt5.getCandles('EURUSD', 'H1', 100);
 const positions = await mt5.getPositions();
-```
-
-### Binary Options
-
-```typescript
-import { BinaryConnector } from '@binaryfaster/kit';
-
-const binary = new BinaryConnector('binaryfaster');
-
-await binary.connect({
-  email: process.env.BINARY_EMAIL,
-  password: process.env.BINARY_PASSWORD,
-});
-
-// Trade
-await binary.trade({
-  asset: 'EURUSD',
-  direction: 'call',
-  amount: 10,
-  expiry: 300,  // 5 Minuten
-});
 ```
 
 ### DeFi (Web3)
 
 ```typescript
-import { DeFiConnector } from '@binaryfaster/kit';
+import { DeFiConnector } from 'kit-trading';
 
 const defi = new DeFiConnector({
   rpc: 'https://eth.llamarpc.com',
@@ -191,24 +170,24 @@ await defi.borrow('ETH', 0.5);
 
 ---
 
-## 📊 Strategy Development
+## Strategy Development
 
-### Custom Strategy erstellen
+### Create Custom Strategy
 
 ```typescript
-import { Strategy, Candle, Signal } from '@binaryfaster/kit';
+import { Strategy, Candle, Signal } from 'kit-trading';
 
 class MyRSIStrategy extends Strategy {
   name = 'RSI Oversold/Overbought';
   
-  // Konfiguration
+  // Configuration
   config = {
     period: 14,
     oversold: 30,
     overbought: 70,
   };
   
-  // Signal-Logik
+  // Signal logic
   async analyze(candles: Candle[]): Promise<Signal | null> {
     const rsi = this.indicators.rsi(candles, this.config.period);
     const currentRSI = rsi[rsi.length - 1];
@@ -229,12 +208,12 @@ class MyRSIStrategy extends Strategy {
     return {
       stopLoss: 0.02,      // 2%
       takeProfit: 0.04,    // 4%
-      maxPosition: 0.1,    // 10% des Portfolios
+      maxPosition: 0.1,    // 10% of portfolio
     };
   }
 }
 
-// Strategie verwenden
+// Use the strategy
 const strategy = new MyRSIStrategy();
 const bot = createBot({ strategy, exchange: 'binance', pair: 'BTC/USDT' });
 ```
@@ -242,7 +221,7 @@ const bot = createBot({ strategy, exchange: 'binance', pair: 'BTC/USDT' });
 ### Backtesting
 
 ```typescript
-import { Backtester } from '@binaryfaster/kit';
+import { Backtester } from 'kit-trading';
 
 const backtester = new Backtester({
   strategy: new MyRSIStrategy(),
@@ -267,22 +246,22 @@ console.log(`
 
 ---
 
-## 🔔 Notification Channels
+## Notification Channels
 
 ### Telegram Bot
 
 ```typescript
-import { TelegramChannel } from '@binaryfaster/kit';
+import { TelegramChannel } from 'kit-trading';
 
 const telegram = new TelegramChannel({
   token: process.env.TELEGRAM_BOT_TOKEN,
   chatId: process.env.TELEGRAM_CHAT_ID,
 });
 
-// Nachrichten senden
-await telegram.send('🚀 Trade executed: BUY BTC/USDT @ $45,000');
+// Send messages
+await telegram.send('Trade executed: BUY BTC/USDT @ $45,000');
 
-// Commands empfangen
+// Receive commands
 telegram.onCommand('/status', async (ctx) => {
   const portfolio = await bot.getPortfolio();
   ctx.reply(`Portfolio: $${portfolio.total}`);
@@ -291,14 +270,14 @@ telegram.onCommand('/status', async (ctx) => {
 telegram.onCommand('/trade', async (ctx) => {
   const [_, action, pair, amount] = ctx.message.split(' ');
   await bot.trade(action, pair, parseFloat(amount));
-  ctx.reply(`✅ ${action.toUpperCase()} ${amount} ${pair}`);
+  ctx.reply(`Done: ${action.toUpperCase()} ${amount} ${pair}`);
 });
 ```
 
 ### Discord Bot
 
 ```typescript
-import { DiscordChannel } from '@binaryfaster/kit';
+import { DiscordChannel } from 'kit-trading';
 
 const discord = new DiscordChannel({
   token: process.env.DISCORD_BOT_TOKEN,
@@ -307,7 +286,7 @@ const discord = new DiscordChannel({
 
 // Trade Alerts
 bot.on('trade', (trade) => {
-  discord.send('trades', `⚡ ${trade.side} ${trade.symbol} @ ${trade.price}`);
+  discord.send('trades', `${trade.side} ${trade.symbol} @ ${trade.price}`);
 });
 
 // Slash Commands
@@ -320,14 +299,14 @@ discord.addCommand('portfolio', async (interaction) => {
 ### Webhooks
 
 ```typescript
-import { WebhookChannel } from '@binaryfaster/kit';
+import { WebhookChannel } from 'kit-trading';
 
 const webhook = new WebhookChannel({
   url: 'https://your-app.com/webhook',
   secret: process.env.WEBHOOK_SECRET,
 });
 
-// Alle Events forwarden
+// Forward all events
 bot.on('*', (event) => {
   webhook.send(event);
 });
@@ -335,9 +314,9 @@ bot.on('*', (event) => {
 
 ---
 
-## 🏗️ App Architecture
+## App Architecture
 
-### Full Trading App Beispiel
+### Full Trading App Example
 
 ```typescript
 // app.ts
@@ -347,15 +326,15 @@ import {
   ExchangeManager,
   TelegramChannel,
   Dashboard 
-} from '@binaryfaster/kit';
+} from 'kit-trading';
 
 async function main() {
-  // 1. Exchanges verbinden
+  // 1. Connect exchanges
   const exchanges = new ExchangeManager();
   await exchanges.connect('binance', { /* ... */ });
   await exchanges.connect('mt5', { /* ... */ });
 
-  // 2. AI Agent erstellen
+  // 2. Create AI Agent
   const agent = new KitAgent({
     name: 'TradingBot',
     model: 'claude-opus-4-5-20251101',
@@ -378,11 +357,11 @@ async function main() {
     gateway,
   });
 
-  // 6. Alles starten
+  // 6. Start everything
   await gateway.start();
   await dashboard.start();
   
-  console.log('🚗 K.I.T. Trading App running!');
+  console.log('K.I.T. Trading App running!');
   console.log('   Gateway: ws://localhost:18799');
   console.log('   Dashboard: http://localhost:3000');
 }
@@ -392,34 +371,33 @@ main();
 
 ---
 
-## 📚 Beispiel-Projekte
+## Example Projects
 
-| Projekt | Beschreibung | Code |
-|---------|--------------|------|
-| [Basic Bot](../examples/basic-bot.ts) | Einfacher Trading Bot | `examples/basic-bot.ts` |
-| [Signal Copier](../examples/signal-copier-example.ts) | Telegram Signal Copy | `examples/signal-copier-example.ts` |
-| [Portfolio Tracker](../examples/portfolio-tracker-example.ts) | Multi-Exchange Portfolio | `examples/portfolio-tracker-example.ts` |
-| Grid Bot | Grid Trading Strategy | `examples/grid-bot.ts` |
-| Arbitrage Bot | CEX Arbitrage | `examples/arbitrage-bot.ts` |
-| DCA Bot | Dollar Cost Averaging | `examples/dca-bot.ts` |
-
----
-
-## 🔐 Best Practices
-
-1. **API Keys**: Niemals im Code - immer Environment Variables
-2. **Testnet First**: Entwickle immer erst auf Testnet/Demo
-3. **Risk Limits**: Setze immer Stop-Loss und Max-Position
-4. **Error Handling**: Fange alle Exchange-Errors ab
-5. **Logging**: Logge alle Trades für Analyse
-6. **Rate Limits**: Respektiere Exchange Rate Limits
+| Project | Description | Code |
+|---------|-------------|------|
+| [Basic Bot](../examples/basic-bot.ts) | Simple trading bot | `examples/basic-bot.ts` |
+| [Signal Copier](../examples/signal-copier-example.ts) | Telegram signal copy | `examples/signal-copier-example.ts` |
+| [Portfolio Tracker](../examples/portfolio-tracker-example.ts) | Multi-exchange portfolio | `examples/portfolio-tracker-example.ts` |
+| Grid Bot | Grid trading strategy | `examples/grid-bot.ts` |
+| Arbitrage Bot | CEX arbitrage | `examples/arbitrage-bot.ts` |
+| DCA Bot | Dollar cost averaging | `examples/dca-bot.ts` |
 
 ---
 
-## 🆘 Support
+## Best Practices
+
+1. **API Keys**: Never in code - always use environment variables
+2. **Testnet First**: Always develop on testnet/demo first
+3. **Risk Limits**: Always set stop-loss and max-position
+4. **Error Handling**: Catch all exchange errors
+5. **Logging**: Log all trades for analysis
+6. **Rate Limits**: Respect exchange rate limits
+
+---
+
+## Support
 
 - **Docs**: https://github.com/kayzaa/k.i.t.-bot/docs
-- **Discord**: [K.I.T. Community](https://discord.gg/kit)
 - **Issues**: https://github.com/kayzaa/k.i.t.-bot/issues
 
 ---
