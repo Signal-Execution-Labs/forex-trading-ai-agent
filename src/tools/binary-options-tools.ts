@@ -782,3 +782,20 @@ export function getBinaryOptionsTools(): ChatToolDef[] {
 export function getBinaryOptionsHandlers(): Record<string, (args: Record<string, unknown>) => Promise<unknown>> {
   return BINARY_OPTIONS_HANDLERS;
 }
+
+/**
+ * Get current BinaryFaster session state for dashboard
+ */
+export function getBinaryFasterState(): {
+  loggedIn: boolean;
+  email?: string;
+  balance: { real: number; demo: number };
+  demoMode: boolean;
+} {
+  return {
+    loggedIn: session.loggedIn,
+    email: session.email,
+    balance: session.balance || { real: 0, demo: 0 },
+    demoMode: session.demoMode,
+  };
+}

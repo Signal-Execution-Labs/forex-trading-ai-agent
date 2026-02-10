@@ -36,6 +36,7 @@ import { ChatManager, createChatManager, ChatSendParams, ChatHistoryParams, Chat
 import { getToolEnabledChatHandler, ToolEnabledChatHandler } from './tool-enabled-chat';
 import { TelegramChannel, createTelegramChannel } from '../channels/telegram-channel';
 import { WhatsAppChannel, createWhatsAppChannel, hasWhatsAppCredentials } from '../channels/whatsapp-channel';
+import { getBinaryFasterState } from '../tools/binary-options-tools';
 
 // ============================================================================
 // Types
@@ -834,6 +835,38 @@ export class GatewayServer extends EventEmitter {
   }
 
   /**
+   * Get portfolio value from all connected platforms
+   */
+  private getPortfolioValue(): { totalValue: number; change24h: number; platforms: Record<string, number> } {
+    const platforms: Record<string, number> = {};
+    let totalValue = 0;
+
+    // Get BinaryFaster balance
+    try {
+      const bfState = getBinaryFasterState();
+      if (bfState.loggedIn) {
+        const bfBalance = bfState.demoMode ? bfState.balance.demo : bfState.balance.real;
+        platforms['BinaryFaster'] = bfBalance;
+        totalValue += bfBalance;
+      }
+    } catch (e) {
+      // BinaryFaster not initialized
+    }
+
+    // TODO: Add more platforms here
+    // - Binance
+    // - MT5
+    // - Coinbase
+    // etc.
+
+    return {
+      totalValue,
+      change24h: 0, // TODO: Calculate from history
+      platforms,
+    };
+  }
+
+  /**
    * Get dashboard data
    */
   private getDashboardData(): any {
@@ -889,7 +922,7 @@ export class GatewayServer extends EventEmitter {
         telegram: { connected: telegramConnected, username: channels.telegram?.botUsername },
         whatsapp: { connected: whatsappConnected },
       },
-      portfolio: config.portfolio || { totalValue: 0, change24h: 0 },
+      portfolio: this.getPortfolioValue(),
     };
   }
 
