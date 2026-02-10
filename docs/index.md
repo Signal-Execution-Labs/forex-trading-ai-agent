@@ -162,6 +162,12 @@ Die Konfiguration liegt in `~/.kit/config.json`:
   <Card title="Getting Started" href="/start/installation" icon="book-open">
     Installation, Konfiguration und erster Trade.
   </Card>
+  <Card title="Windows Installation" href="/start/windows-installation" icon="windows">
+    Detaillierte Windows 10/11 Anleitung.
+  </Card>
+  <Card title="API Reference" href="/api/api-reference" icon="code">
+    Vollständige API Dokumentation.
+  </Card>
   <Card title="Core Concepts" href="/concepts/architecture" icon="cpu">
     Architektur, Skills und Trading-Tools verstehen.
   </Card>
