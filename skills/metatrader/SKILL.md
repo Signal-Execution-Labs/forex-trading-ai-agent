@@ -1,41 +1,41 @@
-# MetaTrader 4/5 Skill für K.I.T. 🚀
+# MetaTrader 4/5 Skill for K.I.T.
 
-> 🤖 **DER BESTE TRADING AGENT DER WELT** - Vollständige MT5 Integration mit Enterprise-Features
+> Complete MT5 Integration with Enterprise Features
 
-## 🏦 Unterstützte Broker
+## Supported Brokers
 
-| Broker | Server | Empfohlen |
-|--------|--------|-----------|
-| **RoboForex** | RoboForex-Demo, RoboForex-ECN | ⭐ Top-Wahl |
-| IC Markets | ICMarketsSC-Demo | ✅ |
-| Pepperstone | Pepperstone-Demo | ✅ |
-| XM | XMGlobal-Demo | ✅ |
-| OANDA | OANDA-v20 Practice | ✅ |
-
-> 💡 **RoboForex** bietet niedrige Spreads, schnelle Ausführung und ist ideal für K.I.T.!
-
-## 🔥 WELTKLASSE FEATURES
-
-| Feature | Status | Beschreibung |
-|---------|--------|--------------|
-| **Core Trading** | ✅ | Market/Limit/Stop Orders, Position Management |
-| **Multi-Account** | ✅ | Unbegrenzte Accounts parallel verwalten |
-| **Copy Trading** | ✅ | Master-Follower mit Multiplikatoren |
-| **Strategy Tester** | ✅ | Backtesting, Optimization, Walk-Forward |
-| **Signal Provider** | ✅ | Telegram/Discord/Webhook Broadcasting |
-| **Expert Advisor** | ✅ | Bidirektionale MQL5 Kommunikation |
-| **VPS Deployment** | ✅ | 24/7 Production mit Auto-Recovery |
+| Broker | Demo Server | Notes |
+|--------|-------------|-------|
+| **RoboForex** | RoboForex-Demo | Low spreads, fast execution |
+| IC Markets | ICMarketsSC-Demo | Popular for scalping |
+| Pepperstone | Pepperstone-Demo | Australian broker |
+| XM | XMGlobal-Demo | Global coverage |
+| OANDA | OANDA-v20 Practice | US-friendly |
+| Any MT5 Broker | Check broker | Works with any MT5 broker |
 
 ---
 
-## 📦 Installation
+## Features
+
+| Feature | Status | Description |
+|---------|--------|-------------|
+| **Core Trading** | ✅ | Market/Limit/Stop Orders, Position Management |
+| **Multi-Account** | ✅ | Manage unlimited accounts in parallel |
+| **Copy Trading** | ✅ | Master-Follower with multipliers |
+| **Strategy Tester** | ✅ | Backtesting, Optimization, Walk-Forward |
+| **Signal Provider** | ✅ | Telegram/Discord/Webhook Broadcasting |
+| **Expert Advisor** | ✅ | Bidirectional MQL5 Communication |
+| **VPS Deployment** | ✅ | 24/7 Production with Auto-Recovery |
+
+---
+
+## Installation
 
 ### 1. MetaTrader 5 Terminal
 
-```bash
-# Download: https://www.metatrader5.com/de/download
-# Installieren und Account einrichten
-```
+Download: https://www.metatrader5.com/download
+
+Or from your broker's website.
 
 ### 2. Python Dependencies
 
@@ -43,7 +43,7 @@
 pip install MetaTrader5 pandas numpy psutil requests flask
 ```
 
-### 3. Optional für erweiterte Features
+### 3. Optional for Extended Features
 
 ```bash
 pip install ta-lib scikit-learn tensorflow  # ML/Technical Analysis
@@ -51,56 +51,56 @@ pip install ta-lib scikit-learn tensorflow  # ML/Technical Analysis
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ```python
 from skills.metatrader import MT5Connector, MT5Orders, MT5Data
 
-# Verbinden
+# Connect
 mt5 = MT5Connector()
 mt5.connect(account=123456, password="pass", server="Broker-Demo")
 
-# Trade ausführen
+# Execute trade
 orders = MT5Orders()
 orders.market_order("EURUSD", "buy", 0.1, sl=1.0850, tp=1.1000)
 
-# Daten abrufen
+# Get data
 data = MT5Data()
 candles = data.get_candles("EURUSD", "H1", 100)
 
-# Trennen
+# Disconnect
 mt5.disconnect()
 ```
 
 ---
 
-## 📖 Module-Übersicht
+## Module Overview
 
-### 1️⃣ MT5 Connector (`mt5_connector.py`)
+### 1. MT5 Connector (`mt5_connector.py`)
 
-Verbindungs-Management mit Error Handling.
+Connection management with error handling.
 
 ```python
 from scripts.mt5_connector import MT5Connector, MT5Error
 
 mt5 = MT5Connector()
 
-# Mit Credentials
+# Connect with credentials
 mt5.connect(account=123456, password="pass", server="ICMarkets-Demo")
 
-# Account Info
+# Account info
 info = mt5.get_account_info()
 print(f"Balance: {info['balance']} {info['currency']}")
 print(f"Leverage: 1:{info['leverage']}")
 
-# Trading erlaubt?
+# Trading allowed?
 if mt5.is_trading_allowed():
-    print("✅ Ready to trade!")
+    print("Ready to trade!")
 ```
 
-### 2️⃣ MT5 Orders (`mt5_orders.py`)
+### 2. MT5 Orders (`mt5_orders.py`)
 
-Vollständiges Order Management.
+Complete order management.
 
 ```python
 from scripts.mt5_orders import MT5Orders
@@ -127,32 +127,19 @@ orders.limit_order(
     tp=1.0980
 )
 
-# STOP ORDER
-orders.stop_order(
-    symbol="EURUSD",
-    order_type="buy_stop",
-    volume=0.1,
-    price=1.1000,
-    sl=1.0950,
-    tp=1.1100
-)
-
 # POSITION MANAGEMENT
 positions = orders.get_positions()
 for pos in positions:
     print(f"{pos['symbol']}: {pos['profit']:+.2f}")
 
-# Schließen
+# Close position
 orders.close_position(ticket=123456789)
 orders.close_all_positions(symbol="EURUSD")
-
-# Modifizieren
-orders.modify_position(ticket=123456789, sl=1.0900, tp=1.1000)
 ```
 
-### 3️⃣ MT5 Data (`mt5_data.py`)
+### 3. MT5 Data (`mt5_data.py`)
 
-Echtzeit-Marktdaten und Historical Data.
+Real-time market data and historical data.
 
 ```python
 from scripts.mt5_data import MT5Data
@@ -163,21 +150,9 @@ data = MT5Data()
 tick = data.get_tick("EURUSD")
 print(f"Bid: {tick['bid']}, Ask: {tick['ask']}")
 
-# SPREAD
-spread = data.get_spread("EURUSD")
-print(f"Spread: {spread} pips")
-
 # CANDLES (OHLCV)
 candles = data.get_candles("EURUSD", "H1", 100)
 print(candles.tail())
-
-# DATE RANGE
-from datetime import datetime
-candles = data.get_candles_range(
-    "EURUSD", "H1",
-    datetime(2024, 1, 1),
-    datetime(2024, 1, 31)
-)
 
 # SYMBOL INFO
 info = data.get_symbol_info("EURUSD")
@@ -187,25 +162,24 @@ print(f"Min Volume: {info['volume_min']}")
 
 ---
 
-## 🏆 ENTERPRISE FEATURES
+## Enterprise Features
 
-### 4️⃣ Multi-Account Manager (`mt5_multi_account.py`)
+### 4. Multi-Account Manager (`mt5_multi_account.py`)
 
-Verwalte unbegrenzte Accounts gleichzeitig!
+Manage unlimited accounts simultaneously.
 
 ```python
 from scripts.mt5_multi_account import MT5MultiAccountManager, AccountConfig
 
 manager = MT5MultiAccountManager()
 
-# Accounts hinzufügen
+# Add accounts
 manager.add_account(AccountConfig(
     account_id=111111,
     password="pass1",
     server="Broker-Demo",
     name="Aggressive Account",
-    max_risk_percent=5.0,
-    copy_multiplier=1.5
+    max_risk_percent=5.0
 ))
 
 manager.add_account(AccountConfig(
@@ -213,254 +187,128 @@ manager.add_account(AccountConfig(
     password="pass2",
     server="Broker-Demo",
     name="Conservative Account",
-    max_risk_percent=1.0,
-    copy_multiplier=0.5
+    max_risk_percent=1.0
 ))
 
-# Auf ALLEN Accounts gleichzeitig traden
-results = manager.execute_on_all("EURUSD", "buy", 0.1, sl=1.0850, tp=1.1000)
+# Trade on ALL accounts simultaneously
+results = manager.execute_on_all("EURUSD", "buy", 0.1)
 
-# Portfolio Summary
+# Portfolio summary
 summary = manager.get_portfolio_summary()
 print(f"Total Balance: ${summary['total_balance']:,.2f}")
-print(f"Total Profit: ${summary['total_profit']:+,.2f}")
-
-# Copy Trading Setup
-manager.setup_copy_trading(
-    master_account=111111,
-    follower_accounts=[222222, 333333],
-    multipliers={222222: 0.5, 333333: 2.0}
-)
-
-# Position Sizing mit Risk Management
-lot_size = manager.calculate_position_size(
-    account_id=111111,
-    symbol="EURUSD",
-    stop_loss_pips=20,
-    risk_percent=2.0
-)
-print(f"Calculated lot size: {lot_size}")
 ```
 
-### 5️⃣ Strategy Tester (`mt5_strategy_tester.py`)
+### 5. Strategy Tester (`mt5_strategy_tester.py`)
 
-Professionelles Backtesting mit Monte Carlo Simulation!
+Professional backtesting with Monte Carlo simulation.
 
 ```python
-from scripts.mt5_strategy_tester import (
-    MT5StrategyTester, 
-    MovingAverageCrossStrategy,
-    Strategy,
-    TradeDirection
-)
+from scripts.mt5_strategy_tester import MT5StrategyTester, MovingAverageCrossStrategy
 
-# Tester erstellen
+# Create tester
 tester = MT5StrategyTester(initial_balance=10000)
 tester.load_data("EURUSD", "H1", days=365)
 
-# Strategie testen
+# Run backtest
 strategy = MovingAverageCrossStrategy()
 result = tester.run_backtest(strategy, volume=0.1)
 
-print(f"📊 Backtest Results:")
+print(f"Backtest Results:")
 print(f"  Total Trades: {result.total_trades}")
 print(f"  Win Rate: {result.win_rate:.1f}%")
 print(f"  Total Profit: ${result.total_profit:,.2f}")
 print(f"  Profit Factor: {result.profit_factor:.2f}")
 print(f"  Max Drawdown: {result.max_drawdown_percent:.1f}%")
-print(f"  Sharpe Ratio: {result.sharpe_ratio:.2f}")
 
-# OPTIMIZATION
+# Optimization
 opt_results = tester.optimize(
     strategy,
     param_grid={
         'fast_period': [5, 10, 15, 20],
-        'slow_period': [20, 30, 40, 50],
-        'sl_pips': [15, 20, 25],
-        'tp_pips': [30, 40, 50]
+        'slow_period': [20, 30, 40, 50]
     },
     metric='profit_factor'
 )
-print(f"Best params: {opt_results[0]['parameters']}")
-
-# WALK-FORWARD ANALYSIS
-wf_results = tester.walk_forward(
-    strategy,
-    param_grid={'fast_period': [5, 10, 15], 'slow_period': [20, 30, 40]},
-    in_sample_bars=500,
-    out_sample_bars=100
-)
-
-# MONTE CARLO SIMULATION
-mc = tester.monte_carlo(result, simulations=1000)
-print(f"🎲 Monte Carlo:")
-print(f"  Probability of Profit: {mc['probability_profit']:.1f}%")
-print(f"  5th Percentile: ${mc['percentile_5']:,.2f}")
-print(f"  95th Percentile: ${mc['percentile_95']:,.2f}")
-
-# HTML Report generieren
-tester.generate_report(result, "backtest_report.html")
 ```
 
-### 6️⃣ Signal Provider (`mt5_signal_provider.py`)
+### 6. Signal Provider (`mt5_signal_provider.py`)
 
-Professioneller Signal-Service mit Multi-Channel Broadcasting!
+Professional signal service with multi-channel broadcasting.
 
 ```python
-from scripts.mt5_signal_provider import (
-    MT5SignalProvider,
-    SignalType,
-    Subscriber
-)
+from scripts.mt5_signal_provider import MT5SignalProvider, SignalType
 
-# Provider erstellen
 provider = MT5SignalProvider(
-    provider_name="KIT_Elite_Signals",
+    provider_name="KIT_Signals",
     telegram_bot_token="your_bot_token"
 )
 
-# Subscriber hinzufügen
+# Add subscribers
 provider.add_subscriber(Subscriber(
     id="sub1",
-    name="John Trader",
-    telegram_chat_id="123456789",
-    volume_multiplier=1.0
+    telegram_chat_id="123456789"
 ))
 
-provider.add_subscriber(Subscriber(
-    id="sub2",
-    name="Jane VIP",
-    discord_webhook="https://discord.com/api/webhooks/...",
-    volume_multiplier=2.0
-))
-
-# Signal erstellen und broadcasten
+# Create and broadcast signal
 signal = provider.create_signal(
     signal_type=SignalType.MARKET_BUY,
     symbol="EURUSD",
     volume=0.1,
     sl=1.0850,
-    tp=1.1000,
-    comment="Golden Cross Setup"
+    tp=1.1000
 )
 
-# Broadcast zu allen Subscribern
 results = provider.broadcast(signal)
-print(f"Notified {results['subscribers_notified']} subscribers")
-
-# Performance Stats
-stats = provider.get_performance_stats(days=30)
-print(f"Total Signals: {stats['total_signals']}")
-print(f"Execution Rate: {stats['execution_rate']:.1f}%")
 ```
 
-### 7️⃣ Expert Advisor Bridge (`mt5_expert_advisor.py`)
+### 7. VPS Deployment (`mt5_vps_deployment.py`)
 
-Bidirektionale Kommunikation mit MQL5 Expert Advisors!
-
-```python
-from scripts.mt5_expert_advisor import (
-    MT5EABridge,
-    EACommand,
-    EASignal,
-    EATemplateGenerator
-)
-
-# Bridge erstellen
-bridge = MT5EABridge(magic_number=123456)
-
-# Signale an EA senden
-bridge.send_buy("EURUSD", 0.1, sl=1.0850, tp=1.1000)
-bridge.send_sell("GBPUSD", 0.05)
-bridge.send_close_all()
-
-# Signale von EA empfangen
-def handle_ea_signal(signal):
-    print(f"EA Signal: {signal.command.value} {signal.symbol}")
-
-bridge.add_handler(handle_ea_signal)
-bridge.start_listener()
-
-# EA Status abrufen
-status = bridge.get_ea_status()
-print(f"EA Status: {status}")
-
-# MQL5 EA Templates generieren
-EATemplateGenerator.save_ea_templates("MQL5/Experts/KIT/")
-```
-
-### 8️⃣ VPS Deployment (`mt5_vps_deployment.py`)
-
-Production-Ready 24/7 Trading Infrastructure!
+Production-ready 24/7 trading infrastructure.
 
 ```python
-from scripts.mt5_vps_deployment import (
-    MT5VPSDeployment,
-    VPSConfig
-)
+from scripts.mt5_vps_deployment import MT5VPSDeployment, VPSConfig
 
-# Konfiguration
 config = VPSConfig(
     account_id=123456,
     password="secure_pass",
     server="Broker-Live",
-    
-    # Watchdog
     watchdog_enabled=True,
-    watchdog_interval_sec=60,
-    max_restart_attempts=3,
-    
-    # Alerts
-    alert_telegram_chat="123456789",
-    telegram_bot_token="your_token",
-    
-    # Performance Limits
-    max_cpu_percent=80,
-    max_memory_percent=80
+    alert_telegram_chat="123456789"
 )
 
-# VPS Service starten
 vps = MT5VPSDeployment(config)
 vps.start()
 
-# Status abrufen
+# Check status
 status = vps.get_status()
 print(f"Status: {status['status']}")
 print(f"Uptime: {status['uptime_hours']:.1f} hours")
-print(f"Health: {'✅' if status['health']['is_healthy'] else '❌'}")
-
-# Health Check manuell
-health = vps.run_health_check()
-print(f"MT5 Connected: {health.mt5_connected}")
-print(f"Latency: {health.latency_ms:.0f}ms")
-print(f"CPU: {health.cpu_usage:.1f}%")
 ```
 
 ---
 
-## 📊 Timeframes
+## Timeframes
 
-| Code | MT5 Konstante | Beschreibung |
-|------|---------------|--------------|
+| Code | MT5 Constant | Description |
+|------|--------------|-------------|
 | `M1` | TIMEFRAME_M1 | 1 Minute |
-| `M5` | TIMEFRAME_M5 | 5 Minuten |
-| `M15` | TIMEFRAME_M15 | 15 Minuten |
-| `M30` | TIMEFRAME_M30 | 30 Minuten |
-| `H1` | TIMEFRAME_H1 | 1 Stunde |
-| `H4` | TIMEFRAME_H4 | 4 Stunden |
-| `D1` | TIMEFRAME_D1 | 1 Tag |
-| `W1` | TIMEFRAME_W1 | 1 Woche |
-| `MN1` | TIMEFRAME_MN1 | 1 Monat |
+| `M5` | TIMEFRAME_M5 | 5 Minutes |
+| `M15` | TIMEFRAME_M15 | 15 Minutes |
+| `M30` | TIMEFRAME_M30 | 30 Minutes |
+| `H1` | TIMEFRAME_H1 | 1 Hour |
+| `H4` | TIMEFRAME_H4 | 4 Hours |
+| `D1` | TIMEFRAME_D1 | 1 Day |
+| `W1` | TIMEFRAME_W1 | 1 Week |
 
 ---
 
-## ⚠️ Error Codes
+## Error Codes
 
-| Code | Bedeutung |
-|------|-----------|
+| Code | Meaning |
+|------|---------|
 | 10004 | Requote |
 | 10006 | Authorization failed |
-| 10010 | Auto-Trading deaktiviert |
+| 10010 | Auto-Trading disabled |
 | 10013 | Invalid volume |
 | 10014 | Invalid price |
 | 10015 | Invalid stops |
@@ -468,47 +316,40 @@ print(f"CPU: {health.cpu_usage:.1f}%")
 
 ---
 
-## 🔒 Security Best Practices
+## Security Best Practices
 
-1. **Credentials**: Niemals im Code speichern - nutze Environment Variables
-2. **Demo First**: IMMER erst im Demo-Modus testen
-3. **Risk Management**: Max 2% pro Trade, setze IMMER Stop Loss
-4. **VPS**: Nutze dedicated VPS für 24/7 Trading
-5. **Monitoring**: Aktiviere Alerts für kritische Events
+1. **Credentials**: Never store in code - use environment variables
+2. **Demo First**: ALWAYS test in demo mode first
+3. **Risk Management**: Max 2% per trade, ALWAYS set Stop Loss
+4. **VPS**: Use dedicated VPS for 24/7 trading
+5. **Monitoring**: Enable alerts for critical events
 
 ---
 
-## 🧪 Testen
+## Testing
 
 ```bash
 cd skills/metatrader
 
-# Basic Test
+# Basic test
 python examples/example_trade.py
 
-# Unit Tests
+# Unit tests
 python -m pytest tests/
 
-# Backtest
-python -c "
-from scripts.mt5_strategy_tester import MT5StrategyTester, MovingAverageCrossStrategy
-tester = MT5StrategyTester()
-tester.load_data('EURUSD', 'H1', days=90)
-result = tester.run_backtest(MovingAverageCrossStrategy())
-print(f'Profit: {result.total_profit:.2f}')
-"
+# Quick test
+python examples/quick_test.py --trade
 ```
 
 ---
 
-## 📁 Dateistruktur
+## File Structure
 
 ```
 skills/metatrader/
-├── SKILL.md                    # Diese Dokumentation
+├── SKILL.md                    # This documentation
 ├── __init__.py                 # Package exports
 ├── scripts/
-│   ├── __init__.py
 │   ├── mt5_connector.py        # Connection Management
 │   ├── mt5_orders.py           # Order Execution
 │   ├── mt5_data.py             # Market Data
@@ -518,30 +359,28 @@ skills/metatrader/
 │   ├── mt5_expert_advisor.py   # MQL5 EA Bridge
 │   └── mt5_vps_deployment.py   # VPS Infrastructure
 └── examples/
-    └── example_trade.py        # Interactive Example
+    ├── 01_connect.py
+    ├── 02_balance.py
+    ├── 03_market_order.py
+    └── quick_test.py
 ```
 
 ---
 
-## 🤖 K.I.T. Befehle
+## K.I.T. Commands
 
-Nach Integration versteht K.I.T.:
+After integration, K.I.T. understands:
 
-- *"Kaufe 0.1 Lot EURUSD mit 20 Pip Stop Loss"*
-- *"Zeige meine offenen Positionen"*
-- *"Schließe alle Verlust-Trades"*
-- *"Backtest MA Crossover auf EURUSD letzte 6 Monate"*
-- *"Sende Signal an alle Subscriber"*
-- *"Status aller Trading-Accounts"*
-- *"VPS Health Check"*
-
----
-
-**Version:** 2.0.0 (Enterprise Edition)  
-**Erstellt:** 2026-02-09  
-**Autor:** K.I.T. MetaTrader Agent  
-**Lines of Code:** 5,000+  
+- *"Buy 0.1 lot EURUSD with 20 pip stop loss"*
+- *"Show my open positions"*
+- *"Close all losing trades"*
+- *"Backtest MA crossover on EURUSD last 6 months"*
+- *"Send signal to all subscribers"*
+- *"Status of all trading accounts"*
+- *"VPS health check"*
 
 ---
 
-> 🚀 **K.I.T. - Der beste Trading Agent der Welt!**
+**Version:** 2.0.0  
+**Created:** February 2026  
+**Author:** K.I.T. MetaTrader Agent

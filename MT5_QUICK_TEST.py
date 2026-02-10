@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """
 K.I.T. MT5 Quick Test
-Testet Verbindung und führt optional einen Demo-Trade aus.
+Tests connection and optionally executes a demo trade.
 
 Usage:
-    python MT5_QUICK_TEST.py           # Nur Verbindungstest
-    python MT5_QUICK_TEST.py --trade   # Mit Demo-Trade
+    python MT5_QUICK_TEST.py           # Connection test only
+    python MT5_QUICK_TEST.py --trade   # With demo trade
+    python MT5_QUICK_TEST.py --auto    # Auto-execute trade (no prompt)
 """
 
 import sys
@@ -13,78 +14,69 @@ import sys
 try:
     import MetaTrader5 as mt5
 except ImportError:
-    print("❌ MetaTrader5 library nicht installiert!")
-    print("   Installieren mit: pip install MetaTrader5")
+    print("ERROR: MetaTrader5 library not installed!")
+    print("   Install with: pip install MetaTrader5")
     sys.exit(1)
 
 def print_header():
     print("""
-    ╔═══════════════════════════════════════════╗
-    ║     K.I.T. MT5 CONNECTION TEST            ║
-    ║     Der beste Trading Agent der Welt!     ║
-    ╚═══════════════════════════════════════════╝
+    +=============================================+
+    |     K.I.T. MT5 CONNECTION TEST              |
+    |     Your Autonomous AI Financial Agent      |
+    +=============================================+
     """)
 
 def test_connection():
-    print("🔌 Verbinde mit MT5...")
+    print("Connecting to MT5...")
     
     if not mt5.initialize():
         error = mt5.last_error()
-        print(f"❌ FEHLER: {error}")
-        print("\n💡 LÖSUNGEN:")
-        print("   1. MT5 Terminal starten")
-        print("   2. Einloggen (RoboForex-Demo)")
-        print("   3. Warten bis verbunden")
-        print("   4. Script erneut ausführen")
+        print(f"ERROR: {error}")
+        print("\nSOLUTIONS:")
+        print("   1. Start MT5 Terminal")
+        print("   2. Log in to your broker")
+        print("   3. Wait until connected")
+        print("   4. Run this script again")
         return False
     
-    print("✅ Verbunden!")
+    print("OK Connected!")
     return True
 
 def show_account():
     account = mt5.account_info()
     if account is None:
-        print("❌ Keine Account-Info!")
+        print("ERROR: No account info!")
         return False
     
+    trading_status = "OK ENABLED" if account.trade_allowed else "X DISABLED"
+    
     print(f"""
-📊 ACCOUNT INFO:
-   ┌────────────────────────────────────────┐
-   │ Login:    {account.login:<28}│
-   │ Server:   {account.server:<28}│
-   │ Name:     {account.name[:28]:<28}│
-   │ Balance:  {account.balance:>15,.2f} {account.currency:<8}│
-   │ Equity:   {account.equity:>15,.2f} {account.currency:<8}│
-   │ Leverage: 1:{account.leverage:<25}│
-   │ Trading:  {'✅ ERLAUBT':<28}│
-   └────────────────────────────────────────┘
-    """) if account.trade_allowed else print(f"""
-📊 ACCOUNT INFO:
-   ┌────────────────────────────────────────┐
-   │ Login:    {account.login:<28}│
-   │ Server:   {account.server:<28}│
-   │ Name:     {account.name[:28]:<28}│
-   │ Balance:  {account.balance:>15,.2f} {account.currency:<8}│
-   │ Equity:   {account.equity:>15,.2f} {account.currency:<8}│
-   │ Leverage: 1:{account.leverage:<25}│
-   │ Trading:  {'❌ DEAKTIVIERT!':<28}│
-   └────────────────────────────────────────┘
+ACCOUNT INFO:
+   +----------------------------------------+
+   | Login:    {account.login:<26}|
+   | Server:   {account.server:<26}|
+   | Name:     {account.name[:26]:<26}|
+   | Balance:  {account.balance:>13,.2f} {account.currency:<8}|
+   | Equity:   {account.equity:>13,.2f} {account.currency:<8}|
+   | Leverage: 1:{account.leverage:<24}|
+   | Trading:  {trading_status:<26}|
+   +----------------------------------------+
     """)
     
     if not account.trade_allowed:
-        print("⚠️  ALGO-TRADING DEAKTIVIERT!")
-        print("   → MT5: Tools → Options → Expert Advisors")
-        print("   → Aktiviere 'Allow Algorithmic Trading'")
-        print("   → Toolbar: 'Algo Trading' Button auf GRÜN")
+        print("WARNING: ALGO-TRADING DISABLED!")
+        print("   -> MT5: Tools > Options > Expert Advisors")
+        print("   -> Enable 'Allow Algorithmic Trading'")
+        print("   -> Toolbar: 'Algo Trading' button must be GREEN")
     
     return account.trade_allowed
 
 def show_prices():
     symbols = ["EURUSD", "GBPUSD", "USDJPY", "XAUUSD"]
-    print("💹 AKTUELLE PREISE:")
-    print("   ┌──────────┬────────────┬────────────┬─────────┐")
-    print("   │ Symbol   │ Bid        │ Ask        │ Spread  │")
-    print("   ├──────────┼────────────┼────────────┼─────────┤")
+    print("LIVE PRICES:")
+    print("   +----------+------------+------------+---------+")
+    print("   | Symbol   | Bid        | Ask        | Spread  |")
+    print("   +----------+------------+------------+---------+")
     
     for symbol in symbols:
         tick = mt5.symbol_info_tick(symbol)
@@ -95,66 +87,66 @@ def show_prices():
                 spread = (tick.ask - tick.bid) * 10
             else:
                 spread = (tick.ask - tick.bid) * 10000
-            print(f"   │ {symbol:<8} │ {tick.bid:>10.5f} │ {tick.ask:>10.5f} │ {spread:>6.1f}  │")
+            print(f"   | {symbol:<8} | {tick.bid:>10.5f} | {tick.ask:>10.5f} | {spread:>6.1f}  |")
         else:
-            print(f"   │ {symbol:<8} │ {'N/A':>10} │ {'N/A':>10} │ {'N/A':>6}  │")
+            print(f"   | {symbol:<8} | {'N/A':>10} | {'N/A':>10} | {'N/A':>6}  |")
     
-    print("   └──────────┴────────────┴────────────┴─────────┘")
+    print("   +----------+------------+------------+---------+")
     print()
 
 def show_positions():
     positions = mt5.positions_get()
     if positions is None or len(positions) == 0:
-        print("📈 OFFENE POSITIONEN: Keine")
+        print("OPEN POSITIONS: None")
         return
     
-    print(f"📈 OFFENE POSITIONEN: {len(positions)}")
-    print("   ┌──────────┬──────┬────────┬────────────┬─────────────┐")
-    print("   │ Symbol   │ Type │ Volume │ Profit     │ Ticket      │")
-    print("   ├──────────┼──────┼────────┼────────────┼─────────────┤")
+    print(f"OPEN POSITIONS: {len(positions)}")
+    print("   +----------+------+--------+------------+-------------+")
+    print("   | Symbol   | Type | Volume | Profit     | Ticket      |")
+    print("   +----------+------+--------+------------+-------------+")
     
     for pos in positions:
         pos_type = "BUY" if pos.type == 0 else "SELL"
-        print(f"   │ {pos.symbol:<8} │ {pos_type:<4} │ {pos.volume:>6.2f} │ {pos.profit:>+10.2f} │ {pos.ticket:<11} │")
+        print(f"   | {pos.symbol:<8} | {pos_type:<4} | {pos.volume:>6.2f} | {pos.profit:>+10.2f} | {pos.ticket:<11} |")
     
-    print("   └──────────┴──────┴────────┴────────────┴─────────────┘")
+    print("   +----------+------+--------+------------+-------------+")
     print()
 
 def execute_demo_trade():
-    print("\n🎯 DEMO TRADE AUSFÜHREN")
-    print("   ─────────────────────")
+    print("\nDEMO TRADE")
+    print("   ---------------------")
     print("   Symbol: EURUSD")
     print("   Type:   BUY")
-    print("   Volume: 0.01 Lot (minimal)")
+    print("   Volume: 0.01 Lot (minimum)")
     
-    # Auto-confirm mit --auto flag
+    # Auto-confirm with --auto flag
     if "--auto" not in sys.argv:
         try:
-            confirm = input("\n   Trade ausführen? (j/n): ").lower().strip()
-            if confirm not in ['j', 'ja', 'y', 'yes']:
-                print("   ❌ Abgebrochen.")
+            confirm = input("\n   Execute trade? (y/n): ").lower().strip()
+            if confirm not in ['y', 'yes']:
+                print("   Cancelled.")
                 return
         except:
-            print("   ❌ Abgebrochen (kein Input).")
+            print("   Cancelled (no input).")
             return
     else:
-        print("\n   [AUTO-MODE] Führe Trade aus...")
+        print("\n   [AUTO-MODE] Executing trade...")
     
     symbol = "EURUSD"
     symbol_info = mt5.symbol_info(symbol)
     
     if symbol_info is None:
-        print(f"   ❌ Symbol {symbol} nicht gefunden!")
+        print(f"   ERROR: Symbol {symbol} not found!")
         return
     
     if not symbol_info.visible:
         if not mt5.symbol_select(symbol, True):
-            print(f"   ❌ Kann {symbol} nicht aktivieren!")
+            print(f"   ERROR: Cannot select {symbol}!")
             return
     
     tick = mt5.symbol_info_tick(symbol)
     if tick is None:
-        print(f"   ❌ Kann Preis für {symbol} nicht abrufen!")
+        print(f"   ERROR: Cannot get price for {symbol}!")
         return
     
     price = tick.ask
@@ -176,77 +168,77 @@ def execute_demo_trade():
         "type_filling": mt5.ORDER_FILLING_IOC,
     }
     
-    print(f"\n   Sende Order @ {price:.5f}...")
+    print(f"\n   Sending order @ {price:.5f}...")
     result = mt5.order_send(request)
     
     if result is None:
-        print(f"   ❌ Order fehlgeschlagen: Kein Result!")
+        print(f"   ERROR: Order failed - no result!")
         return
     
     if result.retcode != mt5.TRADE_RETCODE_DONE:
         error_messages = {
-            10004: "Requote - Preis hat sich geändert",
-            10006: "Request abgelehnt",
-            10007: "Request abgebrochen",
-            10010: "Auto-Trading deaktiviert!",
-            10013: "Ungültiges Volume",
-            10014: "Ungültiger Preis",
-            10015: "Ungültige Stops",
-            10016: "Ungültiger Handelstyp",
-            10017: "Trade deaktiviert",
-            10018: "Markt geschlossen",
-            10019: "Nicht genug Geld",
+            10004: "Requote - price changed",
+            10006: "Request rejected",
+            10007: "Request cancelled",
+            10010: "Auto-trading disabled!",
+            10013: "Invalid volume",
+            10014: "Invalid price",
+            10015: "Invalid stops",
+            10016: "Invalid trade type",
+            10017: "Trade disabled",
+            10018: "Market closed",
+            10019: "Not enough money",
         }
         msg = error_messages.get(result.retcode, result.comment)
-        print(f"   ❌ Trade fehlgeschlagen!")
+        print(f"   ERROR: Trade failed!")
         print(f"   Error Code: {result.retcode}")
-        print(f"   Grund: {msg}")
+        print(f"   Reason: {msg}")
         
         if result.retcode == 10010:
-            print("\n   💡 LÖSUNG:")
-            print("   1. MT5: Tools → Options → Expert Advisors")
-            print("   2. Aktiviere 'Allow Algorithmic Trading'")
-            print("   3. Toolbar: 'Algo Trading' auf GRÜN")
+            print("\n   SOLUTION:")
+            print("   1. MT5: Tools > Options > Expert Advisors")
+            print("   2. Enable 'Allow Algorithmic Trading'")
+            print("   3. Toolbar: 'Algo Trading' must be GREEN")
     else:
         print(f"""
-   ╔════════════════════════════════════════╗
-   ║       ✅ TRADE ERFOLGREICH!            ║
-   ╠════════════════════════════════════════╣
-   ║  Ticket:  {result.order:<27}║
-   ║  Symbol:  EURUSD                       ║
-   ║  Type:    BUY                          ║
-   ║  Volume:  0.01                         ║
-   ║  Price:   {result.price:<27.5f}║
-   ╚════════════════════════════════════════╝
+   +========================================+
+   |       OK TRADE SUCCESSFUL!             |
+   +========================================+
+   |  Ticket:  {result.order:<25}|
+   |  Symbol:  EURUSD                       |
+   |  Type:    BUY                          |
+   |  Volume:  0.01                         |
+   |  Price:   {result.price:<25.5f}|
+   +========================================+
         """)
 
 def main():
     print_header()
     
-    # Verbinden
+    # Connect
     if not test_connection():
         return 1
     
     # Account Info
     trading_allowed = show_account()
     
-    # Preise
+    # Prices
     show_prices()
     
-    # Positionen
+    # Positions
     show_positions()
     
     # Trade?
     if trading_allowed and ("--trade" in sys.argv or "--auto" in sys.argv):
         execute_demo_trade()
     elif not trading_allowed:
-        print("⚠️  Trading deaktiviert - kein Demo-Trade möglich")
+        print("WARNING: Trading disabled - cannot execute demo trade")
     else:
-        print("💡 Für Demo-Trade: python MT5_QUICK_TEST.py --trade")
+        print("TIP: For demo trade run: python MT5_QUICK_TEST.py --trade")
     
     # Cleanup
     mt5.shutdown()
-    print("\n✅ Test abgeschlossen!\n")
+    print("\nOK Test completed!\n")
     return 0
 
 if __name__ == "__main__":

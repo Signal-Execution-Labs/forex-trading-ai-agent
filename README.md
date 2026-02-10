@@ -1,6 +1,5 @@
 # K.I.T. - Knight Industries Trading
 
-[![npm version](https://img.shields.io/npm/v/@binaryfaster/kit.svg)](https://www.npmjs.com/package/@binaryfaster/kit)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue.svg)](https://www.typescriptlang.org/)
@@ -10,18 +9,18 @@
 
 K.I.T. is your **personal AI trading agent** - like having a professional trader working for you 24/7. Just tell it what you want, and it handles everything else.
 
-**For Users:** Just chat with K.I.T. via Telegram/Discord - it trades autonomously.  
+**For Users:** Chat with K.I.T. via Telegram/Discord - it trades autonomously.  
 **For Developers:** Use K.I.T. as a framework to build your own trading apps.
 
 ```
-You: "Investiere 500€ in Bitcoin wenn der Preis unter 40k fällt"
-K.I.T.: "✅ Limit Order gesetzt. Ich benachrichtige dich wenn ausgeführt."
+You: "Invest $500 in Bitcoin when the price drops below 40k"
+K.I.T.: "✅ Limit order set. I'll notify you when executed."
 
-You: "Wie läuft mein Portfolio?"
-K.I.T.: "📊 Portfolio: $12,450 (+3.2% heute). BTC +5%, ETH -1%, EURUSD +0.8%"
+You: "How's my portfolio doing?"
+K.I.T.: "📊 Portfolio: $12,450 (+3.2% today). BTC +5%, ETH -1%, EURUSD +0.8%"
 
-You: "Kopiere Signale von @CryptoWhale"  
-K.I.T.: "📡 Signal Copier aktiviert. Auto-Trading: ON"
+You: "Copy signals from @CryptoWhale"  
+K.I.T.: "📡 Signal Copier activated. Auto-Trading: ON"
 ```
 
 ```
@@ -29,9 +28,7 @@ K.I.T.: "📡 Signal Copier aktiviert. Auto-Trading: ON"
    - K.I.T.
 ```
 
-<p align="center">
-  <img src="docs/assets/kit-dashboard.png" alt="K.I.T. Dashboard" width="600">
-</p>
+---
 
 ## 🎯 Two Ways to Use K.I.T.
 
@@ -48,7 +45,7 @@ kit connect telegram         # Connect Telegram
 
 **K.I.T. can:**
 - 📊 Trade autonomously based on your goals
-- 💬 Understand natural language ("Kauf BTC wenn RSI unter 30")
+- 💬 Understand natural language ("Buy BTC when RSI below 30")
 - 📡 Copy signals from Telegram channels automatically
 - 🔔 Alert you about important market events
 - 📈 Analyze any market on request
@@ -59,7 +56,7 @@ kit connect telegram         # Connect Telegram
 Build your own trading bots, apps, and services.
 
 ```typescript
-import { createBot } from '@binaryfaster/kit';
+import { createBot } from 'kit';
 const bot = createBot({ exchange: 'binance', strategy: 'rsi' });
 bot.start();
 ```
@@ -73,11 +70,18 @@ bot.start();
 ### Install
 
 ```bash
-# Install globally
-npm install -g @binaryfaster/kit
+# Clone repository
+git clone https://github.com/kayzaa/k.i.t.-bot.git
+cd k.i.t.-bot
 
-# Verify installation
-kit --version
+# Install dependencies
+npm install
+
+# Build
+npm run build
+
+# Start
+npm start
 ```
 
 ### Initialize
@@ -110,23 +114,6 @@ kit trade buy BTC/USDT 100 --demo
 
 ---
 
-## 📖 Table of Contents
-
-- [Features](#-features)
-- [Installation](#-installation)
-- [Configuration](#-configuration)
-- [Usage](#-usage)
-- [Operating Modes](#-operating-modes)
-- [Architecture](#-architecture)
-- [CLI Commands](#-cli-commands)
-- [API Reference](#-api-reference)
-- [Examples](#-examples)
-- [Safety & Risk Management](#-safety--risk-management)
-- [Contributing](#-contributing)
-- [License](#-license)
-
----
-
 ## ✨ Features
 
 | Feature | Description |
@@ -143,214 +130,43 @@ kit trade buy BTC/USDT 100 --demo
 
 ---
 
-## 👨‍💻 Build Your Own Bots & Apps
+## 💰 Supported Markets
 
-K.I.T. ist nicht nur ein Trading Bot - es ist ein **Framework** wie OpenClaw!
-
-```typescript
-import { createBot, RSIStrategy } from '@binaryfaster/kit';
-
-// Eigenen Bot in 10 Zeilen erstellen
-const bot = createBot({
-  name: 'MeinBot',
-  exchange: 'binance',      // oder: kraken, mt5, roboforex...
-  pair: 'BTC/USDT',
-  strategy: new RSIStrategy(),
-  risk: { stopLoss: 0.02, takeProfit: 0.04 },
-});
-
-bot.start();
-```
-
-**Was du bauen kannst:**
-- 🤖 Trading Bots (Grid, DCA, Arbitrage, Signal Copier)
-- 📱 Telegram/Discord Bots
-- 🌐 Web Dashboards
-- 📊 Portfolio Tracker
-- 🔔 Alert Systems
-- 📡 Signal Services
-
-👉 **[Developer SDK Documentation](docs/developers/sdk.md)**
+| Market | Exchanges/Brokers | Status |
+|--------|------------------|--------|
+| 🪙 **Crypto** | Binance, Kraken, Coinbase, OKX, Bybit | ✅ Ready |
+| 💱 **Forex** | MetaTrader 4/5, RoboForex, IC Markets, OANDA, Pepperstone, XM | ✅ Ready |
+| 📈 **Stocks** | Interactive Brokers, Alpaca | 🚧 Beta |
+| 🏦 **DeFi** | Uniswap, Aave, Lido | 📋 Planned |
 
 ---
 
-## 📦 Installation
+## 🏗️ Architecture
 
-### Prerequisites
-
-- **Node.js 18+** ([Download](https://nodejs.org))
-- **npm** or **yarn**
-
-### NPM (Recommended)
-
-```bash
-npm install -g @binaryfaster/kit
 ```
-
-### Yarn
-
-```bash
-yarn global add @binaryfaster/kit
-```
-
-### From Source
-
-```bash
-git clone https://github.com/kayzaa/k.i.t.-bot.git
-cd k.i.t.-bot
-npm install
-npm run build
-npm link
-```
-
-### Docker
-
-```bash
-docker pull binaryfaster/kit:latest
-docker run -d --name kit \
-  -v ~/.kit:/root/.kit \
-  -e ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY \
-  binaryfaster/kit:latest
-```
-
-### Verify Installation
-
-```bash
-kit --version
-kit doctor  # Check system requirements
-```
-
----
-
-## ⚙️ Configuration
-
-### Interactive Setup
-
-```bash
-kit setup
-```
-
-This wizard guides you through:
-1. AI Provider (Anthropic/OpenAI) API key
-2. Exchange connections
-3. Risk parameters
-4. Notification channels
-
-### Manual Configuration
-
-Create `~/.kit/config.json`:
-
-```json
-{
-  "ai": {
-    "provider": "anthropic",
-    "model": "claude-3-sonnet-20240229"
-  },
-  "gateway": {
-    "port": 18800,
-    "host": "127.0.0.1"
-  },
-  "risk": {
-    "maxDailyLoss": 5,
-    "maxDrawdown": 15,
-    "maxPositionSize": 10
-  }
-}
-```
-
-### Environment Variables
-
-```bash
-export ANTHROPIC_API_KEY="sk-ant-..."
-export KIT_GATEWAY_PORT="18800"
-export KIT_GATEWAY_TOKEN="your-secret-token"
-```
-
----
-
-## 💡 Usage
-
-### Start the Gateway
-
-```bash
-# Foreground
-kit gateway start
-
-# Background (daemon)
-kit gateway start --daemon
-```
-
-### Portfolio Overview
-
-```bash
-kit portfolio
-```
-
-Output:
-```
-📊 Portfolio Snapshot
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Total Value: $45,231.50 (+2.3%)
-
-Assets:
-  BTC     $33,750.00   74.6%  ↑ +3.2%
-  ETH      $8,750.00   19.3%  ↑ +1.8%
-  USDT     $2,731.50    6.0%
-  
-Positions:
-  BTC/USDT Long  +$156 (+3.2%)
-```
-
-### Market Analysis
-
-```bash
-kit analyze BTC/USDT
-```
-
-Output:
-```
-🔍 BTC/USDT Analysis
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Trend:      BULLISH 📈
-RSI (14):   58 (Neutral)
-MACD:       Bullish crossover
-Support:    $65,000
-Resistance: $70,000
-
-Signal: BUY
-Confidence: 72%
-```
-
-### Execute Trades
-
-```bash
-# Market buy
-kit trade buy BTC/USDT 100
-
-# Limit order
-kit trade buy BTC/USDT 0.01 --type limit --price 65000
-
-# With risk management
-kit trade buy ETH/USDT 500 --sl 3200 --tp 4000
-```
-
-### Backtesting
-
-```bash
-kit backtest --strategy ma_cross --pair BTC/USDT --period 2025
-```
-
-Output:
-```
-📊 Backtest Results: ma_cross
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Period:        2025-01-01 to 2025-12-31
-Total Return:  +28.5%
-Buy & Hold:    +45.2%
-Max Drawdown:  -12.3%
-Sharpe Ratio:  1.85
-Win Rate:      62%
-Total Trades:  48
+kit/
+├── gateway/              # The Brain
+│   ├── server.ts         # WebSocket Gateway
+│   ├── autopilot.ts      # Autonomous Decision Engine
+│   ├── scheduler.ts      # Task Automation
+│   └── skill-loader.ts   # Plugin System
+│
+├── skills/               # Modular Capabilities
+│   ├── exchange-connector/   # Exchange APIs
+│   ├── portfolio-tracker/    # Holdings & P&L
+│   ├── alert-system/         # Price Alerts
+│   ├── market-analysis/      # Technical Analysis
+│   ├── auto-trader/          # Strategy Execution
+│   ├── metatrader/           # MT4/MT5 Integration
+│   ├── signal-copier/        # Copy Trading
+│   └── backtester/           # Historical Testing
+│
+├── workspace/            # Your Agent's Home
+│   ├── SOUL.md           # K.I.T.'s Personality
+│   ├── AGENTS.md         # Trading Instructions
+│   └── TOOLS.md          # Your Configuration
+│
+└── cli/                  # Command Line Interface
 ```
 
 ---
@@ -372,57 +188,12 @@ kit autopilot enable --mode semi-auto
 kit autopilot threshold 500  # Auto-approve trades under $500
 ```
 
-### 3. Full-Auto Mode (Autopilot) 🛫
+### 3. Full-Auto Mode (Autopilot)
 K.I.T. takes full control. You get daily reports. It handles the rest.
 
 ```bash
 kit autopilot enable --mode full-auto
 ```
-
----
-
-## 🏗️ Architecture
-
-```
-kit/
-├── gateway/              # The Brain
-│   ├── server.ts         # WebSocket Gateway
-│   ├── autopilot.ts      # 🤖 Autonomous Decision Engine
-│   ├── scheduler.ts      # ⏰ Task Automation
-│   ├── protocol.ts       # Message Protocol
-│   ├── skill-loader.ts   # Plugin System
-│   └── tool-registry.ts  # Agent Actions
-│
-├── skills/               # Modular Capabilities
-│   ├── exchange-connector/   # 🔌 Exchange APIs
-│   ├── portfolio-tracker/    # 💼 Holdings & P&L
-│   ├── alert-system/         # 🔔 Price Alerts
-│   ├── market-analysis/      # 📈 Technical Analysis
-│   ├── auto-trader/          # 🤖 Strategy Execution
-│   ├── backtester/           # ⏮️ Historical Testing
-│   └── news-tracker/         # 📰 News & Sentiment
-│
-├── workspace/            # Your Agent's Home
-│   ├── SOUL.md           # K.I.T.'s Personality
-│   ├── AGENTS.md         # Trading Instructions
-│   ├── TOOLS.md          # Your Configuration
-│   └── HEARTBEAT.md      # Monitoring Tasks
-│
-└── cli/                  # Command Line Interface
-    └── kit.ts
-```
-
----
-
-## 💰 Supported Markets
-
-| Market | Exchanges/Brokers | Status |
-|--------|------------------|--------|
-| 🪙 **Crypto** | Binance, Kraken, Coinbase, OKX, Bybit | ✅ Ready |
-| 💱 **Forex** | MetaTrader 4/5, **RoboForex**, OANDA, IC Markets | ✅ Ready |
-| 📈 **Stocks** | Interactive Brokers, Alpaca | 🚧 Beta |
-| 📊 **ETFs** | Same as Stocks | 🚧 Beta |
-| 🏦 **DeFi** | Uniswap, Aave, Lido | 📋 Planned |
 
 ---
 
@@ -433,15 +204,12 @@ kit/
 kit gateway start       # Start the Gateway
 kit gateway stop        # Stop the Gateway
 kit gateway status      # Check status
-kit gateway logs        # View logs
 ```
 
 ### Portfolio
 ```bash
 kit portfolio           # Portfolio summary
-kit portfolio --detailed # Full breakdown
 kit portfolio pnl       # P&L analysis
-kit portfolio history   # Historical performance
 ```
 
 ### Trading
@@ -449,138 +217,13 @@ kit portfolio history   # Historical performance
 kit trade buy <pair> <amount>    # Buy
 kit trade sell <pair> <amount>   # Sell
 kit trade positions              # Open positions
-kit trade history                # Trade history
-kit trade cancel <order-id>      # Cancel order
 ```
 
 ### Analysis
 ```bash
 kit analyze <pair>               # Full analysis
-kit analyze <pair> --tf 1h       # Specific timeframe
 kit market <pair>                # Price & volume
 ```
-
-### Autopilot
-```bash
-kit autopilot status             # Check autopilot
-kit autopilot enable             # Enable autopilot
-kit autopilot disable            # Disable autopilot
-kit autopilot decisions          # Pending decisions
-kit autopilot approve <id>       # Approve decision
-kit autopilot reject <id>        # Reject decision
-```
-
-### Alerts
-```bash
-kit alert list                   # List alerts
-kit alert price BTC above 70000  # Price alert
-kit alert rsi BTC below 30       # Indicator alert
-kit alert delete <id>            # Delete alert
-```
-
-### Backtest
-```bash
-kit backtest --strategy <name> --pair <pair>
-kit backtest list                # Available strategies
-kit backtest report <id>         # View report
-```
-
----
-
-## 📚 API Reference
-
-K.I.T. exposes a WebSocket API on port 18800.
-
-### Connect
-
-```javascript
-const ws = new WebSocket('ws://127.0.0.1:18800');
-
-ws.send(JSON.stringify({
-  type: 'req',
-  id: '1',
-  method: 'connect',
-  params: {
-    client: { id: 'my-bot', version: '1.0.0' },
-    auth: { token: 'your-token' }
-  }
-}));
-```
-
-### Execute Trade
-
-```javascript
-ws.send(JSON.stringify({
-  type: 'req',
-  id: '2',
-  method: 'trade.execute',
-  params: {
-    action: 'buy',
-    pair: 'BTC/USDT',
-    amount: 100,
-    type: 'market'
-  }
-}));
-```
-
-### Get Portfolio
-
-```javascript
-ws.send(JSON.stringify({
-  type: 'req',
-  id: '3',
-  method: 'portfolio.snapshot',
-  params: { action: 'snapshot' }
-}));
-```
-
-📖 **Full API documentation:** [docs/api/gateway.md](docs/api/gateway.md)
-
----
-
-## 📝 Examples
-
-### Basic Bot
-
-```typescript
-import { KitClient } from '@binaryfaster/kit';
-
-const client = new KitClient({ url: 'ws://127.0.0.1:18800' });
-await client.connect();
-
-// Get portfolio
-const portfolio = await client.portfolio();
-console.log('Portfolio:', portfolio.totalValueUsd);
-
-// Execute trade
-const order = await client.trade({
-  action: 'buy',
-  pair: 'BTC/USDT',
-  amount: 100,
-  type: 'market'
-});
-console.log('Order:', order.orderId);
-```
-
-### Signal Copier
-
-```typescript
-// Copy signals from webhook to K.I.T.
-app.post('/signal', async (req, res) => {
-  const signal = parseSignal(req.body);
-  const order = await client.trade({
-    action: signal.action,
-    pair: signal.pair,
-    amount: calculatePositionSize(signal),
-    type: 'market',
-    stopLoss: signal.sl,
-    takeProfit: signal.tp
-  });
-  res.json({ success: true, orderId: order.orderId });
-});
-```
-
-📁 **More examples:** [examples/](examples/)
 
 ---
 
@@ -593,7 +236,6 @@ app.post('/signal', async (req, res) => {
 | Max Daily Loss | 5% | Stop trading after 5% daily loss |
 | Max Drawdown | 15% | Emergency stop at 15% from peak |
 | Max Position | 10% | No single position > 10% of portfolio |
-| Approval Mode | Manual | All trades need approval initially |
 
 ### Kill Switch
 
@@ -601,19 +243,46 @@ app.post('/signal', async (req, res) => {
 kit trade kill  # Instantly close all positions
 ```
 
-### Risk Configuration
+---
 
-```json
-{
-  "risk": {
-    "maxDailyLoss": 5,
-    "maxDrawdown": 15,
-    "maxPositionSize": 10,
-    "maxLeverage": 5,
-    "cooldownAfterLoss": 3600
-  }
-}
+## 👨‍💻 Developer SDK
+
+K.I.T. is not just a trading bot - it's a **framework**!
+
+```typescript
+import { createBot, RSIStrategy } from 'kit';
+
+// Create your own bot in 10 lines
+const bot = createBot({
+  name: 'MyBot',
+  exchange: 'binance',      // or: kraken, mt5, roboforex...
+  pair: 'BTC/USDT',
+  strategy: new RSIStrategy(),
+  risk: { stopLoss: 0.02, takeProfit: 0.04 },
+});
+
+bot.start();
 ```
+
+**What you can build:**
+- 🤖 Trading Bots (Grid, DCA, Arbitrage, Signal Copier)
+- 📱 Telegram/Discord Bots
+- 🌐 Web Dashboards
+- 📊 Portfolio Trackers
+- 🔔 Alert Systems
+- 📡 Signal Services
+
+👉 **[Full SDK Documentation](docs/developers/sdk.md)**
+
+---
+
+## 📝 Examples
+
+See the [examples/](examples/) folder:
+
+- `basic-bot.ts` - Simple trading bot
+- `signal-copier-example.ts` - Copy signals from Telegram
+- `portfolio-tracker-example.ts` - Track portfolio across exchanges
 
 ---
 
@@ -660,8 +329,5 @@ K.I.T. is a **tool**, not financial advice. Trading involves risk.
 </p>
 
 <p align="center">
-  <a href="https://github.com/kayzaa/k.i.t.-bot">GitHub</a> •
-  <a href="https://binaryfaster.com/kit">Website</a> •
-  <a href="https://discord.gg/binaryfaster">Discord</a> •
-  <a href="https://twitter.com/binaryfaster">Twitter</a>
+  <a href="https://github.com/kayzaa/k.i.t.-bot">GitHub</a>
 </p>

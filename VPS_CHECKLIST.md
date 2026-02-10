@@ -1,132 +1,143 @@
-# 🚀 K.I.T. VPS Installation Checklist
+# K.I.T. VPS Installation Checklist
 
-**Datum:** 10.02.2026  
-**Ziel:** MT5 + K.I.T. auf Windows VPS installieren
+**Date:** February 2026  
+**Goal:** Install MT5 + K.I.T. on Windows VPS
 
 ---
 
-## ⏱️ Zeitaufwand: ~20 Minuten
+## Estimated Time: ~20 Minutes
 
 ---
 
 ## Phase 1: Software Installation (10 min)
 
-### ✅ Python installieren
+### Python
 - [ ] Download: https://www.python.org/downloads/
-- [ ] **WICHTIG:** "Add Python to PATH" ✓ anhaken!
-- [ ] Test: `python --version` → sollte 3.10+ zeigen
+- [ ] **IMPORTANT:** Check "Add Python to PATH" during installation!
+- [ ] Verify: `python --version` → should show 3.10+
 
-### ✅ MetaTrader 5 installieren  
-- [ ] Download: https://www.roboforex.com/trading-platforms/metatrader5/
-- [ ] Oder: https://download.mql5.com/cdn/web/metaquotes.software.corp/mt5/mt5setup.exe
-- [ ] Installieren (Standard-Optionen)
+### MetaTrader 5
+- [ ] Download: https://www.metatrader5.com/download
+- [ ] Or from your broker's website
+- [ ] Install (use default options)
 
-### ✅ Git installieren (optional)
+### Git (optional)
 - [ ] Download: https://git-scm.com/download/win
-- [ ] Installieren
+- [ ] Install
 
 ---
 
 ## Phase 2: MT5 Account Setup (5 min)
 
-### ✅ RoboForex Demo Account erstellen
-- [ ] MT5 starten
+### Create Demo Account
+- [ ] Start MT5
 - [ ] File → Open an Account
-- [ ] Server: **RoboForex-Demo** wählen
-- [ ] "Open a demo account" → Daten ausfüllen
-- [ ] **LOGIN-DATEN NOTIEREN:**
+- [ ] Choose your broker's demo server
+- [ ] Select "Open a demo account" → fill in details
+- [ ] **SAVE YOUR CREDENTIALS:**
   - Account: ________________
-  - Passwort: ________________
-  - Server: RoboForex-Demo
+  - Password: ________________
+  - Server: ________________
 
-### ✅ Algo-Trading aktivieren (WICHTIG!)
+### Enable Algo-Trading (CRITICAL!)
 - [ ] Tools → Options → Expert Advisors
-- [ ] ✓ "Allow Algorithmic Trading" aktivieren
-- [ ] OK klicken
-- [ ] In Toolbar: "Algo Trading" Button auf **GRÜN** stellen
+- [ ] Check "Allow Algorithmic Trading"
+- [ ] Click OK
+- [ ] In toolbar: "Algo Trading" button must be **GREEN**
 
 ---
 
 ## Phase 3: K.I.T. Installation (5 min)
 
-### ✅ K.I.T. Installer ausführen
+### Run K.I.T. Installer
 ```powershell
-# In PowerShell als Admin:
+# In PowerShell:
 cd C:\
 git clone https://github.com/kayzaa/k.i.t.-bot.git
 cd k.i.t.-bot
 .\INSTALL_VPS.ps1
 ```
 
-### ✅ Alternative: Manuelle Installation
+### Alternative: Manual Installation
 ```powershell
 pip install MetaTrader5 pandas numpy psutil requests flask
 ```
 
 ---
 
-## Phase 4: Verbindungstest
+## Phase 4: Connection Test
 
-### ✅ Quick Test
+### Quick Test
 ```powershell
 cd C:\k.i.t.-bot
 python MT5_QUICK_TEST.py
 ```
 
-**Erwartete Ausgabe:**
+**Expected Output:**
 ```
-✅ Verbunden!
-📊 ACCOUNT INFO:
+OK Connected!
+ACCOUNT INFO:
    Login:    12345678
-   Server:   RoboForex-Demo
+   Server:   YourBroker-Demo
    Balance:  100,000.00 USD
 ```
 
-### ✅ Demo Trade Test
+### Demo Trade Test
 ```powershell
 python MT5_QUICK_TEST.py --trade
 ```
 
 ---
 
-## 🚨 Troubleshooting
+## Troubleshooting
 
-### ❌ "MT5 initialization failed"
-→ MT5 Terminal starten und einloggen
+### "MT5 initialization failed"
+→ Start MT5 Terminal and log in
 
-### ❌ "No module named 'MetaTrader5'"
-→ `pip install MetaTrader5`
+### "No module named 'MetaTrader5'"
+→ Run `pip install MetaTrader5`
 
-### ❌ "Trade not allowed" (Error 10010)
-→ Algo-Trading aktivieren (siehe Phase 2)
+### "Trade not allowed" (Error 10010)
+→ Enable Algo-Trading (see Phase 2)
 
-### ❌ "Python not found"
-→ Python neu installieren MIT "Add to PATH"
-
----
-
-## 📱 Support
-
-Bei Problemen Kay Bescheid geben via Telegram!
-
-- K.I.T. GitHub: https://github.com/kayzaa/k.i.t.-bot
-- RoboForex: https://www.roboforex.com/support/
+### "Python not found"
+→ Reinstall Python WITH "Add to PATH" checked
 
 ---
 
-## 🎯 Nach erfolgreicher Installation
+## Supported Brokers
 
-K.I.T. kann dann:
-- ✅ MT5 verbinden und Account-Info lesen
-- ✅ Preise abrufen (EURUSD, GBPUSD, etc.)
-- ✅ Trades ausführen
-- ✅ Positionen verwalten
-- ✅ 24/7 auf VPS laufen
+| Broker | Demo Server |
+|--------|-------------|
+| RoboForex | RoboForex-Demo |
+| IC Markets | ICMarketsSC-Demo |
+| Pepperstone | Pepperstone-Demo |
+| XM | XMGlobal-Demo |
+| OANDA | OANDA-v20 Practice |
+| Any MT5 Broker | Check broker's website |
 
-**Nächster Schritt:** K.I.T. Gateway starten!
+---
+
+## After Successful Installation
+
+K.I.T. can:
+- Connect to MT5 and read account info
+- Fetch live prices (EURUSD, GBPUSD, etc.)
+- Execute trades
+- Manage positions
+- Run 24/7 on your VPS
+
+**Next Step:** Start K.I.T. Gateway!
 ```powershell
 cd C:\k.i.t.-bot
 npm install
 npm run build
 npm start
 ```
+
+---
+
+## Support
+
+- K.I.T. GitHub: https://github.com/kayzaa/k.i.t.-bot
+- MT5 Documentation: https://www.mql5.com/en/docs/integration/python_metatrader5
