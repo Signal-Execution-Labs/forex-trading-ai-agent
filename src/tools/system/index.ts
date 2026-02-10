@@ -91,4 +91,8 @@ export {
   telegramSendToolHandler,
   telegramGetUpdatesToolDefinition,
   telegramGetUpdatesToolHandler,
+  telegramGetChatIdToolDefinition,
+  telegramGetChatIdToolHandler,
+  telegramSetChatIdToolDefinition,
+  telegramSetChatIdToolHandler,
 } from './telegram-tools';

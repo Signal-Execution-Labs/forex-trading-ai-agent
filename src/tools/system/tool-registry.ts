@@ -211,6 +211,8 @@ import {
   telegramStatusToolDefinition, telegramStatusToolHandler,
   telegramSendToolDefinition, telegramSendToolHandler,
   telegramGetUpdatesToolDefinition, telegramGetUpdatesToolHandler,
+  telegramGetChatIdToolDefinition, telegramGetChatIdToolHandler,
+  telegramSetChatIdToolDefinition, telegramSetChatIdToolHandler,
 } from './telegram-tools';
 
 export function createDefaultToolRegistry(workspaceDir?: string): ToolRegistry {
@@ -250,6 +252,8 @@ export function createDefaultToolRegistry(workspaceDir?: string): ToolRegistry {
   registry.register(telegramStatusToolDefinition, telegramStatusToolHandler, 'channel');
   registry.register(telegramSendToolDefinition, telegramSendToolHandler, 'channel');
   registry.register(telegramGetUpdatesToolDefinition, telegramGetUpdatesToolHandler, 'channel');
+  registry.register(telegramGetChatIdToolDefinition, telegramGetChatIdToolHandler, 'channel');
+  registry.register(telegramSetChatIdToolDefinition, telegramSetChatIdToolHandler, 'channel');
 
   return registry;
 }
