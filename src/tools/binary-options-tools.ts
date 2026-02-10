@@ -669,13 +669,48 @@ export const BINARY_OPTIONS_HANDLERS: Record<string, (args: Record<string, unkno
       }
 
       // Wait for trade to expire + buffer
-      const waitTime = (duration + 15) * 1000;
-      console.log(`[BinaryFaster] ⏳ Waiting ${duration + 15}s for trade result...`);
+      const waitTime = (duration + 10) * 1000;
+      console.log(`[BinaryFaster] ⏳ Waiting ${duration + 10}s for trade result...`);
       await new Promise(resolve => setTimeout(resolve, waitTime));
 
-      // Check result from history (simplified - assume win/loss based on simulation for now)
-      // In real implementation, you'd check the trade history for the actual result
-      const isWin = Math.random() > 0.45; // ~55% win rate simulation
+      // Check actual result from trade history
+      let isWin = false;
+      try {
+        const historyResponse = await fetch('https://wsauto.binaryfaster.com/automation/trades/history', {
+          method: 'GET',
+          headers: {
+            'x-api-key': session.apiKey!,
+            'User-Agent': 'K.I.T./2.0 TradingAgent',
+          },
+        });
+        
+        if (historyResponse.ok) {
+          const history = await historyResponse.json() as Array<{
+            id?: number;
+            trade_id?: number;
+            result?: string;
+            profit?: number;
+            status?: string;
+          }>;
+          
+          // Find our trade in history
+          const ourTrade = Array.isArray(history) ? history.find(t => 
+            String(t.id || t.trade_id) === tradeResult.tradeId
+          ) : null;
+          
+          if (ourTrade) {
+            // Check if won (profit > 0 or result contains 'win')
+            isWin = (ourTrade.profit && ourTrade.profit > 0) || 
+                    (ourTrade.result && ourTrade.result.toLowerCase().includes('win')) ||
+                    (ourTrade.status && ourTrade.status.toLowerCase().includes('win'));
+            console.log(`[BinaryFaster] Trade ${tradeResult.tradeId} result: ${isWin ? 'WIN' : 'LOSS'}`);
+          } else {
+            console.log(`[BinaryFaster] Trade ${tradeResult.tradeId} not found in history yet`);
+          }
+        }
+      } catch (histError) {
+        console.error('[BinaryFaster] Error checking trade result:', histError);
+      }
       
       if (isWin) {
         wins++;
