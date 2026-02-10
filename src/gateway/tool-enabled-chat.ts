@@ -489,24 +489,24 @@ export class ToolEnabledChatHandler {
         const channel = CHANNELS[num - 1];
         
         if (channel.id === 'skip') {
-          // Skip to connections
-          this.onboardingState.set(sessionId, { ...state, step: 'connections', channel: 'none', connections: [] });
-          return this.getConnectionsPrompt();
+          // Skip to platforms
+          this.onboardingState.set(sessionId, { ...state, step: 'platform_select', channel: 'none', platforms: [] });
+          return this.getPlatformSelectPrompt();
         }
         
         if (channel.id === 'telegram') {
           this.onboardingState.set(sessionId, { ...state, step: 'telegram_token', channel: 'telegram' });
-          return `✅ **Telegram** selected!\n\n**Step 5/11: Enter your Telegram Bot Token:**\n\n💡 Get your token from @BotFather on Telegram:\n1. Open Telegram, search for @BotFather\n2. Send /newbot and follow instructions\n3. Copy the token (looks like: 123456789:ABCdefGHI...)\n\n👉 Paste your bot token:`;
+          return `✅ **Telegram** selected!\n\n**Step 5/12: Enter your Telegram Bot Token:**\n\n💡 Get your token from @BotFather on Telegram:\n1. Open Telegram, search for @BotFather\n2. Send /newbot and follow instructions\n3. Copy the token (looks like: 123456789:ABCdefGHI...)\n\n👉 Paste your bot token:`;
         }
         
         if (channel.id === 'whatsapp') {
-          this.onboardingState.set(sessionId, { ...state, step: 'connections', channel: 'whatsapp', connections: [] });
-          return `✅ **WhatsApp** selected!\n\n📱 **WhatsApp Setup:**\nRun this command in terminal after setup:\n\`kit whatsapp login\`\n\nThen scan the QR code with WhatsApp.\n\n${this.getConnectionsPrompt()}`;
+          this.onboardingState.set(sessionId, { ...state, step: 'platform_select', channel: 'whatsapp', platforms: [] });
+          return `✅ **WhatsApp** selected!\n\n📱 **WhatsApp Setup:**\nRun this command in terminal after setup:\n\`kit whatsapp login\`\n\nThen scan the QR code with WhatsApp.\n\n${this.getPlatformSelectPrompt()}`;
         }
         
         if (channel.id === 'discord') {
-          this.onboardingState.set(sessionId, { ...state, step: 'connections', channel: 'discord', connections: [] });
-          return `✅ **Discord** selected!\n\n🎮 **Discord Setup:**\nAdd DISCORD_BOT_TOKEN to your .env file.\nGet it from: https://discord.com/developers/applications\n\n${this.getConnectionsPrompt()}`;
+          this.onboardingState.set(sessionId, { ...state, step: 'platform_select', channel: 'discord', platforms: [] });
+          return `✅ **Discord** selected!\n\n🎮 **Discord Setup:**\nAdd DISCORD_BOT_TOKEN to your .env file.\nGet it from: https://discord.com/developers/applications\n\n${this.getPlatformSelectPrompt()}`;
         }
       }
       return null;
