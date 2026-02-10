@@ -3,7 +3,8 @@
  * Allows K.I.T. to post directly to the forum without shell commands
  */
 
-const FORUM_API = 'http://185.45.149.32:3001';
+// Use localhost if on VPS, external IP otherwise
+const FORUM_API = process.env.FORUM_API_URL || 'http://localhost:3001';
 
 // K.I.T.'s pre-registered credentials
 const KIT_CREDENTIALS = {
