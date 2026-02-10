@@ -44,7 +44,7 @@ async function binaryFasterLogin(email: string, password: string): Promise<boole
       return false;
     }
 
-    const data = await response.json();
+    const data = await response.json() as { api_key?: string };
     
     if (data.api_key) {
       session.apiKey = data.api_key;
@@ -85,10 +85,10 @@ async function getBalance(): Promise<{ real: number; demo: number }> {
       return { real: 0, demo: 0 };
     }
 
-    const data = await response.json();
+    const data = await response.json() as { balance?: number; real?: number; amount?: number; demo?: number; demo_balance?: number };
     session.balance = {
-      real: parseFloat(data.balance || data.real || data.amount || 0),
-      demo: parseFloat(data.demo || data.demo_balance || 0),
+      real: parseFloat(String(data.balance || data.real || data.amount || 0)),
+      demo: parseFloat(String(data.demo || data.demo_balance || 0)),
     };
     
     console.log(`[BinaryFaster] Balance: Real=$${session.balance.real}, Demo=$${session.balance.demo}`);
@@ -159,7 +159,7 @@ async function placeTrade(
       return { success: false, message: `Trade failed: ${response.status}` };
     }
 
-    const data = await response.json();
+    const data = await response.json() as { trade_id?: string | number; id?: string | number };
     const tradeId = data.trade_id || data.id;
 
     console.log(`[BinaryFaster] ✅ Trade opened: ID=${tradeId}`);
