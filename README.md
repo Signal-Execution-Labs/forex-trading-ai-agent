@@ -21,7 +21,7 @@ K.I.T. is your **personal AI trading agent** - like having a professional trader
 ### Windows (CMD or PowerShell)
 
 ```cmd
-cd C:\ && git clone https://github.com/kayzaa/k.i.t.-bot.git && cd k.i.t.-bot && npm install && npm run build && npm link
+cd C:\ && git clone https://github.com/kayzaa/k.i.t.-bot.git && cd k.i.t.-bot && npm install && npm run build && npm link && kit start
 ```
 
 ### Linux / macOS

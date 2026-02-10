@@ -149,14 +149,43 @@ export class GatewayServer extends EventEmitter {
       },
     };
     
-    // Initialize HTTP server
+    // Initialize HTTP server with dashboard
     this.httpServer = createServer((req, res) => {
-      // Basic health endpoint
+      const fs = require('fs');
+      
+      // Health endpoint
       if (req.url === '/health') {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(this.getHealth()));
         return;
       }
+      
+      // Serve dashboard
+      if (req.url === '/' || req.url === '/index.html') {
+        const dashboardPath = path.join(__dirname, '..', 'dashboard', 'index.html');
+        if (fs.existsSync(dashboardPath)) {
+          res.writeHead(200, { 'Content-Type': 'text/html' });
+          res.end(fs.readFileSync(dashboardPath, 'utf8'));
+          return;
+        }
+        // Fallback inline dashboard
+        res.writeHead(200, { 'Content-Type': 'text/html' });
+        res.end(this.getInlineDashboard());
+        return;
+      }
+      
+      // API status endpoint
+      if (req.url === '/api/status') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          status: this.state.status,
+          agent: this.config.agent,
+          health: this.getHealth(),
+          wsUrl: `ws://${this.config.host}:${this.config.port}`,
+        }));
+        return;
+      }
+      
       res.writeHead(404);
       res.end('Not Found');
     });
@@ -664,6 +693,151 @@ export class GatewayServer extends EventEmitter {
       }]]),
       channels: new Map(),
     };
+  }
+
+  /**
+   * Get inline dashboard HTML
+   */
+  private getInlineDashboard(): string {
+    const health = this.getHealth();
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>K.I.T. Dashboard</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+      color: #fff;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+    .container { max-width: 1200px; margin: 0 auto; }
+    .header {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+    .logo {
+      font-size: 3rem;
+      font-weight: bold;
+      background: linear-gradient(90deg, #00d4ff, #7b2fff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+    }
+    .tagline { color: #888; font-size: 1.1rem; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+    .card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 1rem;
+      padding: 1.5rem;
+    }
+    .card-title {
+      font-size: 0.9rem;
+      color: #888;
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+    }
+    .card-value {
+      font-size: 2rem;
+      font-weight: bold;
+    }
+    .status-ok { color: #00ff88; }
+    .status-warn { color: #ffaa00; }
+    .info { font-size: 0.9rem; color: #666; margin-top: 0.5rem; }
+    .chat-container {
+      margin-top: 2rem;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 1rem;
+      padding: 1.5rem;
+    }
+    .chat-input {
+      width: 100%;
+      padding: 1rem;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 0.5rem;
+      color: #fff;
+      font-size: 1rem;
+      margin-top: 1rem;
+    }
+    .chat-input:focus { outline: none; border-color: #00d4ff; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">K.I.T.</div>
+      <div class="tagline">Knight Industries Trading - Your Autonomous AI Financial Agent</div>
+    </div>
+    
+    <div class="grid">
+      <div class="card">
+        <div class="card-title">Status</div>
+        <div class="card-value status-ok">● Online</div>
+        <div class="info">Gateway running on port ${this.config.port}</div>
+      </div>
+      
+      <div class="card">
+        <div class="card-title">Agent</div>
+        <div class="card-value">${this.config.agent.name}</div>
+        <div class="info">ID: ${this.config.agent.id}</div>
+      </div>
+      
+      <div class="card">
+        <div class="card-title">Uptime</div>
+        <div class="card-value">${Math.floor(health.uptime / 1000)}s</div>
+        <div class="info">Since startup</div>
+      </div>
+      
+      <div class="card">
+        <div class="card-title">Connections</div>
+        <div class="card-value">${health.clients}</div>
+        <div class="info">Active WebSocket clients</div>
+      </div>
+    </div>
+    
+    <div class="chat-container">
+      <div class="card-title">Chat with K.I.T.</div>
+      <div id="messages" style="min-height: 200px; margin-bottom: 1rem; padding: 1rem; background: rgba(0,0,0,0.2); border-radius: 0.5rem;">
+        <div style="color: #00d4ff;">K.I.T.: Hello! I'm your autonomous financial agent. How can I help you today?</div>
+      </div>
+      <input type="text" class="chat-input" placeholder="Type a message..." id="chatInput">
+    </div>
+  </div>
+  
+  <script>
+    const ws = new WebSocket('ws://' + window.location.host);
+    const messages = document.getElementById('messages');
+    const input = document.getElementById('chatInput');
+    
+    ws.onmessage = (e) => {
+      const data = JSON.parse(e.data);
+      if (data.type === 'message') {
+        messages.innerHTML += '<div style="color: #00d4ff; margin-top: 0.5rem;">K.I.T.: ' + data.content + '</div>';
+        messages.scrollTop = messages.scrollHeight;
+      }
+    };
+    
+    input.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter' && input.value.trim()) {
+        messages.innerHTML += '<div style="color: #888; margin-top: 0.5rem;">You: ' + input.value + '</div>';
+        ws.send(JSON.stringify({ type: 'chat', content: input.value }));
+        input.value = '';
+      }
+    });
+  </script>
+</body>
+</html>`;
   }
 }
 
