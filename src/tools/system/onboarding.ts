@@ -243,12 +243,12 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
     title: 'Welcome to K.I.T.',
     description: 'Your autonomous AI financial agent',
     prompt: `
-🤖 **Willkommen bei K.I.T.!**
+🤖 **Welcome to K.I.T.!**
 *(Knight Industries Trading)*
 
-Ich bin dein autonomer AI-Finanzagent, bereit, dir beim Vermögensaufbau zu helfen.
+I'm your autonomous AI financial agent, ready to help you build wealth.
 
-Lass uns dich kennenlernen! **Wie soll ich dich nennen?**
+Let's get to know you! **What should I call you?**
     `.trim(),
     process: (input, state, config) => {
       const name = input.trim() || 'Boss';
@@ -257,7 +257,7 @@ Lass uns dich kennenlernen! **Wie soll ich dich nennen?**
       
       return {
         nextStep: 'financial_goals',
-        message: `Freut mich, dich kennenzulernen, **${name}**! 🤝`,
+        message: `Nice to meet you, **${name}**! 🤝`,
       };
     },
   },
@@ -676,41 +676,98 @@ Füge deinen API-Key hier ein. Er wird sicher gespeichert.
     title: 'Communication Channel',
     description: 'How do you want to communicate?',
     prompt: `
-📱 **Wie möchtest du mit mir kommunizieren?**
+📱 **How do you want to communicate with me?**
 
-1. **Telegram** - Am beliebtesten, funktioniert auf Handy & Desktop
-2. **Discord** - Super für Communities
-3. **Nur Dashboard** - Nur über die Web-Oberfläche
-4. **Später einrichten**
+1. **Telegram** - Most popular, works on mobile & desktop (needs bot token)
+2. **WhatsApp** - Scan QR code like WhatsApp Web (no API needed!)
+3. **Discord** - Great for communities
+4. **Dashboard only** - Web interface at http://localhost:18799
+5. **Set up later**
 
-Wähle 1-4:
+Choose 1-5:
     `.trim(),
     validate: (input) => {
       const choice = parseInt(input);
-      if (isNaN(choice) || choice < 1 || choice > 4) {
-        return { valid: false, error: 'Bitte wähle 1, 2, 3 oder 4' };
+      if (isNaN(choice) || choice < 1 || choice > 5) {
+        return { valid: false, error: 'Please choose 1, 2, 3, 4, or 5' };
       }
       return { valid: true };
     },
     process: (input, state, config) => {
       const choice = parseInt(input);
       
-      if (choice === 3 || choice === 4) {
+      if (choice === 4 || choice === 5) {
         return {
           nextStep: 'save_files',
-          message: choice === 3 
-            ? `Perfekt! Du erreichst mich jederzeit unter http://localhost:18799`
-            : `Kein Problem! Du kannst Telegram später mit \`skills_setup telegram\` einrichten`,
+          message: choice === 4 
+            ? `Perfect! You can reach me anytime at http://localhost:18799`
+            : `No problem! You can set up channels later with the CLI.`,
         };
       }
       
-      const channels: Record<number, string> = { 1: 'telegram', 2: 'discord' };
+      if (choice === 2) {
+        // WhatsApp - special flow
+        state.data.selectedChannel = 'whatsapp';
+        saveOnboardingState(state);
+        return {
+          nextStep: 'whatsapp_setup',
+          message: `Great choice! WhatsApp is easy - just scan a QR code!`,
+        };
+      }
+      
+      const channels: Record<number, string> = { 1: 'telegram', 3: 'discord' };
       state.data.selectedChannel = channels[choice];
       saveOnboardingState(state);
       
       return {
         nextStep: 'channel_token',
-        message: `Super Wahl! Lass mich dir bei der ${channels[choice]}-Einrichtung helfen.`,
+        message: `Great choice! Let me help you set up ${channels[choice]}.`,
+      };
+    },
+  },
+
+  // ========================================
+  // Step 11b: WhatsApp Setup
+  // ========================================
+  {
+    id: 'whatsapp_setup',
+    title: 'WhatsApp Setup',
+    description: 'Connect via WhatsApp Web QR code',
+    prompt: `
+📱 **WhatsApp Setup**
+
+WhatsApp uses the same technology as WhatsApp Web - just scan a QR code!
+
+**To connect:**
+1. Run \`kit whatsapp login\` in your terminal
+2. Open WhatsApp on your phone
+3. Go to **Settings → Linked Devices → Link a Device**
+4. Scan the QR code that appears
+5. Restart K.I.T. with \`kit start\`
+
+**Optional: Enter your phone number** (E.164 format, e.g., +1234567890)
+This will be added to the allowlist so only you can message K.I.T.
+
+Enter your phone number (or press Enter to skip):
+    `.trim(),
+    process: (input, state, config) => {
+      const phone = input.trim();
+      
+      // Save to config
+      config.channels = config.channels || {};
+      config.channels.whatsapp = {
+        enabled: true,
+        allowedNumbers: phone ? [phone] : [],
+      };
+      saveConfig(config);
+      
+      saveOnboardingState(state);
+      
+      return {
+        nextStep: 'save_files',
+        message: phone 
+          ? `✅ WhatsApp configured! Allowlist: ${phone}\n\nRemember to run \`kit whatsapp login\` to scan the QR code!`
+          : `✅ WhatsApp configured!\n\nRemember to run \`kit whatsapp login\` to scan the QR code!`,
       };
     },
   },
