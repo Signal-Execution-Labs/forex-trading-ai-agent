@@ -399,9 +399,15 @@
         chatInput.disabled = false;
         sendBtn.disabled = false;
         
-        // Clear and show welcome
-        messages.innerHTML = '';
-        addMessage('kit', 'Hello! I\'m K.I.T., your autonomous financial agent. How can I help you today?');
+        // Check if we have chat history
+        const hasHistory = localStorage.getItem(CHAT_STORAGE_KEY);
+        
+        if (!hasHistory) {
+          // New session - request welcome summary
+          messages.innerHTML = '';
+          addMessage('kit', '<span class="loading"></span>Loading your portfolio summary...', false);
+          ws.send(JSON.stringify({ type: 'chat', content: 'Zeige mir eine Zusammenfassung meines Portfolios und Status' }));
+        }
         
         // Request status
         ws.send(JSON.stringify({ type: 'status_request' }));
