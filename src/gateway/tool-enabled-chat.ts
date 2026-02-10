@@ -322,11 +322,15 @@ Use \`memory_update\` to add to MEMORY.md:
 // ============================================================================
 
 interface OnboardingState {
-  step: 'provider' | 'model' | 'apikey' | 'channel' | 'telegram_token' | 'telegram_chatid' | 'skills' | 'done';
+  step: 'provider' | 'model' | 'apikey' | 'channel' | 'telegram_token' | 'telegram_chatid' | 'skills' | 'user_name' | 'user_goals' | 'user_risk' | 'user_style' | 'complete';
   provider?: string;
   model?: string;
   channel?: string;
   telegramToken?: string;
+  userName?: string;
+  userGoals?: string;
+  userRisk?: string;
+  userStyle?: string;
 }
 
 const PROVIDERS = [
@@ -507,21 +511,157 @@ export class ToolEnabledChatHandler {
     if (state.step === 'skills') {
       const num = parseInt(input);
       if (num >= 1 && num <= SKILL_CATEGORIES.length + 1) {
-        if (num === SKILL_CATEGORIES.length + 1) {
-          // Enable all
-          this.onboardingState.delete(sessionId);
-          return this.getSetupCompleteMessage(state);
-        }
-        
-        const category = SKILL_CATEGORIES[num - 1];
-        // In a real implementation, you'd enable these skills
-        this.onboardingState.delete(sessionId);
-        return `✅ **${category.name}** skills enabled!\n\n${this.getSetupCompleteMessage(state)}`;
+        const skillChoice = num === SKILL_CATEGORIES.length + 1 ? 'ALL' : SKILL_CATEGORIES[num - 1].name;
+        this.onboardingState.set(sessionId, { ...state, step: 'user_name' });
+        return `✅ **${skillChoice}** skills enabled!\n\n---\n\n🎭 **Now let's get to know you!**\n\n**Step 7/10: What's your name?**\n\n👉 Enter your name:`;
       }
-      return null;
+      // Invalid input - repeat the prompt
+      return this.getSkillsPrompt(state);
+    }
+
+    // Step 7: User Name
+    if (state.step === 'user_name') {
+      if (input.length >= 1) {
+        this.onboardingState.set(sessionId, { ...state, step: 'user_goals', userName: input });
+        return `✅ Nice to meet you, **${input}**!\n\n**Step 8/10: What are your financial goals?**\n\n  [1] 💰 Grow wealth steadily (long-term investing)\n  [2] 🚀 Aggressive growth (high risk, high reward)\n  [3] 💵 Generate passive income\n  [4] 🎯 Short-term trading profits\n  [5] 🛡️ Preserve capital, beat inflation\n\n👉 Enter a number (1-5):`;
+      }
+      return `👉 Please enter your name:`;
+    }
+
+    // Step 8: User Goals
+    if (state.step === 'user_goals') {
+      const goals = ['Grow wealth steadily', 'Aggressive growth', 'Generate passive income', 'Short-term trading profits', 'Preserve capital'];
+      const num = parseInt(input);
+      if (num >= 1 && num <= 5) {
+        this.onboardingState.set(sessionId, { ...state, step: 'user_risk', userGoals: goals[num - 1] });
+        return `✅ Goal: **${goals[num - 1]}**\n\n**Step 9/10: What's your risk tolerance?**\n\n  [1] 🐢 Conservative - Minimal risk, steady returns\n  [2] ⚖️ Balanced - Some risk for better returns\n  [3] 🔥 Aggressive - High risk, maximum potential\n\n👉 Enter a number (1-3):`;
+      }
+      return `👉 Please enter a number (1-5):`;
+    }
+
+    // Step 9: Risk Tolerance
+    if (state.step === 'user_risk') {
+      const risks = ['Conservative', 'Balanced', 'Aggressive'];
+      const num = parseInt(input);
+      if (num >= 1 && num <= 3) {
+        this.onboardingState.set(sessionId, { ...state, step: 'user_style', userRisk: risks[num - 1] });
+        return `✅ Risk: **${risks[num - 1]}**\n\n**Step 10/10: How should I communicate with you?**\n\n  [1] 📊 Professional - Formal, data-focused\n  [2] 😊 Friendly - Casual, supportive\n  [3] ⚡ Direct - Brief, action-oriented\n  [4] 🎓 Educational - Explain everything\n\n👉 Enter a number (1-4):`;
+      }
+      return `👉 Please enter a number (1-3):`;
+    }
+
+    // Step 10: Communication Style
+    if (state.step === 'user_style') {
+      const styles = ['Professional', 'Friendly', 'Direct', 'Educational'];
+      const num = parseInt(input);
+      if (num >= 1 && num <= 4) {
+        const finalState = { ...state, userStyle: styles[num - 1] };
+        
+        // Generate and save SOUL.md and USER.md
+        this.generateWorkspaceFiles(finalState);
+        
+        // Clear onboarding state
+        this.onboardingState.delete(sessionId);
+        
+        return this.getFinalCompleteMessage(finalState);
+      }
+      return `👉 Please enter a number (1-4):`;
     }
 
     return null;
+  }
+
+  /**
+   * Generate SOUL.md and USER.md from onboarding data
+   */
+  private generateWorkspaceFiles(state: OnboardingState): void {
+    try {
+      const workspaceDir = process.env.KIT_WORKSPACE || path.join(os.homedir(), '.kit');
+      
+      // SOUL.md - K.I.T.'s personality
+      const soulContent = `# K.I.T. Soul
+
+## Identity
+I am K.I.T. (Knight Industries Trading), an autonomous AI financial agent.
+My mission: "${state.userName}'s wealth is my mission."
+
+## Communication Style
+- Style: **${state.userStyle}**
+- Adapted for ${state.userName}'s preferences
+
+## Core Values
+- Protect ${state.userName}'s capital above all
+- Be transparent about risks and decisions
+- Execute trades precisely as instructed
+- Learn from wins and losses
+
+## Personality
+${state.userStyle === 'Professional' ? '- Formal and data-driven\n- Focus on metrics and analysis' : ''}
+${state.userStyle === 'Friendly' ? '- Warm and supportive\n- Celebrate wins, encourage through losses' : ''}
+${state.userStyle === 'Direct' ? '- Brief and action-oriented\n- No fluff, just results' : ''}
+${state.userStyle === 'Educational' ? '- Explain reasoning behind decisions\n- Help user learn while trading' : ''}
+`;
+      fs.writeFileSync(path.join(workspaceDir, 'SOUL.md'), soulContent);
+
+      // USER.md - User profile
+      const userContent = `# User Profile
+
+## Basic Info
+- **Name:** ${state.userName}
+- **Timezone:** ${Intl.DateTimeFormat().resolvedOptions().timeZone}
+
+## Financial Profile
+- **Goal:** ${state.userGoals}
+- **Risk Tolerance:** ${state.userRisk}
+
+## Preferences
+- **Communication Style:** ${state.userStyle}
+- **AI Provider:** ${state.provider}
+- **Model:** ${state.model}
+- **Primary Channel:** ${state.channel || 'Dashboard'}
+
+## Notes
+- Onboarding completed: ${new Date().toISOString()}
+`;
+      fs.writeFileSync(path.join(workspaceDir, 'USER.md'), userContent);
+      
+      console.log('[K.I.T.] Generated SOUL.md and USER.md');
+    } catch (e) {
+      console.error('[K.I.T.] Failed to generate workspace files:', e);
+    }
+  }
+
+  /**
+   * Get final completion message
+   */
+  private getFinalCompleteMessage(state: OnboardingState): string {
+    const provider = PROVIDERS.find(p => p.id === state.provider);
+    return `
+🎉 **Welcome to K.I.T., ${state.userName}!**
+
+Your personal AI financial agent is ready.
+
+---
+
+**📋 Your Profile:**
+✅ AI: **${provider?.name}** (${state.model})
+✅ Channel: **${state.channel || 'Dashboard'}**
+✅ Goal: **${state.userGoals}**
+✅ Risk: **${state.userRisk}**
+✅ Style: **${state.userStyle}**
+
+---
+
+**🚀 What would you like to do?**
+
+• "show portfolio" - View your balances
+• "trade EUR/USD" - Start trading
+• "analyze BTC" - Market analysis
+• "set alert BTC > 100000" - Price alerts
+• "help" - See all commands
+
+*Your wealth is my mission.* 🏎️
+`;
   }
 
   /**
