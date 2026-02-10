@@ -35,6 +35,7 @@ import { CronManager, createCronManager, CronJob } from './cron-manager';
 import { ChatManager, createChatManager, ChatSendParams, ChatHistoryParams, ChatAbortParams } from './chat-manager';
 import { getToolEnabledChatHandler, ToolEnabledChatHandler } from './tool-enabled-chat';
 import { TelegramChannel, createTelegramChannel } from '../channels/telegram-channel';
+import { WhatsAppChannel, createWhatsAppChannel, hasWhatsAppCredentials } from '../channels/whatsapp-channel';
 
 // ============================================================================
 // Types
@@ -121,6 +122,7 @@ export class GatewayServer extends EventEmitter {
   
   // Channels
   private telegramChannel: TelegramChannel | null = null;
+  private whatsappChannel: WhatsAppChannel | null = null;
   
   // State
   private state: GatewayState;
@@ -290,6 +292,9 @@ export class GatewayServer extends EventEmitter {
     if (this.telegramChannel) {
       this.telegramChannel.stop();
     }
+    if (this.whatsappChannel) {
+      this.whatsappChannel.stop();
+    }
     
     // Flush sessions
     await this.sessions.flush();
@@ -349,6 +354,9 @@ export class GatewayServer extends EventEmitter {
 
     // Start Telegram channel if configured
     this.startTelegramChannel();
+
+    // Start WhatsApp channel if configured
+    this.startWhatsAppChannel();
   }
 
   /**
@@ -384,6 +392,47 @@ export class GatewayServer extends EventEmitter {
       console.log('📱 Telegram channel active - listening for messages');
     } catch (error) {
       console.error('[Telegram] Failed to start:', error);
+    }
+  }
+
+  /**
+   * Start WhatsApp channel for bidirectional messaging
+   */
+  private async startWhatsAppChannel(): Promise<void> {
+    try {
+      // Check if we have credentials
+      if (!hasWhatsAppCredentials()) {
+        console.log('[WhatsApp] No credentials found - use "kit whatsapp login" to connect');
+        return;
+      }
+
+      this.whatsappChannel = createWhatsAppChannel();
+      
+      if (!this.whatsappChannel) {
+        return;
+      }
+
+      // Initialize tool chat handler for WhatsApp
+      const toolChatHandler = getToolEnabledChatHandler();
+
+      await this.whatsappChannel.start(async (msg) => {
+        console.log(`[WhatsApp] Message from ${msg.senderPhone}: ${msg.text}`);
+        
+        // Process message through AI with tools
+        const response = await toolChatHandler.processMessage(
+          `whatsapp_${msg.chatId}`,
+          msg.text,
+          () => {}, // No streaming for WhatsApp
+          () => {}, // No tool call display
+          () => {}  // No tool result display
+        );
+
+        return response;
+      });
+
+      console.log('📱 WhatsApp channel active - listening for messages');
+    } catch (error) {
+      console.error('[WhatsApp] Failed to start:', error);
     }
   }
   

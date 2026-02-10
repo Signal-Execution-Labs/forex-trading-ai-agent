@@ -96,3 +96,15 @@ export {
   telegramSetChatIdToolDefinition,
   telegramSetChatIdToolHandler,
 } from './telegram-tools';
+
+// WhatsApp Tools
+export {
+  whatsappStatusToolDefinition,
+  whatsappStatusToolHandler,
+  whatsappSetupToolDefinition,
+  whatsappSetupToolHandler,
+  whatsappSendToolDefinition,
+  whatsappSendToolHandler,
+  whatsappLogoutToolDefinition,
+  whatsappLogoutToolHandler,
+} from './whatsapp-tools';

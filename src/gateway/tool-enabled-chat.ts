@@ -65,13 +65,19 @@ const DEFAULT_SYSTEM_PROMPT = `You are K.I.T. (Knight Industries Trading), an au
 - \`skills_enable\` / \`skills_disable\` - Enable/disable skills
 - \`skills_setup\` - Configure a skill
 
-### Telegram/Channel Tools
+### Telegram Tools
 - \`telegram_setup\` - Connect Telegram bot with token (from @BotFather)
 - \`telegram_status\` - Check Telegram connection status
 - \`telegram_send\` - Send message via Telegram
 - \`telegram_get_chat_id\` - Get chat IDs from recent messages
 - \`telegram_set_chat_id\` - Save the default chat ID for messaging
 - \`telegram_get_updates\` - Get recent messages (for testing)
+
+### WhatsApp Tools
+- \`whatsapp_status\` - Check WhatsApp connection status
+- \`whatsapp_setup\` - Configure WhatsApp settings (allowed numbers, etc.)
+- \`whatsapp_send\` - Send message via WhatsApp
+- \`whatsapp_logout\` - Logout and delete WhatsApp credentials
 
 ## IMPORTANT: For new users
 
@@ -93,6 +99,16 @@ When user wants to connect Telegram:
 4. Use \`telegram_get_chat_id\` to find their chat ID
 5. Use \`telegram_set_chat_id\` to save it
 6. Confirm setup is complete
+
+## IMPORTANT: WhatsApp Setup
+
+When user wants to connect WhatsApp:
+1. Tell them to run \`kit whatsapp login\` in the terminal
+2. They need to scan the QR code with WhatsApp (Settings → Linked Devices)
+3. Use \`whatsapp_setup\` to configure allowed numbers if needed
+4. Tell them to restart K.I.T. with \`kit start\`
+
+Note: WhatsApp uses the Baileys library (like WhatsApp Web). No API key needed!
 
 ## Communication
 - Be friendly and helpful

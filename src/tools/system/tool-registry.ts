@@ -215,6 +215,13 @@ import {
   telegramSetChatIdToolDefinition, telegramSetChatIdToolHandler,
 } from './telegram-tools';
 
+import {
+  whatsappStatusToolDefinition, whatsappStatusToolHandler,
+  whatsappSetupToolDefinition, whatsappSetupToolHandler,
+  whatsappSendToolDefinition, whatsappSendToolHandler,
+  whatsappLogoutToolDefinition, whatsappLogoutToolHandler,
+} from './whatsapp-tools';
+
 export function createDefaultToolRegistry(workspaceDir?: string): ToolRegistry {
   const registry = new ToolRegistry(workspaceDir);
 
@@ -254,6 +261,12 @@ export function createDefaultToolRegistry(workspaceDir?: string): ToolRegistry {
   registry.register(telegramGetUpdatesToolDefinition, telegramGetUpdatesToolHandler, 'channel');
   registry.register(telegramGetChatIdToolDefinition, telegramGetChatIdToolHandler, 'channel');
   registry.register(telegramSetChatIdToolDefinition, telegramSetChatIdToolHandler, 'channel');
+
+  // WhatsApp/Channel tools
+  registry.register(whatsappStatusToolDefinition, whatsappStatusToolHandler, 'channel');
+  registry.register(whatsappSetupToolDefinition, whatsappSetupToolHandler, 'channel');
+  registry.register(whatsappSendToolDefinition, whatsappSendToolHandler, 'channel');
+  registry.register(whatsappLogoutToolDefinition, whatsappLogoutToolHandler, 'channel');
 
   return registry;
 }

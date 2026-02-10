@@ -204,6 +204,259 @@ program
   });
 
 // ═══════════════════════════════════════════════════════════════
+// WHATSAPP
+// ═══════════════════════════════════════════════════════════════
+const whatsappCmd = program
+  .command('whatsapp')
+  .alias('wa')
+  .description('WhatsApp channel management');
+
+whatsappCmd
+  .command('login')
+  .description('Login to WhatsApp - scan QR code with your phone')
+  .action(async () => {
+    console.log(`
+${c.cyan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  📱 K.I.T. WhatsApp Login
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${c.reset}
+
+${c.yellow}Instructions:${c.reset}
+1. Open WhatsApp on your phone
+2. Go to Settings → Linked Devices → Link a Device
+3. Scan the QR code that appears below
+
+${c.dim}Waiting for QR code...${c.reset}
+`);
+
+    try {
+      const { WhatsAppChannel } = await import('../channels/whatsapp-channel');
+      
+      const channel = new WhatsAppChannel({});
+      
+      // Just connect to show QR code
+      await channel.start(async (msg) => {
+        // This won't process messages in login mode
+        return '';
+      });
+
+      // Keep running until connected
+      console.log(`
+${c.green}✅ WhatsApp connected!${c.reset}
+
+Your WhatsApp is now linked to K.I.T.
+Restart the gateway to start receiving messages.
+
+Run: ${c.cyan}kit start${c.reset}
+`);
+    } catch (error) {
+      console.error(`${c.red}❌ Error:${c.reset}`, error);
+      process.exit(1);
+    }
+  });
+
+whatsappCmd
+  .command('logout')
+  .description('Logout from WhatsApp and delete credentials')
+  .action(async () => {
+    const credsDir = path.join(KIT_HOME, 'credentials', 'whatsapp');
+    
+    if (fs.existsSync(credsDir)) {
+      fs.rmSync(credsDir, { recursive: true });
+      console.log(`${c.green}✅ WhatsApp credentials deleted.${c.reset}`);
+    } else {
+      console.log(`${c.yellow}No WhatsApp credentials found.${c.reset}`);
+    }
+  });
+
+whatsappCmd
+  .command('status')
+  .description('Check WhatsApp connection status')
+  .action(async () => {
+    const credsPath = path.join(KIT_HOME, 'credentials', 'whatsapp', 'creds.json');
+    const hasCredentials = fs.existsSync(credsPath);
+
+    console.log(`
+${c.cyan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  📱 K.I.T. WhatsApp Status
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${c.reset}
+
+  Credentials: ${hasCredentials ? `${c.green}✅ Found${c.reset}` : `${c.red}❌ Not found${c.reset}`}
+${hasCredentials ? `
+  ${c.green}WhatsApp is ready!${c.reset}
+  Run ${c.cyan}kit start${c.reset} to connect.
+` : `
+  Run ${c.cyan}kit whatsapp login${c.reset} to scan QR code.
+`}
+`);
+  });
+
+// ═══════════════════════════════════════════════════════════════
+// TELEGRAM
+// ═══════════════════════════════════════════════════════════════
+const telegramCmd = program
+  .command('telegram')
+  .alias('tg')
+  .description('Telegram channel management');
+
+telegramCmd
+  .command('setup <token>')
+  .description('Setup Telegram bot with token from @BotFather')
+  .action(async (token: string) => {
+    console.log(`${c.cyan}Setting up Telegram bot...${c.reset}`);
+    
+    try {
+      // Test the token
+      const response = await fetch(`https://api.telegram.org/bot${token}/getMe`);
+      const data = await response.json() as any;
+
+      if (!data.ok) {
+        console.log(`${c.red}❌ Invalid token: ${data.description}${c.reset}`);
+        process.exit(1);
+      }
+
+      // Save to config
+      if (!fs.existsSync(KIT_HOME)) {
+        fs.mkdirSync(KIT_HOME, { recursive: true });
+      }
+
+      let config: any = {};
+      if (fs.existsSync(CONFIG_PATH)) {
+        config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+      }
+
+      if (!config.channels) config.channels = {};
+      config.channels.telegram = {
+        enabled: true,
+        token: token,
+        botId: data.result.id,
+        botUsername: data.result.username,
+        botName: data.result.first_name,
+        connectedAt: new Date().toISOString(),
+      };
+
+      fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+
+      console.log(`
+${c.green}✅ Telegram bot connected!${c.reset}
+
+  Bot: @${data.result.username}
+  Name: ${data.result.first_name}
+
+${c.yellow}Next steps:${c.reset}
+1. Send a message to @${data.result.username} on Telegram
+2. Run: ${c.cyan}kit telegram chatid${c.reset} to get your chat ID
+3. Run: ${c.cyan}kit start${c.reset} to start receiving messages
+`);
+    } catch (error) {
+      console.error(`${c.red}❌ Error:${c.reset}`, error);
+      process.exit(1);
+    }
+  });
+
+telegramCmd
+  .command('chatid')
+  .description('Get chat ID from recent messages')
+  .action(async () => {
+    if (!fs.existsSync(CONFIG_PATH)) {
+      console.log(`${c.red}❌ Config not found. Run kit telegram setup first.${c.reset}`);
+      process.exit(1);
+    }
+
+    const config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+    const token = config.channels?.telegram?.token;
+
+    if (!token) {
+      console.log(`${c.red}❌ Telegram not configured. Run kit telegram setup first.${c.reset}`);
+      process.exit(1);
+    }
+
+    try {
+      const response = await fetch(`https://api.telegram.org/bot${token}/getUpdates?limit=10`);
+      const data = await response.json() as any;
+
+      if (!data.ok || data.result.length === 0) {
+        console.log(`${c.yellow}No messages found. Send a message to your bot first.${c.reset}`);
+        return;
+      }
+
+      // Extract unique chats
+      const chats = new Map();
+      for (const update of data.result) {
+        const chat = update.message?.chat;
+        if (chat && !chats.has(chat.id)) {
+          chats.set(chat.id, chat);
+        }
+      }
+
+      console.log(`\n${c.cyan}Found ${chats.size} chat(s):${c.reset}\n`);
+      
+      for (const [id, chat] of chats) {
+        console.log(`  Chat ID: ${c.green}${id}${c.reset}`);
+        if (chat.username) console.log(`  Username: @${chat.username}`);
+        if (chat.first_name) console.log(`  Name: ${chat.first_name} ${chat.last_name || ''}`);
+        console.log('');
+      }
+
+      console.log(`${c.dim}Use: kit telegram setchatid <id>${c.reset}`);
+    } catch (error) {
+      console.error(`${c.red}❌ Error:${c.reset}`, error);
+    }
+  });
+
+telegramCmd
+  .command('setchatid <chatId>')
+  .description('Set the default chat ID for notifications')
+  .action(async (chatId: string) => {
+    if (!fs.existsSync(CONFIG_PATH)) {
+      console.log(`${c.red}❌ Config not found.${c.reset}`);
+      process.exit(1);
+    }
+
+    const config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+    
+    if (!config.channels?.telegram?.token) {
+      console.log(`${c.red}❌ Telegram not configured.${c.reset}`);
+      process.exit(1);
+    }
+
+    config.channels.telegram.chatId = chatId;
+    fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+
+    console.log(`${c.green}✅ Chat ID saved: ${chatId}${c.reset}`);
+    console.log(`Run ${c.cyan}kit start${c.reset} to connect.`);
+  });
+
+telegramCmd
+  .command('status')
+  .description('Check Telegram connection status')
+  .action(async () => {
+    if (!fs.existsSync(CONFIG_PATH)) {
+      console.log(`${c.yellow}Telegram not configured.${c.reset}`);
+      console.log(`Run: ${c.cyan}kit telegram setup <token>${c.reset}`);
+      return;
+    }
+
+    const config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+    const telegram = config.channels?.telegram;
+
+    if (!telegram?.token) {
+      console.log(`${c.yellow}Telegram not configured.${c.reset}`);
+      return;
+    }
+
+    console.log(`
+${c.cyan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  📱 K.I.T. Telegram Status
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${c.reset}
+
+  Bot: @${telegram.botUsername}
+  Name: ${telegram.botName}
+  Chat ID: ${telegram.chatId || `${c.yellow}Not set${c.reset}`}
+  Connected: ${telegram.connectedAt || 'Unknown'}
+`);
+  });
+
+// ═══════════════════════════════════════════════════════════════
 // DOCTOR
 // ═══════════════════════════════════════════════════════════════
 program

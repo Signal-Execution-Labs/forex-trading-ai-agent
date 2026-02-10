@@ -4,4 +4,4 @@
  */
 
 export { TelegramChannel, createTelegramChannel, startTelegramWithChat, TelegramMessage, TelegramChannelConfig } from './telegram-channel';
-// WhatsApp channel coming soon
+export { WhatsAppChannel, createWhatsAppChannel, hasWhatsAppCredentials, WhatsAppMessage, WhatsAppChannelConfig } from './whatsapp-channel';
