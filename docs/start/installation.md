@@ -19,7 +19,7 @@ kit demo
 
 ## Prerequisites
 
-- **Node.js 22** or newer
+- **Node.js 18** or newer (22+ recommended)
 - **npm** or **yarn**
 - **Git** (optional, for development)
 
@@ -44,8 +44,8 @@ Check your Node version with `node --version`.
       </Tab>
       <Tab title="From Source">
         ```bash
-        git clone https://github.com/binaryfaster/kit-bot.git
-        cd kit-bot
+        git clone https://github.com/kayzaa/k.i.t.-bot.git
+        cd k.i.t.-bot
         npm install
         npm link
         ```

@@ -296,9 +296,48 @@ program
     }
 
     if (options.test) {
-      console.log(`\n🔄 Testing connection to ${options.test}...`);
-      // TODO: Implement connection test
-      console.log('   (Test implementation in progress)');
+      const exchangeId = options.test;
+      console.log(`\n🔄 Testing connection to ${exchangeId}...`);
+      
+      const exchange = exchanges[exchangeId];
+      if (!exchange) {
+        console.log(`   ❌ Exchange '${exchangeId}' not configured.`);
+        console.log(`   Available: ${Object.keys(exchanges).join(', ') || 'none'}\n`);
+        return;
+      }
+      
+      // Test based on exchange type
+      if (exchange.type === 'mt5') {
+        // MT5 connection test via Python
+        const { execSync } = await import('child_process');
+        try {
+          const testScript = `
+import MetaTrader5 as mt5
+import json
+result = mt5.initialize(login=${exchange.login || 0}, server="${exchange.server || ''}", password="${exchange.password || ''}")
+if result:
+    info = mt5.account_info()
+    mt5.shutdown()
+    print(json.dumps({"ok": True, "balance": info.balance if info else 0}))
+else:
+    print(json.dumps({"ok": False, "error": str(mt5.last_error())}))
+`;
+          const output = execSync(`python -c "${testScript.replace(/\n/g, ';')}"`, { encoding: 'utf8' });
+          const result = JSON.parse(output.trim());
+          if (result.ok) {
+            console.log(`   ✅ Connected! Balance: $${result.balance.toFixed(2)}\n`);
+          } else {
+            console.log(`   ❌ Failed: ${result.error}\n`);
+          }
+        } catch (err: any) {
+          console.log(`   ❌ MT5 test failed: ${err.message}`);
+          console.log(`   Make sure MetaTrader5 Python package is installed.\n`);
+        }
+      } else {
+        // Crypto exchange test - try to fetch balance
+        console.log(`   ⚠️  Crypto exchange testing not yet implemented.`);
+        console.log(`   Exchange type: ${exchange.type || 'crypto'}\n`);
+      }
     }
   });
 
@@ -327,7 +366,93 @@ program
     if (options.kill) {
       console.log('\n🚨 EMERGENCY KILL SWITCH');
       console.log('   This will close ALL open positions.\n');
-      // TODO: Implement kill switch
+      
+      // Connect to gateway and send kill command
+      try {
+        const { loadConfig } = await import('../config');
+        const config = loadConfig();
+        const ws = await import('ws');
+        
+        const gatewayUrl = `ws://${config.gateway?.host || '127.0.0.1'}:${config.gateway?.port || 18799}`;
+        console.log(`   Connecting to gateway: ${gatewayUrl}`);
+        
+        const client = new ws.default(gatewayUrl);
+        
+        await new Promise<void>((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            client.close();
+            reject(new Error('Connection timeout'));
+          }, 5000);
+          
+          client.on('open', () => {
+            // Send kill command to all exchanges
+            client.send(JSON.stringify({
+              type: 'req',
+              id: 'kill_all',
+              method: 'tool',
+              params: {
+                name: 'trade_kill_switch',
+                args: { confirm: true }
+              }
+            }));
+          });
+          
+          client.on('message', (data) => {
+            clearTimeout(timeout);
+            try {
+              const response = JSON.parse(data.toString());
+              if (response.ok) {
+                console.log('   ✅ Kill switch activated!');
+                console.log(`   ${response.payload?.message || 'All positions closed.'}`);
+              } else {
+                console.log(`   ❌ Failed: ${response.error || 'Unknown error'}`);
+              }
+            } catch {}
+            client.close();
+            resolve();
+          });
+          
+          client.on('error', (err) => {
+            clearTimeout(timeout);
+            reject(err);
+          });
+        });
+      } catch (err: any) {
+        console.log(`   ❌ Could not connect to gateway: ${err.message}`);
+        console.log('   Make sure K.I.T. is running: kit start\n');
+        
+        // Fallback: Try MT5 direct if configured
+        console.log('   Attempting direct MT5 kill...');
+        const { execSync } = await import('child_process');
+        try {
+          const killScript = `
+import MetaTrader5 as mt5
+mt5.initialize()
+positions = mt5.positions_get()
+closed = 0
+if positions:
+    for pos in positions:
+        request = {
+            "action": mt5.TRADE_ACTION_DEAL,
+            "symbol": pos.symbol,
+            "volume": pos.volume,
+            "type": mt5.ORDER_TYPE_SELL if pos.type == 0 else mt5.ORDER_TYPE_BUY,
+            "position": pos.ticket,
+            "magic": 0,
+        }
+        result = mt5.order_send(request)
+        if result.retcode == mt5.TRADE_RETCODE_DONE:
+            closed += 1
+mt5.shutdown()
+print(f"Closed {closed} positions")
+`;
+          const output = execSync(`python -c "${killScript.replace(/"/g, '\\"').replace(/\n/g, ';')}"`, { encoding: 'utf8' });
+          console.log(`   ✅ ${output.trim()}\n`);
+        } catch {
+          console.log('   ⚠️  Direct MT5 kill also failed.\n');
+        }
+      }
+      console.log('');
     } else if (options.status) {
       console.log('\n📊 Open Positions:\n');
       console.log('   No open positions.\n');
@@ -488,8 +613,44 @@ program
 Set with: kit models --set anthropic/claude-opus-4-5-20251101
 `);
     } else if (options.set) {
-      console.log(`\n✅ Default model set to: ${options.set}\n`);
-      // TODO: Save to config
+      const model = options.set;
+      const configPath = path.join(KIT_HOME, 'config.json');
+      
+      // Validate model format
+      if (!model.includes('/')) {
+        console.log(`\n❌ Invalid model format. Use: provider/model`);
+        console.log(`   Example: kit models --set anthropic/claude-opus-4-5-20251101\n`);
+        return;
+      }
+      
+      const [provider] = model.split('/');
+      const validProviders = ['anthropic', 'openai', 'google', 'openrouter', 'groq', 'ollama', 'xai', 'mistral', 'deepseek'];
+      
+      if (!validProviders.includes(provider)) {
+        console.log(`\n⚠️  Unknown provider: ${provider}`);
+        console.log(`   Valid providers: ${validProviders.join(', ')}\n`);
+      }
+      
+      // Load or create config
+      let config: any = {};
+      if (fs.existsSync(configPath)) {
+        config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+      }
+      
+      // Update model
+      config.agent = config.agent || {};
+      config.agent.model = model;
+      
+      // Ensure config directory exists
+      if (!fs.existsSync(KIT_HOME)) {
+        fs.mkdirSync(KIT_HOME, { recursive: true });
+      }
+      
+      // Save config
+      fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+      
+      console.log(`\n✅ Default model set to: ${model}`);
+      console.log(`   Saved to: ${configPath}\n`);
     } else {
       program.commands.find(c => c.name() === 'models')?.help();
     }
