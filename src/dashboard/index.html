@@ -536,25 +536,110 @@
       }
     }
     
+    // ========== CHAT HISTORY PERSISTENCE ==========
+    const CHAT_STORAGE_KEY = 'kit_chat_history';
+    const MAX_STORED_MESSAGES = 100;
+    
+    function saveChatHistory() {
+      const messagesEl = document.getElementById('messages');
+      const messageEls = messagesEl.querySelectorAll('.message');
+      const history = [];
+      messageEls.forEach(el => {
+        if (!el.id || el.id !== 'thinking') {
+          history.push({
+            className: el.className,
+            html: el.innerHTML
+          });
+        }
+      });
+      // Keep only last N messages
+      const toStore = history.slice(-MAX_STORED_MESSAGES);
+      localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(toStore));
+    }
+    
+    function loadChatHistory() {
+      const stored = localStorage.getItem(CHAT_STORAGE_KEY);
+      if (stored) {
+        try {
+          const history = JSON.parse(stored);
+          const messagesEl = document.getElementById('messages');
+          messagesEl.innerHTML = '';
+          history.forEach(msg => {
+            const div = document.createElement('div');
+            div.className = msg.className;
+            div.innerHTML = msg.html;
+            messagesEl.appendChild(div);
+          });
+          messagesEl.scrollTop = messagesEl.scrollHeight;
+          return true;
+        } catch (e) {
+          console.error('Failed to load chat history:', e);
+        }
+      }
+      return false;
+    }
+    
+    // Override addMessage to save history
+    const originalAddMessage = addMessage;
+    addMessage = function(type, content, showTime = true) {
+      const result = originalAddMessage(type, content, showTime);
+      saveChatHistory();
+      return result;
+    };
+    
+    // ========== AUTO-REFRESH STATUS ==========
+    function refreshStatus() {
+      fetch('/api/status')
+        .then(r => r.json())
+        .then(data => {
+          if (data.health) {
+            const uptimeMs = data.health.uptime || 0;
+            const hours = Math.floor(uptimeMs / 3600000);
+            const minutes = Math.floor((uptimeMs % 3600000) / 60000);
+            document.getElementById('uptime').textContent = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+            document.getElementById('connections').textContent = data.health.clients || 1;
+          }
+          if (data.portfolio) {
+            document.getElementById('portfolioValue').textContent = '$' + (data.portfolio.totalValue || 0).toLocaleString();
+          }
+          if (data.skillsActive !== undefined) {
+            document.getElementById('skillsCount').textContent = `${data.skillsActive}/${data.skillsTotal || 37}`;
+          }
+        })
+        .catch(() => {});
+    }
+    
     // Event listeners
     chatInput.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') sendMessage();
     });
     sendBtn.addEventListener('click', sendMessage);
     
+    // Load chat history before connecting
+    const hadHistory = loadChatHistory();
+    
     // Start connection
     connect();
     
-    // Fetch initial status via API
-    fetch('/api/status')
-      .then(r => r.json())
-      .then(data => {
-        if (data.health) {
-          document.getElementById('uptime').textContent = Math.floor(data.health.uptime / 60000) + 'm';
-          document.getElementById('connections').textContent = data.health.clients || 1;
-        }
-      })
-      .catch(() => {});
+    // If we loaded history, don't show welcome message again
+    if (hadHistory) {
+      ws.onopen = () => {
+        connected = true;
+        statusBadge.textContent = '● Online';
+        statusBadge.style.background = 'rgba(0,255,136,0.2)';
+        statusBadge.style.color = '#00ff88';
+        chatStatus.textContent = 'Connected';
+        chatInput.disabled = false;
+        sendBtn.disabled = false;
+        ws.send(JSON.stringify({ type: 'status_request' }));
+      };
+    }
+    
+    // Auto-refresh status every 5 seconds
+    setInterval(refreshStatus, 5000);
+    
+    // Initial status fetch
+    refreshStatus();
   </script>
 </body>
 </html>
