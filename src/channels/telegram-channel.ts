@@ -21,6 +21,9 @@ export interface TelegramMessage {
   date: Date;
   threadId?: number;  // For topic/thread support
   isTopicMessage?: boolean;
+  // Callback query fields (for button presses)
+  callbackQueryId?: string;
+  callbackData?: string;
 }
 
 export interface TelegramChannelConfig {
@@ -163,47 +166,140 @@ export class TelegramChannel extends EventEmitter {
           isTopicMessage: msg.is_topic_message,
         });
       }
+
+      // Handle callback queries (button presses)
+      const callback = update.callback_query;
+      if (callback) {
+        messages.push({
+          messageId: callback.message?.message_id || 0,
+          chatId: callback.message?.chat?.id || callback.from.id,
+          userId: callback.from.id,
+          username: callback.from.username,
+          firstName: callback.from.first_name,
+          text: `callback_data: ${callback.data}`,
+          date: new Date(),
+          callbackQueryId: callback.id,
+          callbackData: callback.data,
+        });
+      }
     }
 
     return messages;
   }
 
   /**
-   * Send a message
+   * Chunk text for Telegram (max 4096 chars per message)
+   * Prefers breaking at paragraph boundaries, then sentences, then words
+   */
+  private chunkText(text: string, maxLength: number = 4000): string[] {
+    if (text.length <= maxLength) return [text];
+    
+    const chunks: string[] = [];
+    let remaining = text;
+    
+    while (remaining.length > 0) {
+      if (remaining.length <= maxLength) {
+        chunks.push(remaining);
+        break;
+      }
+      
+      // Find best break point
+      let breakAt = maxLength;
+      
+      // Try paragraph break (double newline)
+      const paragraphBreak = remaining.lastIndexOf('\n\n', maxLength);
+      if (paragraphBreak > maxLength * 0.5) {
+        breakAt = paragraphBreak + 2;
+      } else {
+        // Try sentence break
+        const sentenceBreaks = ['. ', '! ', '? ', '.\n', '!\n', '?\n'];
+        let bestSentenceBreak = -1;
+        for (const br of sentenceBreaks) {
+          const idx = remaining.lastIndexOf(br, maxLength);
+          if (idx > bestSentenceBreak) bestSentenceBreak = idx;
+        }
+        if (bestSentenceBreak > maxLength * 0.5) {
+          breakAt = bestSentenceBreak + 2;
+        } else {
+          // Try word break
+          const spaceBreak = remaining.lastIndexOf(' ', maxLength);
+          if (spaceBreak > maxLength * 0.5) {
+            breakAt = spaceBreak + 1;
+          }
+          // Otherwise force break at maxLength
+        }
+      }
+      
+      chunks.push(remaining.slice(0, breakAt).trim());
+      remaining = remaining.slice(breakAt).trim();
+    }
+    
+    return chunks;
+  }
+
+  /**
+   * Send a message (auto-chunks long messages)
    */
   async sendMessage(chatId: number | string, text: string, options?: {
     parseMode?: 'HTML' | 'Markdown';
     replyToMessageId?: number;
     threadId?: number;
   }): Promise<boolean> {
-    const params: any = {
-      chat_id: chatId,
-      text: text,
-    };
-
-    if (options?.parseMode) params.parse_mode = options.parseMode;
-    if (options?.replyToMessageId) params.reply_to_message_id = options.replyToMessageId;
-    if (options?.threadId) params.message_thread_id = options.threadId;
-
-    try {
-      const response = await fetch(`https://api.telegram.org/bot${this.config.token}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(params),
-      });
-
-      const data = await response.json() as any;
+    // Chunk long messages
+    const chunks = this.chunkText(text);
+    let allSuccess = true;
+    
+    for (let i = 0; i < chunks.length; i++) {
+      const chunk = chunks[i];
+      const isFirst = i === 0;
       
-      if (!data.ok) {
-        console.error('[Telegram] Send failed:', data.description);
-        return false;
-      }
+      const params: any = {
+        chat_id: chatId,
+        text: chunk,
+      };
 
-      return true;
-    } catch (error) {
-      console.error('[Telegram] Send error:', error);
-      return false;
+      if (options?.parseMode) params.parse_mode = options.parseMode;
+      // Only reply to original message for first chunk
+      if (isFirst && options?.replyToMessageId) params.reply_to_message_id = options.replyToMessageId;
+      if (options?.threadId) params.message_thread_id = options.threadId;
+
+      try {
+        const response = await fetch(`https://api.telegram.org/bot${this.config.token}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(params),
+        });
+
+        const data = await response.json() as any;
+        
+        if (!data.ok) {
+          console.error('[Telegram] Send failed:', data.description);
+          allSuccess = false;
+          // If HTML parsing failed, retry as plain text
+          if (options?.parseMode && data.description?.includes('parse')) {
+            console.log('[Telegram] Retrying without parse_mode...');
+            delete params.parse_mode;
+            const retry = await fetch(`https://api.telegram.org/bot${this.config.token}/sendMessage`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(params),
+            });
+            const retryData = await retry.json() as any;
+            if (retryData.ok) allSuccess = true;
+          }
+        }
+        
+        // Small delay between chunks to avoid rate limiting
+        if (i < chunks.length - 1) {
+          await new Promise(r => setTimeout(r, 100));
+        }
+      } catch (error) {
+        console.error('[Telegram] Send error:', error);
+        allSuccess = false;
+      }
     }
+    
+    return allSuccess;
   }
 
   /**
@@ -221,6 +317,197 @@ export class TelegramChannel extends EventEmitter {
       });
     } catch (error) {
       // Ignore typing indicator errors
+    }
+  }
+
+  /**
+   * Send a message with inline keyboard buttons
+   */
+  async sendMessageWithButtons(
+    chatId: number | string,
+    text: string,
+    buttons: Array<Array<{ text: string; callbackData?: string; url?: string }>>,
+    options?: {
+      parseMode?: 'HTML' | 'Markdown';
+      replyToMessageId?: number;
+      threadId?: number;
+    }
+  ): Promise<boolean> {
+    const inlineKeyboard = buttons.map(row =>
+      row.map(btn => {
+        if (btn.url) {
+          return { text: btn.text, url: btn.url };
+        }
+        return { text: btn.text, callback_data: btn.callbackData || btn.text };
+      })
+    );
+
+    const params: any = {
+      chat_id: chatId,
+      text: text,
+      reply_markup: { inline_keyboard: inlineKeyboard },
+    };
+
+    if (options?.parseMode) params.parse_mode = options.parseMode;
+    if (options?.replyToMessageId) params.reply_to_message_id = options.replyToMessageId;
+    if (options?.threadId) params.message_thread_id = options.threadId;
+
+    try {
+      const response = await fetch(`https://api.telegram.org/bot${this.config.token}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+      });
+
+      const data = await response.json() as any;
+      if (!data.ok) {
+        console.error('[Telegram] Send with buttons failed:', data.description);
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error('[Telegram] Send with buttons error:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Set reaction on a message
+   */
+  async setReaction(
+    chatId: number | string,
+    messageId: number,
+    emoji: string
+  ): Promise<boolean> {
+    try {
+      const response = await fetch(`https://api.telegram.org/bot${this.config.token}/setMessageReaction`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chatId,
+          message_id: messageId,
+          reaction: [{ type: 'emoji', emoji }],
+        }),
+      });
+
+      const data = await response.json() as any;
+      if (!data.ok) {
+        // Reactions may not be supported in all chats
+        console.log('[Telegram] Reaction not set:', data.description);
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error('[Telegram] Reaction error:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Edit a message
+   */
+  async editMessage(
+    chatId: number | string,
+    messageId: number,
+    text: string,
+    options?: { parseMode?: 'HTML' | 'Markdown' }
+  ): Promise<boolean> {
+    const params: any = {
+      chat_id: chatId,
+      message_id: messageId,
+      text: text,
+    };
+    if (options?.parseMode) params.parse_mode = options.parseMode;
+
+    try {
+      const response = await fetch(`https://api.telegram.org/bot${this.config.token}/editMessageText`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+      });
+
+      const data = await response.json() as any;
+      if (!data.ok) {
+        console.error('[Telegram] Edit failed:', data.description);
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error('[Telegram] Edit error:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Delete a message
+   */
+  async deleteMessage(chatId: number | string, messageId: number): Promise<boolean> {
+    try {
+      const response = await fetch(`https://api.telegram.org/bot${this.config.token}/deleteMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chatId,
+          message_id: messageId,
+        }),
+      });
+
+      const data = await response.json() as any;
+      if (!data.ok) {
+        console.error('[Telegram] Delete failed:', data.description);
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error('[Telegram] Delete error:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Answer callback query (for inline button presses)
+   */
+  async answerCallbackQuery(
+    callbackQueryId: string,
+    options?: { text?: string; showAlert?: boolean }
+  ): Promise<boolean> {
+    try {
+      const response = await fetch(`https://api.telegram.org/bot${this.config.token}/answerCallbackQuery`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          callback_query_id: callbackQueryId,
+          text: options?.text,
+          show_alert: options?.showAlert,
+        }),
+      });
+
+      const data = await response.json() as any;
+      return data.ok;
+    } catch (error) {
+      console.error('[Telegram] Answer callback error:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get bot info
+   */
+  async getMe(): Promise<{ id: number; username: string; firstName: string } | null> {
+    try {
+      const response = await fetch(`https://api.telegram.org/bot${this.config.token}/getMe`);
+      const data = await response.json() as any;
+      if (data.ok && data.result) {
+        return {
+          id: data.result.id,
+          username: data.result.username,
+          firstName: data.result.first_name,
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error('[Telegram] getMe error:', error);
+      return null;
     }
   }
 }
