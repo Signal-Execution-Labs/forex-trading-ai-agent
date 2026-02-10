@@ -18,7 +18,7 @@ K.I.T. is your **personal AI trading agent** - like having a professional trader
 
 ## 🚀 One-Line Installation
 
-### Windows (CMD or PowerShell)
+### Windows (CMD)
 
 ```cmd
 cd C:\ && git clone https://github.com/kayzaa/k.i.t.-bot.git && cd k.i.t.-bot && npm install && npm run build && npm link && kit start
@@ -27,15 +27,16 @@ cd C:\ && git clone https://github.com/kayzaa/k.i.t.-bot.git && cd k.i.t.-bot &&
 ### Linux / macOS
 
 ```bash
-cd ~ && git clone https://github.com/kayzaa/k.i.t.-bot.git && cd k.i.t.-bot && npm install && npm run build && npm link
+cd ~ && git clone https://github.com/kayzaa/k.i.t.-bot.git && cd k.i.t.-bot && npm install && npm run build && sudo npm link && kit start
 ```
 
-**That's it!** Now you can use `kit` from anywhere:
+**That's it!** Dashboard opens automatically at `http://localhost:18799/`
+
+After installation, use `kit` from anywhere:
 
 ```cmd
-kit --help
-kit start
-kit dashboard
+kit start       # Start gateway + dashboard
+kit --help      # Show all commands
 ```
 
 ---
