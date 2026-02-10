@@ -240,25 +240,28 @@ async function localSpeak(text: string, outputPath: string): Promise<TTSResult> 
       }
     } else if (platform === 'win32') {
       // Windows: use PowerShell SAPI
-      const psScript = `
-Add-Type -AssemblyName System.Speech
-$synth = New-Object System.Speech.Synthesis.SpeechSynthesizer
-$synth.SetOutputToWaveFile("${outputPath.replace(/\.mp3$/, '.wav').replace(/\\/g, '\\\\')}")
-$synth.Speak("${text.replace(/"/g, '`"')}")
-$synth.Dispose()
-`;
-      await execAsync(`powershell -Command "${psScript.replace(/\n/g, '; ')}"`);
+      const wavPath = outputPath.replace(/\.mp3$/, '.wav');
+      
+      // Escape text for PowerShell - replace special chars
+      const safeText = text
+        .replace(/'/g, "''")  // Escape single quotes for PS
+        .replace(/\r?\n/g, ' ');  // Remove newlines
+      const safePath = wavPath.replace(/'/g, "''");
+      
+      // Single-line PowerShell command
+      const psCommand = `Add-Type -AssemblyName System.Speech; $s = New-Object System.Speech.Synthesis.SpeechSynthesizer; $s.SetOutputToWaveFile('${safePath}'); $s.Speak('${safeText}'); $s.Dispose()`;
+      
+      await execAsync(`powershell -NoProfile -Command "${psCommand}"`);
 
       // Convert to mp3 if ffmpeg is available
       try {
-        const wavPath = outputPath.replace(/\.mp3$/, '.wav');
         await execAsync(`ffmpeg -i "${wavPath}" -acodec libmp3lame "${outputPath}" -y`);
         await fs.unlink(wavPath);
       } catch {
         return {
           success: true,
           provider: 'local (SAPI)',
-          audioPath: outputPath.replace(/\.mp3$/, '.wav'),
+          audioPath: wavPath,
         };
       }
     } else {
