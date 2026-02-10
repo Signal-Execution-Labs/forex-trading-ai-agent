@@ -236,9 +236,64 @@ import {
 } from './web-tools';
 
 import {
+  browserOpenToolDefinition, browserOpenToolHandler,
+  browserNavigateToolDefinition, browserNavigateToolHandler,
+  browserScreenshotToolDefinition, browserScreenshotToolHandler,
+  browserSnapshotToolDefinition, browserSnapshotToolHandler,
+  browserClickToolDefinition, browserClickToolHandler,
+  browserTypeToolDefinition, browserTypeToolHandler,
+  browserWaitToolDefinition, browserWaitToolHandler,
+  browserCloseToolDefinition, browserCloseToolHandler,
+  browserEvaluateToolDefinition, browserEvaluateToolHandler,
+} from './browser-tools';
+
+import {
+  imageAnalyzeToolDefinition, imageAnalyzeToolHandler,
+  chartAnalyzeToolDefinition, chartAnalyzeToolHandler,
+  screenshotAnalyzeToolDefinition, screenshotAnalyzeToolHandler,
+} from './image-tools';
+
+import {
+  canvasPresentToolDefinition, canvasPresentToolHandler,
+  canvasChartToolDefinition, canvasChartToolHandler,
+  canvasPortfolioToolDefinition, canvasPortfolioToolHandler,
+  canvasSignalsToolDefinition, canvasSignalsToolHandler,
+  canvasTableToolDefinition, canvasTableToolHandler,
+  canvasSnapshotToolDefinition, canvasSnapshotToolHandler,
+  canvasHideToolDefinition, canvasHideToolHandler,
+  canvasBackToolDefinition, canvasBackToolHandler,
+} from './canvas-tools';
+
+import {
   getBinaryOptionsTools,
   getBinaryOptionsHandlers,
 } from '../binary-options-tools';
+
+import {
+  cronListToolDefinition, cronListToolHandler,
+  cronAddToolDefinition, cronAddToolHandler,
+  cronRemoveToolDefinition, cronRemoveToolHandler,
+  cronRunToolDefinition, cronRunToolHandler,
+  cronEnableToolDefinition, cronEnableToolHandler,
+  cronDisableToolDefinition, cronDisableToolHandler,
+  cronStatusToolDefinition, cronStatusToolHandler,
+  heartbeatTriggerToolDefinition, heartbeatTriggerToolHandler,
+  cronHistoryToolDefinition, cronHistoryToolHandler,
+} from './cron-tools';
+
+import {
+  sessionSpawnToolDefinition, sessionSpawnToolHandler,
+  sessionListToolDefinition, sessionListToolHandler,
+  sessionSendToolDefinition, sessionSendToolHandler,
+  sessionStatusToolDefinition, sessionStatusToolHandler,
+  sessionCancelToolDefinition, sessionCancelToolHandler,
+} from './session-tools';
+
+import {
+  ttsSpeakToolDefinition, ttsSpeakToolHandler,
+  ttsVoicesToolDefinition, ttsVoicesToolHandler,
+  ttsPlayToolDefinition, ttsPlayToolHandler,
+} from './tts-tools';
 
 export function createDefaultToolRegistry(workspaceDir?: string): ToolRegistry {
   const registry = new ToolRegistry(workspaceDir);
@@ -296,6 +351,55 @@ export function createDefaultToolRegistry(workspaceDir?: string): ToolRegistry {
   // Web tools
   registry.register(webSearchToolDefinition, webSearchToolHandler, 'utility');
   registry.register(webFetchToolDefinition, webFetchToolHandler, 'utility');
+
+  // Browser automation tools
+  registry.register(browserOpenToolDefinition, browserOpenToolHandler, 'system');
+  registry.register(browserNavigateToolDefinition, browserNavigateToolHandler, 'system');
+  registry.register(browserScreenshotToolDefinition, browserScreenshotToolHandler, 'system');
+  registry.register(browserSnapshotToolDefinition, browserSnapshotToolHandler, 'system');
+  registry.register(browserClickToolDefinition, browserClickToolHandler, 'system');
+  registry.register(browserTypeToolDefinition, browserTypeToolHandler, 'system');
+  registry.register(browserWaitToolDefinition, browserWaitToolHandler, 'system');
+  registry.register(browserCloseToolDefinition, browserCloseToolHandler, 'system');
+  registry.register(browserEvaluateToolDefinition, browserEvaluateToolHandler, 'system');
+
+  // Image analysis tools
+  registry.register(imageAnalyzeToolDefinition, imageAnalyzeToolHandler, 'analysis');
+  registry.register(chartAnalyzeToolDefinition, chartAnalyzeToolHandler, 'analysis');
+  registry.register(screenshotAnalyzeToolDefinition, screenshotAnalyzeToolHandler, 'analysis');
+
+  // Canvas tools - UI visualization
+  registry.register(canvasPresentToolDefinition, canvasPresentToolHandler, 'system');
+  registry.register(canvasChartToolDefinition, canvasChartToolHandler, 'system');
+  registry.register(canvasPortfolioToolDefinition, canvasPortfolioToolHandler, 'system');
+  registry.register(canvasSignalsToolDefinition, canvasSignalsToolHandler, 'system');
+  registry.register(canvasTableToolDefinition, canvasTableToolHandler, 'system');
+  registry.register(canvasSnapshotToolDefinition, canvasSnapshotToolHandler, 'system');
+  registry.register(canvasHideToolDefinition, canvasHideToolHandler, 'system');
+  registry.register(canvasBackToolDefinition, canvasBackToolHandler, 'system');
+
+  // Cron & Heartbeat tools
+  registry.register(cronListToolDefinition, cronListToolHandler, 'system');
+  registry.register(cronAddToolDefinition, cronAddToolHandler, 'system');
+  registry.register(cronRemoveToolDefinition, cronRemoveToolHandler, 'system');
+  registry.register(cronRunToolDefinition, cronRunToolHandler, 'system');
+  registry.register(cronEnableToolDefinition, cronEnableToolHandler, 'system');
+  registry.register(cronDisableToolDefinition, cronDisableToolHandler, 'system');
+  registry.register(cronStatusToolDefinition, cronStatusToolHandler, 'system');
+  registry.register(cronHistoryToolDefinition, cronHistoryToolHandler, 'system');
+  registry.register(heartbeatTriggerToolDefinition, heartbeatTriggerToolHandler, 'system');
+
+  // Session/Sub-Agent tools
+  registry.register(sessionSpawnToolDefinition, sessionSpawnToolHandler, 'system');
+  registry.register(sessionListToolDefinition, sessionListToolHandler, 'system');
+  registry.register(sessionSendToolDefinition, sessionSendToolHandler, 'system');
+  registry.register(sessionStatusToolDefinition, sessionStatusToolHandler, 'system');
+  registry.register(sessionCancelToolDefinition, sessionCancelToolHandler, 'system');
+
+  // TTS (Text-to-Speech) tools
+  registry.register(ttsSpeakToolDefinition, ttsSpeakToolHandler, 'system');
+  registry.register(ttsVoicesToolDefinition, ttsVoicesToolHandler, 'system');
+  registry.register(ttsPlayToolDefinition, ttsPlayToolHandler, 'system');
 
   // Binary Options / BinaryFaster trading tools
   const binaryTools = getBinaryOptionsTools();

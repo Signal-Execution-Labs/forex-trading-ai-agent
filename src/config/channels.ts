@@ -47,9 +47,9 @@ export const SUPPORTED_CHANNELS: ChannelInfo[] = [
     id: 'slack',
     name: 'Slack',
     description: 'Enterprise workplace communication',
-    status: 'beta',
+    status: 'ready',
     requiresToken: true,
-    setupCommand: 'kit slack setup',
+    setupCommand: 'kit slack setup <botToken> <appToken>',
     icon: '💼',
   },
   {

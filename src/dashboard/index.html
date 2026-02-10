@@ -240,9 +240,158 @@
       margin-right: 0.5rem;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+    
+    /* Canvas Overlay */
+    .canvas-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.85);
+      z-index: 1000;
+      animation: fadeIn 0.3s ease;
+    }
+    .canvas-overlay.visible { display: flex; flex-direction: column; }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    .canvas-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 1.5rem;
+      background: rgba(0, 0, 0, 0.5);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .canvas-title {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      color: #00d4ff;
+      font-weight: 600;
+    }
+    .canvas-title-icon { font-size: 1.25rem; }
+    .canvas-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .canvas-btn {
+      padding: 0.5rem 1rem;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 0.5rem;
+      color: #fff;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .canvas-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+    .canvas-btn.close {
+      background: rgba(255, 68, 68, 0.2);
+      border-color: rgba(255, 68, 68, 0.5);
+    }
+    .canvas-btn.close:hover {
+      background: rgba(255, 68, 68, 0.4);
+    }
+    
+    .canvas-content {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 1rem;
+      overflow: auto;
+    }
+    .canvas-frame {
+      width: 100%;
+      height: 100%;
+      max-width: 1200px;
+      max-height: calc(100vh - 100px);
+      border: none;
+      border-radius: 0.75rem;
+      background: #fff;
+    }
+    
+    /* Canvas in sidebar */
+    .canvas-mini {
+      display: none;
+      margin-top: 1rem;
+    }
+    .canvas-mini.visible { display: block; }
+    .canvas-mini-preview {
+      position: relative;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 0.5rem;
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .canvas-mini-preview:hover {
+      transform: scale(1.02);
+    }
+    .canvas-mini-frame {
+      width: 100%;
+      height: 150px;
+      border: none;
+      pointer-events: none;
+    }
+    .canvas-mini-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.5);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .canvas-mini-preview:hover .canvas-mini-overlay {
+      opacity: 1;
+    }
+    .canvas-mini-expand {
+      padding: 0.5rem 1rem;
+      background: rgba(0, 212, 255, 0.9);
+      border-radius: 0.5rem;
+      color: #000;
+      font-weight: 600;
+      font-size: 0.85rem;
+    }
   </style>
 </head>
 <body>
+  <!-- Canvas Overlay -->
+  <div class="canvas-overlay" id="canvasOverlay">
+    <div class="canvas-header">
+      <div class="canvas-title">
+        <span class="canvas-title-icon">📊</span>
+        <span id="canvasTitle">K.I.T. Canvas</span>
+      </div>
+      <div class="canvas-actions">
+        <button class="canvas-btn" onclick="canvasBack()" id="canvasBackBtn" style="display: none;">
+          ← Back
+        </button>
+        <button class="canvas-btn" onclick="canvasMinimize()">
+          Minimize
+        </button>
+        <button class="canvas-btn close" onclick="canvasClose()">
+          ✕ Close
+        </button>
+      </div>
+    </div>
+    <div class="canvas-content">
+      <iframe class="canvas-frame" id="canvasFrame" sandbox="allow-scripts allow-same-origin"></iframe>
+    </div>
+  </div>
+  
   <div class="container">
     <div class="header">
       <div class="logo-section">
@@ -340,6 +489,19 @@
               <div>🛠️ <code>kit onboard</code> - Setup</div>
               <div>📊 <code>kit status</code> - Status</div>
               <div>🔧 <code>kit doctor</code> - Diagnose</div>
+            </div>
+          </div>
+          
+          <!-- Canvas Mini Preview -->
+          <div class="canvas-mini" id="canvasMini">
+            <div class="card-header" style="padding: 0; margin-top: 1rem;">
+              <span class="card-title">📊 Canvas</span>
+            </div>
+            <div class="canvas-mini-preview" onclick="canvasExpand()">
+              <iframe class="canvas-mini-frame" id="canvasMiniFrame" sandbox="allow-scripts allow-same-origin"></iframe>
+              <div class="canvas-mini-overlay">
+                <span class="canvas-mini-expand">🔍 Expand</span>
+              </div>
             </div>
           </div>
         </div>
@@ -690,6 +852,140 @@
     
     // Initial status fetch
     refreshStatus();
+    
+    // ========== CANVAS FUNCTIONALITY ==========
+    let canvasContent = null;
+    let canvasHistory = [];
+    let canvasMinimized = false;
+    
+    const canvasOverlay = document.getElementById('canvasOverlay');
+    const canvasFrame = document.getElementById('canvasFrame');
+    const canvasMini = document.getElementById('canvasMini');
+    const canvasMiniFrame = document.getElementById('canvasMiniFrame');
+    const canvasTitle = document.getElementById('canvasTitle');
+    const canvasBackBtn = document.getElementById('canvasBackBtn');
+    
+    // Present content on canvas
+    function canvasPresent(content) {
+      if (!content) return;
+      
+      canvasContent = content;
+      canvasTitle.textContent = content.title || 'K.I.T. Canvas';
+      
+      // Set iframe content
+      const html = content.html || '<html><body style="background:#1a1a2e;color:#fff;padding:2rem;font-family:system-ui;">No content</body></html>';
+      
+      // Write to both frames
+      canvasFrame.srcdoc = html;
+      canvasMiniFrame.srcdoc = html;
+      
+      // Update back button visibility
+      canvasBackBtn.style.display = canvasHistory.length > 0 ? 'block' : 'none';
+      
+      // Show canvas
+      if (!canvasMinimized) {
+        canvasOverlay.classList.add('visible');
+      }
+      canvasMini.classList.add('visible');
+    }
+    
+    // Close canvas
+    function canvasClose() {
+      canvasOverlay.classList.remove('visible');
+      canvasMini.classList.remove('visible');
+      canvasContent = null;
+      canvasHistory = [];
+      canvasMinimized = false;
+      
+      // Clear frames
+      canvasFrame.srcdoc = '';
+      canvasMiniFrame.srcdoc = '';
+      
+      // Notify server
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'canvas_action', action: 'close' }));
+      }
+    }
+    
+    // Minimize canvas
+    function canvasMinimize() {
+      canvasOverlay.classList.remove('visible');
+      canvasMinimized = true;
+    }
+    
+    // Expand canvas from mini preview
+    function canvasExpand() {
+      if (canvasContent) {
+        canvasOverlay.classList.add('visible');
+        canvasMinimized = false;
+      }
+    }
+    
+    // Go back in canvas history
+    function canvasBack() {
+      if (canvasHistory.length > 0) {
+        const previous = canvasHistory.pop();
+        canvasPresent(previous);
+      }
+    }
+    
+    // Handle canvas events from WebSocket
+    function handleCanvasMessage(data) {
+      if (!data.metadata) return;
+      
+      const { canvasEvent, canvas } = data.metadata;
+      
+      if (canvasEvent === 'present' && canvas?.content) {
+        // Save current to history if exists
+        if (canvasContent) {
+          canvasHistory.push(canvasContent);
+          if (canvasHistory.length > 10) canvasHistory.shift();
+        }
+        canvasPresent(canvas.content);
+      } else if (canvasEvent === 'update' && canvas?.content) {
+        canvasPresent(canvas.content);
+      } else if (canvasEvent === 'hide') {
+        canvasClose();
+      }
+    }
+    
+    // Override WebSocket onmessage to handle canvas events
+    const originalOnMessage = ws.onmessage;
+    ws.onmessage = (e) => {
+      const data = JSON.parse(e.data);
+      
+      // Handle canvas events
+      if (data.metadata?.canvasEvent) {
+        handleCanvasMessage(data);
+      }
+      
+      // Call original handler for other messages
+      if (data.type === 'message') {
+        const thinkingEl = document.getElementById('thinking');
+        if (thinkingEl) thinkingEl.remove();
+        addMessage('kit', data.content);
+        thinking = false;
+        chatInput.disabled = false;
+        sendBtn.disabled = false;
+      } else if (data.type === 'tool_call') {
+        addMessage('tool', `🔧 Using: ${data.name}`, false);
+      } else if (data.type === 'status') {
+        updateDashboard(data);
+      }
+    };
+    
+    // Add keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && canvasOverlay.classList.contains('visible')) {
+        canvasMinimize();
+      }
+    });
+    
+    // Expose canvas functions globally for button onclick handlers
+    window.canvasClose = canvasClose;
+    window.canvasMinimize = canvasMinimize;
+    window.canvasExpand = canvasExpand;
+    window.canvasBack = canvasBack;
   </script>
 </body>
 </html>

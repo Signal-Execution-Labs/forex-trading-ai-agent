@@ -17,6 +17,11 @@
 // Gateway (OpenClaw-inspired infrastructure)
 export * from './gateway';
 
+// Core (Logger, SkillRouter, CanvasManager - Cron/Heartbeat are in gateway)
+export { Logger, createLogger, LogLevel } from './core/logger';
+export { SkillRouter, getSkillRouter, initSkillSystem, Skill, SkillMatch, SkillRegistry } from './core/skill-router';
+export { CanvasManager, createCanvasManager, getCanvasManager, ChartConfig, CanvasEvent, CanvasContent, CanvasState } from './core/canvas-manager';
+
 // Configuration System (exclude conflicting names)
 export { 
   loadConfig, 

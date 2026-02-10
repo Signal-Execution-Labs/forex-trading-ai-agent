@@ -3,12 +3,14 @@
  * 
  * Serves the web dashboard with integrated chat interface.
  * Connects to K.I.T. Gateway for real-time communication.
+ * Supports Canvas UI for displaying charts and visualizations.
  */
 
 import { createServer, IncomingMessage, ServerResponse } from 'http';
 import { readFile } from 'fs/promises';
 import { join, extname } from 'path';
 import { WebSocket, WebSocketServer } from 'ws';
+import { getCanvasManager, CanvasEvent } from '../core/canvas-manager';
 
 const MIME_TYPES: Record<string, string> = {
   '.html': 'text/html',
@@ -40,6 +42,7 @@ export class DashboardServer {
   private wss: WebSocketServer | null = null;
   private gatewayWs: WebSocket | null = null;
   private clients: Set<WebSocket> = new Set();
+  private canvasUnsubscribe: (() => void) | null = null;
   
   constructor(config: Partial<DashboardConfig> = {}) {
     this.config = {
@@ -47,6 +50,59 @@ export class DashboardServer {
       gatewayUrl: config.gatewayUrl || 'ws://localhost:18799',
       staticDir: config.staticDir || join(__dirname),
     };
+    
+    // Subscribe to canvas events
+    this.setupCanvasSubscription();
+  }
+  
+  /**
+   * Setup canvas event subscription
+   */
+  private setupCanvasSubscription(): void {
+    const canvasManager = getCanvasManager();
+    this.canvasUnsubscribe = canvasManager.subscribe((event: CanvasEvent) => {
+      this.handleCanvasEvent(event);
+    });
+  }
+  
+  /**
+   * Handle canvas events and broadcast to clients
+   */
+  private handleCanvasEvent(event: CanvasEvent): void {
+    const message: ChatMessage = {
+      type: 'status',
+      content: '',
+      timestamp: event.timestamp,
+      metadata: { canvasEvent: event },
+    };
+    
+    if (event.type === 'present' && event.content) {
+      message.content = `📊 Canvas: ${event.content.title || 'Content'} displayed`;
+      message.metadata = {
+        canvasEvent: event.type,
+        canvas: {
+          visible: true,
+          content: event.content,
+        },
+      };
+    } else if (event.type === 'hide') {
+      message.content = '📊 Canvas hidden';
+      message.metadata = {
+        canvasEvent: event.type,
+        canvas: { visible: false },
+      };
+    } else if (event.type === 'update' && event.content) {
+      message.metadata = {
+        canvasEvent: event.type,
+        canvas: {
+          visible: true,
+          content: event.content,
+        },
+      };
+      // Don't broadcast update messages to chat, just update canvas
+    }
+    
+    this.broadcast(message);
   }
   
   /**

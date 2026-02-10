@@ -117,6 +117,42 @@ export {
   whatsappLogoutToolHandler,
 } from './whatsapp-tools';
 
+// Discord Tools
+export {
+  discordSetupToolDefinition,
+  discordSetupToolHandler,
+  discordStatusToolDefinition,
+  discordStatusToolHandler,
+  discordSendToolDefinition,
+  discordSendToolHandler,
+  discordReactToolDefinition,
+  discordReactToolHandler,
+  discordEditToolDefinition,
+  discordEditToolHandler,
+  discordDeleteToolDefinition,
+  discordDeleteToolHandler,
+  discordListGuildsToolDefinition,
+  discordListGuildsToolHandler,
+} from './discord-tools';
+
+// Slack Tools
+export {
+  slackSetupToolDefinition,
+  slackSetupToolHandler,
+  slackStatusToolDefinition,
+  slackStatusToolHandler,
+  slackSendToolDefinition,
+  slackSendToolHandler,
+  slackReactToolDefinition,
+  slackReactToolHandler,
+  slackEditToolDefinition,
+  slackEditToolHandler,
+  slackDeleteToolDefinition,
+  slackDeleteToolHandler,
+  slackListChannelsToolDefinition,
+  slackListChannelsToolHandler,
+} from './slack-tools';
+
 // Memory Tools
 export {
   memorySearchToolDefinition,
@@ -130,6 +166,111 @@ export {
   memoryListToolDefinition,
   memoryListToolHandler,
 } from './memory-tools';
+
+// Session/Sub-Agent Tools
+export {
+  sessionSpawnToolDefinition,
+  sessionSpawnToolHandler,
+  sessionListToolDefinition,
+  sessionListToolHandler,
+  sessionSendToolDefinition,
+  sessionSendToolHandler,
+  sessionStatusToolDefinition,
+  sessionStatusToolHandler,
+  sessionCancelToolDefinition,
+  sessionCancelToolHandler,
+} from './session-tools';
+
+// TTS (Text-to-Speech) Tools
+export {
+  ttsSpeakToolDefinition,
+  ttsSpeakToolHandler,
+  ttsVoicesToolDefinition,
+  ttsVoicesToolHandler,
+  ttsPlayToolDefinition,
+  ttsPlayToolHandler,
+} from './tts-tools';
+
+// Cron Tools
+export {
+  cronListToolDefinition,
+  cronListToolHandler,
+  cronAddToolDefinition,
+  cronAddToolHandler,
+  cronRemoveToolDefinition,
+  cronRemoveToolHandler,
+  cronRunToolDefinition,
+  cronRunToolHandler,
+  cronEnableToolDefinition,
+  cronEnableToolHandler,
+  cronDisableToolDefinition,
+  cronDisableToolHandler,
+  cronStatusToolDefinition,
+  cronStatusToolHandler,
+  heartbeatTriggerToolDefinition,
+  heartbeatTriggerToolHandler,
+  cronHistoryToolDefinition,
+  cronHistoryToolHandler,
+  // Manager setters for gateway integration
+  setCronManager,
+  setHeartbeatManager,
+  getCronManagerRef,
+  getHeartbeatManagerRef,
+} from './cron-tools';
+
+// Canvas Tools
+export {
+  canvasPresentToolDefinition,
+  canvasPresentToolHandler,
+  canvasChartToolDefinition,
+  canvasChartToolHandler,
+  canvasPortfolioToolDefinition,
+  canvasPortfolioToolHandler,
+  canvasSignalsToolDefinition,
+  canvasSignalsToolHandler,
+  canvasTableToolDefinition,
+  canvasTableToolHandler,
+  canvasSnapshotToolDefinition,
+  canvasSnapshotToolHandler,
+  canvasHideToolDefinition,
+  canvasHideToolHandler,
+  canvasBackToolDefinition,
+  canvasBackToolHandler,
+  CANVAS_TOOLS,
+  CANVAS_HANDLERS,
+} from './canvas-tools';
+
+// Browser Automation Tools
+export {
+  browserOpenToolDefinition,
+  browserOpenToolHandler,
+  browserNavigateToolDefinition,
+  browserNavigateToolHandler,
+  browserScreenshotToolDefinition,
+  browserScreenshotToolHandler,
+  browserSnapshotToolDefinition,
+  browserSnapshotToolHandler,
+  browserClickToolDefinition,
+  browserClickToolHandler,
+  browserTypeToolDefinition,
+  browserTypeToolHandler,
+  browserWaitToolDefinition,
+  browserWaitToolHandler,
+  browserCloseToolDefinition,
+  browserCloseToolHandler,
+  browserEvaluateToolDefinition,
+  browserEvaluateToolHandler,
+} from './browser-tools';
+
+// Image Analysis Tools
+export {
+  imageAnalyzeToolDefinition,
+  imageAnalyzeToolHandler,
+  chartAnalyzeToolDefinition,
+  chartAnalyzeToolHandler,
+  screenshotAnalyzeToolDefinition,
+  screenshotAnalyzeToolHandler,
+} from './image-tools';
 
 // Web Tools
 export {
