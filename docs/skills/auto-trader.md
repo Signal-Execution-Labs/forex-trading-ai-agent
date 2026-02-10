@@ -1,40 +1,40 @@
 ---
-summary: "Auto-Trader Skill - Automatische Trading-Strategien"
+summary: "Auto-Trader Skill - Automatic trading strategies"
 read_when:
-  - Automatisches Trading einrichten
-  - Strategien konfigurieren
+  - Set up automatic trading
+  - Configure strategies
 title: "Auto-Trader"
 ---
 
 # Auto-Trader
 
-Der Auto-Trader führt vordefinierte Trading-Strategien automatisch aus. Du definierst die Regeln, K.I.T. handelt.
+The Auto-Trader executes predefined trading strategies automatically. You define the rules, K.I.T. trades.
 
 <Warning>
-**Risiko-Hinweis:** Automatisches Trading kann zu erheblichen Verlusten führen. Teste jede Strategie ausgiebig mit Backtesting und Paper-Trading, bevor du echtes Kapital einsetzt.
+**Risk Disclaimer:** Automatic trading can lead to significant losses. Thoroughly test every strategy with backtesting and paper trading before using real capital.
 </Warning>
 
-## Übersicht
+## Overview
 
 ```mermaid
 flowchart TD
-    A[Marktdaten] --> B[Strategie-Engine]
+    A[Market Data] --> B[Strategy Engine]
     B --> C{Signal?}
-    C -->|Ja| D[Risk Check]
-    D -->|Pass| E[Order ausführen]
-    D -->|Fail| F[Ablehnen]
-    C -->|Nein| A
-    E --> G[Position überwachen]
-    G --> H{Exit-Signal?}
-    H -->|Ja| I[Position schließen]
-    H -->|Nein| G
+    C -->|Yes| D[Risk Check]
+    D -->|Pass| E[Execute Order]
+    D -->|Fail| F[Reject]
+    C -->|No| A
+    E --> G[Monitor Position]
+    G --> H{Exit Signal?}
+    H -->|Yes| I[Close Position]
+    H -->|No| G
 ```
 
-## Eingebaute Strategien
+## Built-in Strategies
 
 ### Trend Following
 
-Folgt etablierten Trends mit Moving Averages.
+Follows established trends with moving averages.
 
 ```json
 {
@@ -49,13 +49,13 @@ Folgt etablierten Trends mit Moving Averages.
 }
 ```
 
-**Signale:**
-- **Long:** Fast MA kreuzt über Slow MA
-- **Short:** Fast MA kreuzt unter Slow MA
+**Signals:**
+- **Long:** Fast MA crosses above Slow MA
+- **Short:** Fast MA crosses below Slow MA
 
 ### Mean Reversion
 
-Handelt Rückkehr zum Mittelwert bei Übertreibungen.
+Trades return to mean on overextensions.
 
 ```json
 {
@@ -70,13 +70,13 @@ Handelt Rückkehr zum Mittelwert bei Übertreibungen.
 }
 ```
 
-**Signale:**
-- **Long:** RSI < 30 ODER Preis unter unterem BB
-- **Short:** RSI > 70 ODER Preis über oberem BB
+**Signals:**
+- **Long:** RSI < 30 OR Price below lower BB
+- **Short:** RSI > 70 OR Price above upper BB
 
 ### Breakout
 
-Handelt Ausbrüche aus Konsolidierungen.
+Trades breakouts from consolidations.
 
 ```json
 {
@@ -91,7 +91,7 @@ Handelt Ausbrüche aus Konsolidierungen.
 
 ### Grid Trading
 
-Platziert Orders in einem Preis-Raster.
+Places orders in a price grid.
 
 ```json
 {
@@ -107,7 +107,7 @@ Platziert Orders in einem Preis-Raster.
 
 ### DCA (Dollar Cost Averaging)
 
-Regelmäßige Käufe unabhängig vom Preis.
+Regular purchases regardless of price.
 
 ```json
 {
@@ -121,17 +121,17 @@ Regelmäßige Käufe unabhängig vom Preis.
 }
 ```
 
-## Strategie starten
+## Start Strategy
 
 ### Via CLI
 
 ```bash
-# Strategie starten
+# Start strategy
 kit auto-trader start trend-following \
   --pair BTC/USDT \
   --capital 1000
 
-# Mit Custom-Parametern
+# With custom parameters
 kit auto-trader start mean-reversion \
   --pair ETH/USDT \
   --capital 500 \
@@ -142,30 +142,30 @@ kit auto-trader start mean-reversion \
 ### Via Telegram
 
 ```
-"Starte Trend-Following für BTC mit 1000$"
-"Auto-Trade Mean-Reversion auf ETH"
+"Start trend-following for BTC with $1000"
+"Auto-trade mean-reversion on ETH"
 ```
 
-## Strategie-Verwaltung
+## Strategy Management
 
 ```bash
-# Aktive Strategien anzeigen
+# Show active strategies
 kit auto-trader status
 
-# Strategie pausieren
+# Pause strategy
 kit auto-trader pause trend-following-btc
 
-# Strategie fortsetzen
+# Resume strategy
 kit auto-trader resume trend-following-btc
 
-# Strategie stoppen
+# Stop strategy
 kit auto-trader stop trend-following-btc
 
-# Alle stoppen
+# Stop all
 kit auto-trader stop-all
 ```
 
-## Status-Dashboard
+## Status Dashboard
 
 ```bash
 kit auto-trader dashboard
@@ -174,50 +174,50 @@ kit auto-trader dashboard
 ```
 🤖 Auto-Trader Dashboard
 ═══════════════════════════════════════
-Aktive Strategien: 3
+Active Strategies: 3
 
 ┌─────────────────────────────────────────────────┐
 │ #1 Trend-Following (BTC/USDT)                   │
 ├─────────────────────────────────────────────────┤
-│ Status: 🟢 Aktiv                                │
-│ Kapital: $1,000 | Position: Long $500           │
+│ Status: 🟢 Active                               │
+│ Capital: $1,000 | Position: Long $500           │
 │ PnL: +$52.30 (+5.23%)                          │
 │ Trades: 12 | Win Rate: 67%                      │
-│ Laufzeit: 7 Tage                               │
+│ Runtime: 7 days                                 │
 └─────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────┐
 │ #2 Mean-Reversion (ETH/USDT)                    │
 ├─────────────────────────────────────────────────┤
-│ Status: ⏳ Wartet auf Signal                     │
-│ Kapital: $500 | Position: Keine                 │
+│ Status: ⏳ Waiting for signal                   │
+│ Capital: $500 | Position: None                  │
 │ PnL: +$23.50 (+4.7%)                           │
 │ Trades: 8 | Win Rate: 62%                       │
-│ Laufzeit: 5 Tage                               │
+│ Runtime: 5 days                                 │
 └─────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────┐
 │ #3 DCA (BTC/USDT)                               │
 ├─────────────────────────────────────────────────┤
-│ Status: 🟢 Aktiv                                │
-│ Investiert: $400 | Nächster Kauf: Mo 09:00     │
-│ Avg Entry: $65,200 | Aktuell: $67,500          │
+│ Status: 🟢 Active                               │
+│ Invested: $400 | Next buy: Mon 09:00            │
+│ Avg Entry: $65,200 | Current: $67,500           │
 │ PnL: +$14.00 (+3.5%)                           │
 └─────────────────────────────────────────────────┘
 
-Gesamt-PnL: +$89.80 (+5.98%)
+Total PnL: +$89.80 (+5.98%)
 ```
 
-## Eigene Strategie erstellen
+## Create Custom Strategy
 
-### Strategie-Datei
+### Strategy File
 
 ```json
 // ~/.kit/strategies/my-strategy.json
 {
   "name": "my-strategy",
   "version": "1.0.0",
-  "description": "Meine Custom-Strategie",
+  "description": "My custom strategy",
   "timeframe": "4h",
   "pairs": ["BTC/USDT", "ETH/USDT"],
   
@@ -250,14 +250,14 @@ Gesamt-PnL: +$89.80 (+5.98%)
 }
 ```
 
-### Strategie registrieren
+### Register Strategy
 
 ```bash
 kit auto-trader add-strategy ./my-strategy.json
 kit auto-trader list-strategies
 ```
 
-### Strategie mit Code (Advanced)
+### Strategy with Code (Advanced)
 
 ```typescript
 // ~/.kit/strategies/custom/index.ts
@@ -287,24 +287,24 @@ export const myStrategy: Strategy = {
 };
 ```
 
-## Backtest vor Live
+## Backtest Before Live
 
-Bevor eine Strategie live geht:
+Before a strategy goes live:
 
 ```bash
-# Backtest durchführen
+# Run backtest
 kit backtest my-strategy \
   --pair BTC/USDT \
   --from 2023-01-01 \
   --to 2024-01-01
 
-# Paper-Trading testen
+# Test with paper trading
 kit auto-trader start my-strategy \
   --pair BTC/USDT \
   --paper
 ```
 
-## Benachrichtigungen
+## Notifications
 
 ```json
 {
@@ -320,12 +320,12 @@ kit auto-trader start my-strategy \
 }
 ```
 
-Trade-Benachrichtigung:
+Trade notification:
 ```
-🤖 Auto-Trader: Trade ausgeführt
+🤖 Auto-Trader: Trade executed
 ═══════════════════════════════════════
-Strategie: Trend-Following
-Aktion: LONG BTC/USDT
+Strategy: Trend-Following
+Action: LONG BTC/USDT
 
 Entry: $67,200
 Stop-Loss: $65,856 (-2%)
@@ -334,9 +334,9 @@ Take-Profit: $71,232 (+6%)
 Position: $500 (5% Portfolio)
 ```
 
-## Sicherheits-Features
+## Safety Features
 
-### Kill-Switch
+### Kill Switch
 
 ```json
 {
@@ -350,17 +350,17 @@ Position: $500 (5% Portfolio)
 }
 ```
 
-### Manuelles Override
+### Manual Override
 
 ```bash
-# Alle Auto-Trades sofort stoppen
+# Stop all auto-trades immediately
 kit auto-trader emergency-stop
 
-# Bestimmte Strategie überschreiben
+# Override specific strategy
 kit auto-trader override trend-following --close-all
 ```
 
-## Performance-Tracking
+## Performance Tracking
 
 ```bash
 kit auto-trader performance
@@ -370,27 +370,27 @@ kit auto-trader performance --strategy trend-following
 ```
 📊 Auto-Trader Performance
 ═══════════════════════════════════════
-Zeitraum: 30 Tage
+Period: 30 days
 
-Strategie         Trades  Win%   PnL      Sharpe
+Strategy         Trades  Win%   PnL      Sharpe
 ────────────────────────────────────────────────
-Trend-Following   24      67%    +8.5%    1.8
-Mean-Reversion    18      56%    +3.2%    1.2
-DCA               4       75%    +5.1%    N/A
+Trend-Following  24      67%    +8.5%    1.8
+Mean-Reversion   18      56%    +3.2%    1.2
+DCA              4       75%    +5.1%    N/A
 ────────────────────────────────────────────────
-Gesamt            46      64%    +6.2%    1.5
+Total            46      64%    +6.2%    1.5
 ```
 
-## Nächste Schritte
+## Next Steps
 
 <Columns>
   <Card title="Backtester" href="/skills/backtester" icon="history">
-    Strategien testen.
+    Test strategies.
   </Card>
   <Card title="Risk Management" href="/concepts/risk-management" icon="shield">
-    Risiko-Kontrolle.
+    Risk control.
   </Card>
   <Card title="Market Analysis" href="/skills/market-analysis" icon="bar-chart">
-    Analyse für bessere Strategien.
+    Analysis for better strategies.
   </Card>
 </Columns>

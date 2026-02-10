@@ -1,16 +1,16 @@
 ---
-summary: "Portfolio Tracker Skill - Vermögensübersicht und Performance"
+summary: "Portfolio Tracker Skill - Asset overview and performance"
 read_when:
-  - Portfolio verwalten
-  - Performance tracken
+  - Manage portfolio
+  - Track performance
 title: "Portfolio Tracker"
 ---
 
 # Portfolio Tracker
 
-Der Portfolio Tracker bietet eine konsolidierte Übersicht über alle deine Assets auf allen verbundenen Exchanges.
+The Portfolio Tracker provides a consolidated overview of all your assets across all connected exchanges.
 
-## Übersicht
+## Overview
 
 ```mermaid
 flowchart LR
@@ -22,9 +22,9 @@ flowchart LR
     A --> D[Dashboard]
 ```
 
-## Befehle
+## Commands
 
-### Portfolio anzeigen
+### Show Portfolio
 
 ```bash
 kit portfolio
@@ -34,14 +34,14 @@ kit portfolio --exchange binance
 
 Telegram:
 ```
-"Zeig mein Portfolio"
-"Portfolio-Details"
-"Wie viel habe ich auf Binance?"
+"Show my portfolio"
+"Portfolio details"
+"How much do I have on Binance?"
 ```
 
 Output:
 ```
-💰 Portfolio Übersicht
+💰 Portfolio Overview
 ═══════════════════════════════════════
 Total: $15,432.50 (+5.2% MTD)
 
@@ -66,8 +66,8 @@ kit holdings BTC
 ```
 
 ```
-"Was habe ich an BTC?"
-"Zeig meine Holdings"
+"What BTC do I have?"
+"Show my holdings"
 ```
 
 ### Performance
@@ -80,39 +80,39 @@ kit performance --period ytd
 ```
 
 ```
-"Wie ist meine Performance?"
-"Performance letzte Woche"
-"Performance dieses Jahr"
+"How is my performance?"
+"Performance last week"
+"Performance this year"
 ```
 
 ## Features
 
 ### Multi-Exchange Aggregation
 
-Kombiniert Balances von allen Exchanges:
+Combines balances from all exchanges:
 
 ```
-📊 Verteilung nach Exchange:
+📊 Distribution by Exchange:
 • Binance:   $10,000 (64.8%)
 • Kraken:    $3,500 (22.7%)
 • MetaTrader: $1,932 (12.5%)
 ```
 
-### Echtzeit-Updates
+### Real-Time Updates
 
 ```json
 {
   "skills": {
     "portfolio-tracker": {
-      "updateInterval": 60,        // Sekunden
-      "realtime": true,           // WebSocket-Updates
-      "priceSource": "binance"    // Preisquelle
+      "updateInterval": 60,        // Seconds
+      "realtime": true,           // WebSocket updates
+      "priceSource": "binance"    // Price source
     }
   }
 }
 ```
 
-### Historische Snapshots
+### Historical Snapshots
 
 ```bash
 kit portfolio history --from 2024-01-01
@@ -121,7 +121,7 @@ kit portfolio compare --date 2024-01-01
 
 ## Analytics
 
-### Performance-Metriken
+### Performance Metrics
 
 ```bash
 kit portfolio analytics
@@ -148,31 +148,31 @@ Benchmark Comparison:
 • vs S&P:  +35.2%
 ```
 
-### Korrelationsmatrix
+### Correlation Matrix
 
 ```bash
 kit portfolio correlation
 ```
 
 ```
-📊 Asset Korrelation
+📊 Asset Correlation
        BTC    ETH    SOL
 BTC   1.00   0.85   0.72
 ETH   0.85   1.00   0.81
 SOL   0.72   0.81   1.00
 
-⚠️ Hohe Korrelation zwischen ETH und SOL
-   Diversifikation begrenzt
+⚠️ High correlation between ETH and SOL
+   Diversification limited
 ```
 
-### Sektor-Allocation
+### Sector Allocation
 
 ```bash
 kit portfolio sectors
 ```
 
 ```
-📊 Sektor-Verteilung
+📊 Sector Distribution
 • Layer 1:    55% (BTC, ETH, SOL)
 • DeFi:       20% (AAVE, UNI)
 • Stablecoins: 15% (USDT, USDC)
@@ -181,7 +181,7 @@ kit portfolio sectors
 
 ## Alerts
 
-### Wert-Alerts
+### Value Alerts
 
 ```bash
 kit alert portfolio --total-above 20000
@@ -189,7 +189,7 @@ kit alert portfolio --total-below 10000
 kit alert portfolio --change -5%
 ```
 
-### Allocation-Alerts
+### Allocation Alerts
 
 ```bash
 kit alert portfolio --asset BTC --share-above 70%
@@ -198,7 +198,7 @@ kit alert portfolio --asset USDT --share-below 5%
 
 ## Rebalancing
 
-### Ziel-Allocation definieren
+### Define Target Allocation
 
 ```json
 {
@@ -212,7 +212,7 @@ kit alert portfolio --asset USDT --share-below 5%
 }
 ```
 
-### Rebalancing durchführen
+### Execute Rebalancing
 
 ```bash
 kit portfolio rebalance
@@ -221,48 +221,48 @@ kit portfolio rebalance --threshold 5%
 ```
 
 ```
-"Rebalance mein Portfolio"
-"Rebalance auf 50% BTC, 30% ETH, 20% USDT"
+"Rebalance my portfolio"
+"Rebalance to 50% BTC, 30% ETH, 20% USDT"
 ```
 
 Output:
 ```
-🔄 Rebalancing-Plan
+🔄 Rebalancing Plan
 ═══════════════════════════════════════
-Aktuelle vs. Ziel-Allocation:
+Current vs. Target Allocation:
 
-Asset    Aktuell    Ziel      Aktion
+Asset    Current    Target    Action
 ─────────────────────────────────────
 BTC      65.1%      50.0%     Sell $2,330
 ETH      22.5%      30.0%     Buy $1,155
 USDT     12.3%      20.0%     Buy $1,175
 
-Geschätzte Gebühren: $4.50
+Estimated Fees: $4.50
 
-[✅ Ausführen] [📋 Nur anzeigen]
+[✅ Execute] [📋 View Only]
 ```
 
 ## Export
 
-### CSV-Export
+### CSV Export
 
 ```bash
 kit portfolio export --format csv --output portfolio.csv
 ```
 
-### JSON-Export
+### JSON Export
 
 ```bash
 kit portfolio export --format json --output portfolio.json
 ```
 
-### Tax-Report
+### Tax Report
 
 ```bash
 kit portfolio tax --year 2024 --format csv
 ```
 
-## Konfiguration
+## Configuration
 
 ```json
 {
@@ -283,11 +283,11 @@ kit portfolio tax --year 2024 --format csv
 }
 ```
 
-## Dashboard-Widgets
+## Dashboard Widgets
 
 ### Telegram Mini-Dashboard
 
-K.I.T. kann regelmäßige Portfolio-Updates senden:
+K.I.T. can send regular portfolio updates:
 
 ```json
 {
@@ -302,29 +302,29 @@ K.I.T. kann regelmäßige Portfolio-Updates senden:
 ```
 
 ```
-📊 Täglicher Portfolio Report - 15. Januar 2024
+📊 Daily Portfolio Report - January 15, 2024
 ═══════════════════════════════════════
 Total: $15,432.50 (+1.2% ↗️)
 
 Top Performer: SOL +5.2%
 Worst: LINK -2.1%
 
-Offene Positionen: 3
-PnL heute: +$180
+Open Positions: 3
+PnL today: +$180
 
-✨ Guten Handel!
+✨ Happy trading!
 ```
 
-## Nächste Schritte
+## Next Steps
 
 <Columns>
   <Card title="Alert System" href="/skills/alert-system" icon="bell">
-    Portfolio-Alerts einrichten.
+    Set up portfolio alerts.
   </Card>
   <Card title="Risk Management" href="/concepts/risk-management" icon="shield">
-    Portfolio-Risiko verstehen.
+    Understand portfolio risk.
   </Card>
   <Card title="Auto-Trader" href="/skills/auto-trader" icon="bot">
-    Automatisches Rebalancing.
+    Automatic rebalancing.
   </Card>
 </Columns>

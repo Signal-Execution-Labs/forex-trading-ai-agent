@@ -1,32 +1,32 @@
 # Build Your Own Trading Bot
 
-> 🤖 Entwickle deinen eigenen Trading Bot mit K.I.T. in unter 30 Minuten!
+> 🤖 Build your own trading bot with K.I.T. in under 30 minutes!
 
-## Warum K.I.T.?
+## Why K.I.T.?
 
-K.I.T. ist nicht nur ein Trading Bot - es ist ein **Framework** wie OpenClaw. Du kannst:
+K.I.T. is not just a trading bot - it's a **framework** like OpenClaw. You can:
 
-- ✅ Eigene Trading Bots entwickeln
-- ✅ Custom Strategien implementieren
-- ✅ Apps für alle unterstützten Plattformen bauen
-- ✅ Telegram/Discord Bots erstellen
-- ✅ Web Dashboards bauen
-- ✅ Signal-Services anbieten
+- ✅ Develop your own trading bots
+- ✅ Implement custom strategies
+- ✅ Build apps for all supported platforms
+- ✅ Create Telegram/Discord bots
+- ✅ Build web dashboards
+- ✅ Offer signal services
 
 ---
 
-## 🚀 In 5 Schritten zum eigenen Bot
+## 🚀 5 Steps to Your Own Bot
 
-### Schritt 1: Projekt erstellen
+### Step 1: Create Project
 
 ```bash
-mkdir mein-trading-bot
-cd mein-trading-bot
+mkdir my-trading-bot
+cd my-trading-bot
 npm init -y
 npm install @binaryfaster/kit typescript ts-node
 ```
 
-### Schritt 2: TypeScript konfigurieren
+### Step 2: Configure TypeScript
 
 ```json
 // tsconfig.json
@@ -41,14 +41,14 @@ npm install @binaryfaster/kit typescript ts-node
 }
 ```
 
-### Schritt 3: Bot-Code schreiben
+### Step 3: Write Bot Code
 
 ```typescript
 // src/bot.ts
 import { createBot, RSIStrategy } from '@binaryfaster/kit';
 
 const bot = createBot({
-  name: 'MeinRSIBot',
+  name: 'MyRSIBot',
   
   // Exchange
   exchange: 'binance',
@@ -61,7 +61,7 @@ const bot = createBot({
   pair: 'BTC/USDT',
   timeframe: '1h',
   
-  // Strategie
+  // Strategy
   strategy: new RSIStrategy({
     period: 14,
     oversold: 30,
@@ -70,10 +70,10 @@ const bot = createBot({
   
   // Risk Management
   risk: {
-    maxPositionSize: 0.1,  // 10% pro Trade
-    stopLoss: 0.02,        // 2% Stop Loss
-    takeProfit: 0.04,      // 4% Take Profit
-    maxDailyLoss: 0.05,    // 5% max Tagesverlust
+    maxPositionSize: 0.1,  // 10% per trade
+    stopLoss: 0.02,        // 2% stop loss
+    takeProfit: 0.04,      // 4% take profit
+    maxDailyLoss: 0.05,    // 5% max daily loss
   },
   
   // Notifications
@@ -98,47 +98,47 @@ bot.on('error', (error) => {
   console.error(`❌ Error: ${error.message}`);
 });
 
-// Starten
+// Start
 bot.start();
-console.log('🚗 Bot gestartet!');
+console.log('🚗 Bot started!');
 ```
 
-### Schritt 4: Environment Variables
+### Step 4: Environment Variables
 
 ```bash
 # .env
-BINANCE_API_KEY=dein_api_key
-BINANCE_SECRET=dein_secret
-TELEGRAM_BOT_TOKEN=dein_bot_token
-TELEGRAM_CHAT_ID=dein_chat_id
+BINANCE_API_KEY=your_api_key
+BINANCE_SECRET=your_secret
+TELEGRAM_BOT_TOKEN=your_bot_token
+TELEGRAM_CHAT_ID=your_chat_id
 ```
 
-### Schritt 5: Bot starten
+### Step 5: Start Bot
 
 ```bash
 npx ts-node src/bot.ts
 ```
 
-**Das war's!** 🎉 Dein Bot traded jetzt automatisch.
+**That's it!** 🎉 Your bot is now trading automatically.
 
 ---
 
-## 📊 Eigene Strategie entwickeln
+## 📊 Develop Your Own Strategy
 
 ```typescript
 // src/strategies/my-strategy.ts
 import { Strategy, Candle, Signal, Indicators } from '@binaryfaster/kit';
 
-export class MeineStrategie extends Strategy {
-  name = 'Meine Super Strategie';
+export class MyStrategy extends Strategy {
+  name = 'My Super Strategy';
   
   private indicators = new Indicators();
   
   async analyze(candles: Candle[]): Promise<Signal | null> {
-    // Deine Logik hier
+    // Your logic here
     const closes = candles.map(c => c.close);
     
-    // Beispiel: MA Crossover
+    // Example: MA Crossover
     const ma20 = this.indicators.sma(closes, 20);
     const ma50 = this.indicators.sma(closes, 50);
     
@@ -164,9 +164,9 @@ export class MeineStrategie extends Strategy {
 
 ---
 
-## 🌐 Unterstützte Plattformen
+## 🌐 Supported Platforms
 
-Du kannst Bots für alle diese Plattformen bauen:
+You can build bots for all these platforms:
 
 ### Crypto
 - Binance, Binance Futures
@@ -196,21 +196,21 @@ Du kannst Bots für alle diese Plattformen bauen:
 
 ---
 
-## 💡 Projekt-Ideen
+## 💡 Project Ideas
 
-| Projekt | Schwierigkeit | Beschreibung |
-|---------|---------------|--------------|
-| DCA Bot | ⭐ Einfach | Dollar Cost Averaging |
-| Grid Bot | ⭐⭐ Mittel | Grid Trading |
-| Arbitrage Bot | ⭐⭐⭐ Schwer | Cross-Exchange Arbitrage |
-| Signal Bot | ⭐⭐ Mittel | Telegram Signal Service |
-| Copy Trading | ⭐⭐⭐ Schwer | Master-Follower System |
-| Portfolio App | ⭐⭐ Mittel | Multi-Exchange Dashboard |
-| News Trader | ⭐⭐⭐ Schwer | Event-basiertes Trading |
+| Project | Difficulty | Description |
+|---------|------------|-------------|
+| DCA Bot | ⭐ Easy | Dollar Cost Averaging |
+| Grid Bot | ⭐⭐ Medium | Grid Trading |
+| Arbitrage Bot | ⭐⭐⭐ Hard | Cross-Exchange Arbitrage |
+| Signal Bot | ⭐⭐ Medium | Telegram Signal Service |
+| Copy Trading | ⭐⭐⭐ Hard | Master-Follower System |
+| Portfolio App | ⭐⭐ Medium | Multi-Exchange Dashboard |
+| News Trader | ⭐⭐⭐ Hard | Event-based Trading |
 
 ---
 
-## 🆘 Hilfe & Community
+## 🆘 Help & Community
 
 - **Docs**: [K.I.T. Documentation](https://github.com/kayzaa/k.i.t.-bot)
 - **Examples**: [Code Examples](https://github.com/kayzaa/k.i.t.-bot/tree/main/examples)

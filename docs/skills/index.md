@@ -1,16 +1,16 @@
 ---
-summary: "Übersicht aller K.I.T. Skills"
+summary: "Overview of all K.I.T. skills"
 read_when:
-  - Skill-System verstehen
-  - Verfügbare Skills erkunden
-title: "Skills Übersicht"
+  - Understand skill system
+  - Explore available skills
+title: "Skills Overview"
 ---
 
-# Skills - K.I.T.'s Fähigkeiten
+# Skills - K.I.T.'s Capabilities
 
-Skills sind modulare Erweiterungen, die K.I.T. seine Fähigkeiten verleihen. Jeder Skill ist unabhängig und kann aktiviert/deaktiviert werden.
+Skills are modular extensions that give K.I.T. its capabilities. Each skill is independent and can be enabled/disabled.
 
-## Architektur
+## Architecture
 
 ```mermaid
 flowchart TB
@@ -41,165 +41,165 @@ flowchart TB
     EC --> MetaTrader
 ```
 
-## Verfügbare Skills
+## Available Skills
 
 ### 🔌 Exchange Connector
-**Status:** ✅ Stabil
+**Status:** ✅ Stable
 
-Verbindet K.I.T. mit Börsen und Brokern.
+Connects K.I.T. to exchanges and brokers.
 
-| Feature | Beschreibung |
-|---------|--------------|
-| Multi-Exchange | Gleichzeitig mehrere Börsen |
-| Unified API | Einheitliches Interface für alle Exchanges |
-| WebSocket | Echtzeit-Preisstreams |
-| Rate Limiting | Automatisches Throttling |
+| Feature | Description |
+|---------|-------------|
+| Multi-Exchange | Multiple exchanges simultaneously |
+| Unified API | Unified interface for all exchanges |
+| WebSocket | Real-time price streams |
+| Rate Limiting | Automatic throttling |
 
-**Unterstützt:** Binance, Kraken, Coinbase, OKX, Bybit, MetaTrader 4/5
+**Supported:** Binance, Kraken, Coinbase, OKX, Bybit, MetaTrader 4/5
 
-[📖 Dokumentation →](/skills/exchange-connector)
+[📖 Documentation →](/skills/exchange-connector)
 
 ---
 
 ### 💼 Portfolio Tracker
-**Status:** ✅ Stabil
+**Status:** ✅ Stable
 
-Verfolgt dein gesamtes Portfolio über alle Exchanges.
+Tracks your entire portfolio across all exchanges.
 
-| Feature | Beschreibung |
-|---------|--------------|
-| Consolidation | Alle Assets in einer Ansicht |
-| P&L Tracking | Gewinn/Verlust pro Position |
-| Allocation | Portfolio-Verteilung |
-| History | Historische Performance |
+| Feature | Description |
+|---------|-------------|
+| Consolidation | All assets in one view |
+| P&L Tracking | Profit/loss per position |
+| Allocation | Portfolio distribution |
+| History | Historical performance |
 
 **Tools:**
-- `kit portfolio` - Übersicht
-- `kit portfolio pnl` - P&L-Analyse
-- `kit portfolio history` - Verlauf
+- `kit portfolio` - Overview
+- `kit portfolio pnl` - P&L analysis
+- `kit portfolio history` - History
 
-[📖 Dokumentation →](/skills/portfolio-tracker)
+[📖 Documentation →](/skills/portfolio-tracker)
 
 ---
 
 ### 📈 Market Analysis
-**Status:** ✅ Stabil
+**Status:** ✅ Stable
 
-Technische Analyse und Marktdaten.
+Technical analysis and market data.
 
-| Feature | Beschreibung |
-|---------|--------------|
+| Feature | Description |
+|---------|-------------|
 | Indicators | RSI, MACD, Bollinger, MA, etc. |
-| Pattern | Candlestick-Muster erkennen |
-| Support/Resistance | Automatische Level-Erkennung |
-| Signals | Buy/Sell-Signale generieren |
+| Pattern | Candlestick pattern detection |
+| Support/Resistance | Automatic level detection |
+| Signals | Generate buy/sell signals |
 
 **Tools:**
-- `kit analyze <pair>` - Vollanalyse
-- `kit market <pair>` - Marktdaten
-- `kit chart <pair>` - Chart-Daten
+- `kit analyze <pair>` - Full analysis
+- `kit market <pair>` - Market data
+- `kit chart <pair>` - Chart data
 
-[📖 Dokumentation →](/skills/market-analysis)
+[📖 Documentation →](/skills/market-analysis)
 
 ---
 
 ### 🤖 Auto Trader
-**Status:** ✅ Stabil
+**Status:** ✅ Stable
 
-Automatisierte Strategieausführung.
+Automated strategy execution.
 
-| Feature | Beschreibung |
-|---------|--------------|
-| Strategies | Vordefinierte & eigene Strategien |
-| Risk Management | Stop-Loss, Take-Profit, Position-Sizing |
-| Approval Mode | Manuell, Semi-Auto, Full-Auto |
-| Logging | Jede Entscheidung dokumentiert |
+| Feature | Description |
+|---------|-------------|
+| Strategies | Predefined & custom strategies |
+| Risk Management | Stop-loss, take-profit, position sizing |
+| Approval Mode | Manual, semi-auto, full-auto |
+| Logging | Every decision documented |
 
-**Modi:**
-1. **Manual** - Jeder Trade braucht Bestätigung
-2. **Semi-Auto** - Kleine Trades automatisch
-3. **Full-Auto** - Alles automatisch
+**Modes:**
+1. **Manual** - Every trade needs confirmation
+2. **Semi-Auto** - Small trades automatic
+3. **Full-Auto** - Everything automatic
 
-[📖 Dokumentation →](/skills/auto-trader)
+[📖 Documentation →](/skills/auto-trader)
 
 ---
 
 ### 🔔 Alert System
-**Status:** ✅ Stabil
+**Status:** ✅ Stable
 
-Benachrichtigungen bei Preisbewegungen und Events.
+Notifications for price movements and events.
 
-| Feature | Beschreibung |
-|---------|--------------|
-| Price Alerts | Über/unter Preis |
+| Feature | Description |
+|---------|-------------|
+| Price Alerts | Above/below price |
 | Indicator Alerts | RSI, MACD, etc. |
-| Portfolio Alerts | Drawdown, Exposure |
+| Portfolio Alerts | Drawdown, exposure |
 | Multi-Channel | Telegram, Discord, Email |
 
 **Tools:**
-- `kit alert list` - Alle Alerts
-- `kit alert price BTC above 70000` - Preis-Alert
-- `kit alert rsi BTC below 30` - Indikator-Alert
+- `kit alert list` - All alerts
+- `kit alert price BTC above 70000` - Price alert
+- `kit alert rsi BTC below 30` - Indicator alert
 
-[📖 Dokumentation →](/skills/alert-system)
+[📖 Documentation →](/skills/alert-system)
 
 ---
 
 ### ⏮️ Backtester
-**Status:** ✅ Stabil
+**Status:** ✅ Stable
 
-Strategien mit historischen Daten testen.
+Test strategies with historical data.
 
-| Feature | Beschreibung |
-|---------|--------------|
-| Historical Data | Multi-Timeframe OHLCV |
+| Feature | Description |
+|---------|-------------|
+| Historical Data | Multi-timeframe OHLCV |
 | Metrics | Sharpe, Sortino, Max DD, etc. |
-| Visualization | Equity-Kurve, Drawdown-Chart |
-| Optimization | Parameter-Optimierung |
+| Visualization | Equity curve, drawdown chart |
+| Optimization | Parameter optimization |
 
 **Tools:**
-- `kit backtest --strategy ma_cross` - Backtest starten
-- `kit backtest list` - Verfügbare Strategien
-- `kit backtest report <id>` - Ergebnis anzeigen
+- `kit backtest --strategy ma_cross` - Start backtest
+- `kit backtest list` - Available strategies
+- `kit backtest report <id>` - Show result
 
-[📖 Dokumentation →](/skills/backtester)
+[📖 Documentation →](/skills/backtester)
 
 ---
 
 ### 📰 News Tracker
 **Status:** 🚧 Beta
 
-Nachrichten und Sentiment-Analyse.
+News and sentiment analysis.
 
-| Feature | Beschreibung |
-|---------|--------------|
+| Feature | Description |
+|---------|-------------|
 | News Aggregation | Crypto, Forex, Stocks |
-| Sentiment | AI-basierte Sentiment-Erkennung |
-| Impact Analysis | Auswirkung auf Assets |
-| Alerts | Breaking News Benachrichtigungen |
+| Sentiment | AI-based sentiment detection |
+| Impact Analysis | Impact on assets |
+| Alerts | Breaking news notifications |
 
-**Quellen:** CoinDesk, CoinTelegraph, Bloomberg, Reuters
+**Sources:** CoinDesk, CoinTelegraph, Bloomberg, Reuters
 
-[📖 Dokumentation →](/skills/news-tracker)
+[📖 Documentation →](/skills/news-tracker)
 
 ---
 
-## Skill aktivieren/deaktivieren
+## Enable/Disable Skills
 
-### Per CLI
+### Via CLI
 
 ```bash
-# Skill aktivieren
+# Enable skill
 kit skills enable backtester
 
-# Skill deaktivieren
+# Disable skill
 kit skills disable news-tracker
 
-# Skill-Status anzeigen
+# Show skill status
 kit skills status
 ```
 
-### Per Config
+### Via Config
 
 ```json
 {
@@ -215,16 +215,16 @@ kit skills status
 }
 ```
 
-## Eigene Skills entwickeln
+## Develop Custom Skills
 
-Skills folgen einer standardisierten Struktur:
+Skills follow a standardized structure:
 
 ```
 my-skill/
-├── index.ts          # Einstiegspunkt
-├── SKILL.md          # Dokumentation
-├── package.json      # Metadaten
-└── config.schema.json # Konfiguration
+├── index.ts          # Entry point
+├── SKILL.md          # Documentation
+├── package.json      # Metadata
+└── config.schema.json # Configuration
 ```
 
 ### Skill Template
@@ -239,7 +239,7 @@ export default class MySkill implements Skill {
   version = '1.0.0';
   
   async init(ctx: SkillContext): Promise<void> {
-    // Initialisierung
+    // Initialization
   }
   
   async execute(action: string, params: any): Promise<any> {
@@ -252,28 +252,28 @@ export default class MySkill implements Skill {
   }
   
   private async handleMyAction(params: any): Promise<any> {
-    // Implementierung
+    // Implementation
     return { success: true };
   }
 }
 ```
 
-### Skill installieren
+### Install Skill
 
 ```bash
-# Aus npm
+# From npm
 kit skills install @binaryfaster/kit-skill-myskill
 
-# Lokal
+# Local
 kit skills install ./path/to/my-skill
 ```
 
-## Skill-Interaktion
+## Skill Interaction
 
-Skills können miteinander kommunizieren:
+Skills can communicate with each other:
 
 ```typescript
-// In einem Skill
+// In a skill
 const price = await this.ctx.invokeSkill('market-analysis', 'getPrice', {
   pair: 'BTC/USDT'
 });
@@ -290,13 +290,13 @@ const order = await this.ctx.invokeSkill('exchange-connector', 'createOrder', {
 
 | Skill | Status | ETA |
 |-------|--------|-----|
-| DeFi Connector | 📋 Geplant | Q2 2026 |
-| Tax Reporter | 📋 Geplant | Q2 2026 |
-| Social Trading | 📋 Geplant | Q3 2026 |
-| ML Predictor | 📋 Geplant | Q3 2026 |
+| DeFi Connector | 📋 Planned | Q2 2026 |
+| Tax Reporter | 📋 Planned | Q2 2026 |
+| Social Trading | 📋 Planned | Q3 2026 |
+| ML Predictor | 📋 Planned | Q3 2026 |
 
 ---
 
 <Tip>
-**Tipp:** Starte mit den Core-Skills (Exchange Connector, Portfolio Tracker, Market Analysis) und aktiviere weitere nach Bedarf.
+**Tip:** Start with the core skills (Exchange Connector, Portfolio Tracker, Market Analysis) and enable more as needed.
 </Tip>

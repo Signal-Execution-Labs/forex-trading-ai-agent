@@ -1,18 +1,18 @@
 ---
-summary: "Alert System Skill - Intelligente Benachrichtigungen"
+summary: "Alert System Skill - Intelligent notifications"
 read_when:
-  - Alerts einrichten
-  - Benachrichtigungen konfigurieren
+  - Set up alerts
+  - Configure notifications
 title: "Alert System"
 ---
 
 # Alert System
 
-Das Alert System überwacht Märkte 24/7 und benachrichtigt dich bei wichtigen Ereignissen.
+The Alert System monitors markets 24/7 and notifies you of important events.
 
-## Alert-Typen
+## Alert Types
 
-### Preis-Alerts
+### Price Alerts
 
 ```bash
 kit alert BTC/USDT price above 70000
@@ -22,11 +22,11 @@ kit alert ETH/USDT price at 3500
 
 Telegram:
 ```
-"Alert wenn BTC über 70k"
-"Benachrichtige mich bei ETH unter 3000"
+"Alert when BTC above 70k"
+"Notify me when ETH below 3000"
 ```
 
-### Prozent-Änderung
+### Percent Change
 
 ```bash
 kit alert BTC/USDT change +5% --period 1h
@@ -34,10 +34,10 @@ kit alert BTC/USDT change -10% --period 24h
 ```
 
 ```
-"Alert wenn BTC 5% steigt in 1 Stunde"
+"Alert when BTC rises 5% in 1 hour"
 ```
 
-### Indikator-Alerts
+### Indicator Alerts
 
 ```bash
 # RSI
@@ -53,25 +53,25 @@ kit alert ETH/USDT bb-touch lower
 ```
 
 ```
-"Alert wenn BTC RSI über 70"
-"Benachrichtige bei MACD Crossover"
+"Alert when BTC RSI above 70"
+"Notify on MACD crossover"
 ```
 
-### Volumen-Alerts
+### Volume Alerts
 
 ```bash
 kit alert BTC/USDT volume above 200%
 kit alert ETH/USDT volume spike
 ```
 
-### Pattern-Alerts
+### Pattern Alerts
 
 ```bash
 kit alert BTC/USDT pattern "bullish engulfing"
 kit alert ETH/USDT pattern "head and shoulders"
 ```
 
-### Portfolio-Alerts
+### Portfolio Alerts
 
 ```bash
 kit alert portfolio total above 50000
@@ -79,9 +79,9 @@ kit alert portfolio total below 10000
 kit alert portfolio change -5%
 ```
 
-## Alert-Verwaltung
+## Alert Management
 
-### Alerts auflisten
+### List Alerts
 
 ```bash
 kit alerts
@@ -90,29 +90,29 @@ kit alerts --triggered
 ```
 
 ```
-"Zeig meine Alerts"
+"Show my alerts"
 ```
 
 Output:
 ```
-📋 Aktive Alerts (5)
+📋 Active Alerts (5)
 ═══════════════════════════════════════
-ID    Typ       Asset      Bedingung        Status
+ID    Type      Asset      Condition        Status
 ─────────────────────────────────────────────────
-#1    Price     BTC/USDT   > $70,000        ⏳ Aktiv
-#2    Price     BTC/USDT   < $60,000        ⏳ Aktiv
-#3    RSI       ETH/USDT   < 30             ⏳ Aktiv
-#4    Change    SOL/USDT   +10% (24h)       ⏳ Aktiv
-#5    Volume    BTC/USDT   > 200%           ⏳ Aktiv
+#1    Price     BTC/USDT   > $70,000        ⏳ Active
+#2    Price     BTC/USDT   < $60,000        ⏳ Active
+#3    RSI       ETH/USDT   < 30             ⏳ Active
+#4    Change    SOL/USDT   +10% (24h)       ⏳ Active
+#5    Volume    BTC/USDT   > 200%           ⏳ Active
 
-Letzte ausgelöste (3):
+Recently Triggered (3):
 ─────────────────────────────────────────────────
-#6    Price     ETH/USDT   > $3,500         ✅ Vor 2h
-#7    RSI       BTC/USDT   > 70             ✅ Gestern
-#8    Pattern   BTC/USDT   Bullish Engulf   ✅ 3 Tage
+#6    Price     ETH/USDT   > $3,500         ✅ 2h ago
+#7    RSI       BTC/USDT   > 70             ✅ Yesterday
+#8    Pattern   BTC/USDT   Bullish Engulf   ✅ 3 days
 ```
 
-### Alert löschen
+### Delete Alert
 
 ```bash
 kit alerts remove 1
@@ -121,11 +121,11 @@ kit alerts remove --asset BTC/USDT
 ```
 
 ```
-"Lösche Alert #1"
-"Lösche alle Alerts"
+"Delete alert #1"
+"Delete all alerts"
 ```
 
-### Alert pausieren
+### Pause Alert
 
 ```bash
 kit alerts pause 1
@@ -133,9 +133,9 @@ kit alerts pause --all
 kit alerts resume 1
 ```
 
-## Erweiterte Alerts
+## Advanced Alerts
 
-### Kombinierte Bedingungen
+### Combined Conditions
 
 ```bash
 kit alert BTC/USDT \
@@ -144,23 +144,23 @@ kit alert BTC/USDT \
   --volume-above 150%
 ```
 
-Alle Bedingungen müssen erfüllt sein.
+All conditions must be met.
 
-### Wiederkehrende Alerts
+### Recurring Alerts
 
 ```bash
 kit alert BTC/USDT price above 70000 --repeat
 ```
 
-Alert wird nach Auslösung wieder aktiviert.
+Alert is reactivated after triggering.
 
-### Zeitbasierte Alerts
+### Time-Based Alerts
 
 ```bash
-# Nur während Handelszeiten
+# Only during trading hours
 kit alert BTC/USDT price above 70000 --hours 9-17
 
-# Nur an bestimmten Tagen
+# Only on specific days
 kit alert BTC/USDT rsi below 30 --days mon,tue,wed
 ```
 
@@ -170,11 +170,11 @@ kit alert BTC/USDT rsi below 30 --days mon,tue,wed
 kit alert BTC/USDT change +5% --cooldown 1h
 ```
 
-Mindestens 1 Stunde zwischen Benachrichtigungen.
+At least 1 hour between notifications.
 
-## Benachrichtigungs-Kanäle
+## Notification Channels
 
-### Konfiguration
+### Configuration
 
 ```json
 {
@@ -200,24 +200,24 @@ Mindestens 1 Stunde zwischen Benachrichtigungen.
 }
 ```
 
-### Prioritäten
+### Priorities
 
 ```bash
-# Kritisch - alle Kanäle
+# Critical - all channels
 kit alert BTC/USDT price below 50000 --priority critical
 
-# Hoch - Telegram + Discord
+# High - Telegram + Discord
 kit alert BTC/USDT rsi below 30 --priority high
 
-# Normal - nur Telegram
+# Normal - only Telegram
 kit alert BTC/USDT price above 70000 --priority normal
 ```
 
 ## Smart Alerts
 
-### KI-gestützte Alerts
+### AI-Powered Alerts
 
-K.I.T. kann intelligent Alerts vorschlagen:
+K.I.T. can intelligently suggest alerts:
 
 ```bash
 kit alerts suggest BTC/USDT
@@ -225,25 +225,25 @@ kit alerts suggest BTC/USDT
 
 Output:
 ```
-💡 Alert-Vorschläge für BTC/USDT
+💡 Alert Suggestions for BTC/USDT
 ═══════════════════════════════════════
-Basierend auf technischer Analyse:
+Based on technical analysis:
 
-1. Support-Alert
-   Preis: $65,000 (starker Support)
-   "Alert wenn BTC unter $65,000"
+1. Support Alert
+   Price: $65,000 (strong support)
+   "Alert when BTC below $65,000"
 
-2. Resistance-Alert
-   Preis: $70,000 (Resistance)
-   "Alert wenn BTC über $70,000"
+2. Resistance Alert
+   Price: $70,000 (resistance)
+   "Alert when BTC above $70,000"
 
-3. RSI-Alert
-   RSI nähert sich Überkauft (aktuell 65)
-   "Alert wenn RSI über 70"
+3. RSI Alert
+   RSI approaching overbought (currently 65)
+   "Alert when RSI above 70"
 
-[1] Alle hinzufügen
-[2] Auswählen
-[3] Ignorieren
+[1] Add all
+[2] Select
+[3] Ignore
 ```
 
 ### Auto-Alerts
@@ -264,9 +264,9 @@ Basierend auf technischer Analyse:
 }
 ```
 
-## Alert-Aktionen
+## Alert Actions
 
-Alerts können automatische Aktionen auslösen:
+Alerts can trigger automatic actions:
 
 ```json
 {
@@ -288,72 +288,72 @@ Alerts können automatische Aktionen auslösen:
 }
 ```
 
-## Benachrichtigungs-Format
+## Notification Format
 
-### Standard-Format
+### Standard Format
 
 ```
 🔔 ALERT: BTC/USDT
 ─────────────────────
-Bedingung: Preis > $70,000
-Aktuell: $70,150 (+0.2%)
+Condition: Price > $70,000
+Current: $70,150 (+0.2%)
 
-Zeitpunkt: 15.01.2024 14:32 UTC
+Time: Jan 15, 2024 14:32 UTC
 ```
 
-### Detailliertes Format
+### Detailed Format
 
 ```
 🔔 ALERT: BTC/USDT
 ═══════════════════════════════════════
-Bedingung: RSI < 30 (Überverkauft)
-Aktuell: RSI = 28
+Condition: RSI < 30 (Oversold)
+Current: RSI = 28
 
-Kontext:
-• Preis: $62,500 (-5.2% 24h)
-• Volumen: +180% vs Durchschnitt
+Context:
+• Price: $62,500 (-5.2% 24h)
+• Volume: +180% vs average
 • Support: $61,000
 
-Empfehlung: 🟢 Mögliche Kaufgelegenheit
+Recommendation: 🟢 Possible buying opportunity
 
-[📊 Chart] [💰 Kaufen] [❌ Ignorieren]
+[📊 Chart] [💰 Buy] [❌ Ignore]
 ```
 
-## Statistiken
+## Statistics
 
 ```bash
 kit alerts stats
 ```
 
 ```
-📊 Alert-Statistiken (30 Tage)
+📊 Alert Statistics (30 days)
 ═══════════════════════════════════════
-Gesamt erstellt: 45
-Ausgelöst: 23 (51%)
-Gelöscht: 12
-Aktiv: 10
+Total created: 45
+Triggered: 23 (51%)
+Deleted: 12
+Active: 10
 
-Profitabel (nach Alert-Trade):
-• Gewinner: 15 (65%)
-• Verlierer: 8 (35%)
-• Durchschnitt: +2.3%
+Profitable (after alert trade):
+• Winners: 15 (65%)
+• Losers: 8 (35%)
+• Average: +2.3%
 
-Top Alert-Typen:
-1. RSI Oversold: 8 Treffer, +4.5% avg
-2. Support Break: 6 Treffer, +3.2% avg
-3. Volume Spike: 5 Treffer, +2.1% avg
+Top Alert Types:
+1. RSI Oversold: 8 hits, +4.5% avg
+2. Support Break: 6 hits, +3.2% avg
+3. Volume Spike: 5 hits, +2.1% avg
 ```
 
-## Nächste Schritte
+## Next Steps
 
 <Columns>
   <Card title="Market Analysis" href="/skills/market-analysis" icon="bar-chart">
-    Technische Analyse für bessere Alerts.
+    Technical analysis for better alerts.
   </Card>
   <Card title="Auto-Trader" href="/skills/auto-trader" icon="bot">
-    Alerts mit automatischen Trades verbinden.
+    Connect alerts with automatic trades.
   </Card>
   <Card title="Telegram Channel" href="/channels/telegram" icon="message-square">
-    Telegram-Benachrichtigungen einrichten.
+    Set up Telegram notifications.
   </Card>
 </Columns>

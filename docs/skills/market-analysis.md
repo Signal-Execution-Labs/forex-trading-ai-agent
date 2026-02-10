@@ -1,14 +1,14 @@
 ---
-summary: "Market Analysis Skill - Technische und fundamentale Analyse"
+summary: "Market Analysis Skill - Technical and fundamental analysis"
 read_when:
-  - Marktanalyse verstehen
-  - Indikatoren nutzen
+  - Understand market analysis
+  - Use indicators
 title: "Market Analysis"
 ---
 
 # Market Analysis
 
-Der Market Analysis Skill bietet umfassende technische und fundamentale Analyse für informierte Trading-Entscheidungen.
+The Market Analysis skill provides comprehensive technical and fundamental analysis for informed trading decisions.
 
 ## Quick Analysis
 
@@ -18,23 +18,23 @@ kit analyze BTC/USDT
 
 Telegram:
 ```
-"Analysiere BTC"
-"Wie sieht ETH aus?"
+"Analyze BTC"
+"How does ETH look?"
 ```
 
 Output:
 ```
-📊 BTC/USDT Analyse
+📊 BTC/USDT Analysis
 ═══════════════════════════════════════
-Preis: $67,432.50 (+1.2% 24h)
+Price: $67,432.50 (+1.2% 24h)
 24h Range: $66,100 - $68,200
 Volume: $28.5B (+15% vs avg)
 
 📈 TREND: Bullish
 ─────────────────────
-• MA20: $66,500 ✅ (Preis drüber)
-• MA50: $64,200 ✅ (Preis drüber)
-• MA200: $52,400 ✅ (Preis drüber)
+• MA20: $66,500 ✅ (Price above)
+• MA50: $64,200 ✅ (Price above)
+• MA200: $52,400 ✅ (Price above)
 
 📊 MOMENTUM
 ─────────────────────
@@ -42,7 +42,7 @@ Volume: $28.5B (+15% vs avg)
 • MACD: +420 🟢 Bullish
 • Stochastic: 65/72 🟡 Neutral
 
-📉 VOLATILITÄT
+📉 VOLATILITY
 ─────────────────────
 • BB: $64,500 - $70,500
 • ATR(14): $1,200 (2.1%)
@@ -52,116 +52,116 @@ Volume: $28.5B (+15% vs avg)
 Support: $65,000 | $63,500 | $61,000
 Resistance: $68,500 | $70,000 | $72,500
 
-💡 K.I.T. FAZIT
+💡 K.I.T. CONCLUSION
 ─────────────────────
 🟢 Bullish Bias
-Empfehlung: Long bei Pullback zu $66,000
+Recommendation: Long on pullback to $66,000
 Stop-Loss: $64,500 | Take-Profit: $70,000
 ```
 
-## Technische Indikatoren
+## Technical Indicators
 
-### Trend-Indikatoren
+### Trend Indicators
 
 ```bash
 kit indicators BTC/USDT --category trend
 ```
 
-| Indikator | Beschreibung | Interpretation |
-|-----------|--------------|----------------|
-| SMA | Simple Moving Average | Trend-Richtung |
-| EMA | Exponential Moving Average | Reaktiver als SMA |
+| Indicator | Description | Interpretation |
+|-----------|-------------|----------------|
+| SMA | Simple Moving Average | Trend direction |
+| EMA | Exponential Moving Average | More reactive than SMA |
 | MACD | Moving Average Convergence | Momentum + Trend |
-| ADX | Average Directional Index | Trendstärke |
+| ADX | Average Directional Index | Trend strength |
 | Parabolic SAR | Stop and Reverse | Trend + SL |
 
-### Momentum-Indikatoren
+### Momentum Indicators
 
 ```bash
 kit indicators BTC/USDT --category momentum
 ```
 
-| Indikator | Beschreibung | Überkauft | Überverkauft |
-|-----------|--------------|-----------|--------------|
+| Indicator | Description | Overbought | Oversold |
+|-----------|-------------|------------|----------|
 | RSI | Relative Strength Index | >70 | <30 |
 | Stochastic | Stochastic Oscillator | >80 | <20 |
 | CCI | Commodity Channel Index | >100 | <-100 |
 | Williams %R | Williams Percent Range | >-20 | <-80 |
 
-### Volatilitäts-Indikatoren
+### Volatility Indicators
 
 ```bash
 kit indicators BTC/USDT --category volatility
 ```
 
-| Indikator | Beschreibung | Verwendung |
-|-----------|--------------|------------|
-| Bollinger Bands | Preis-Kanäle | Breakouts, Mean-Reversion |
-| ATR | Average True Range | Stop-Loss Sizing |
-| Keltner Channels | Volatilitäts-Kanäle | Trend + Volatilität |
+| Indicator | Description | Usage |
+|-----------|-------------|-------|
+| Bollinger Bands | Price channels | Breakouts, mean reversion |
+| ATR | Average True Range | Stop-loss sizing |
+| Keltner Channels | Volatility channels | Trend + volatility |
 
-### Volumen-Indikatoren
+### Volume Indicators
 
 ```bash
 kit indicators BTC/USDT --category volume
 ```
 
-| Indikator | Beschreibung |
-|-----------|--------------|
+| Indicator | Description |
+|-----------|-------------|
 | OBV | On-Balance Volume |
-| Volume Profile | Volumen nach Preis |
+| Volume Profile | Volume by price |
 | VWAP | Volume Weighted Average Price |
 | CMF | Chaikin Money Flow |
 
-## Chart-Patterns
+## Chart Patterns
 
 ```bash
 kit patterns BTC/USDT
 ```
 
-### Erkannte Patterns
+### Detected Patterns
 
 ```
 📊 Chart Patterns - BTC/USDT
 ═══════════════════════════════════════
-Aktive Patterns:
+Active Patterns:
 
 🔼 Ascending Triangle (4h)
-   Seit: 3 Tagen
-   Breakout-Level: $68,500
+   Since: 3 days
+   Breakout Level: $68,500
    Target: $72,000
-   Konfidenz: 75%
+   Confidence: 75%
 
 🕯️ Bullish Engulfing (1d)
-   Vor: 2 Kerzen
-   Signifikanz: Hoch
-   Bestätigung: Warten auf Close über $67,500
+   Ago: 2 candles
+   Significance: High
+   Confirmation: Wait for close above $67,500
 
 📈 Higher Highs & Higher Lows
    Timeframe: Daily
-   Trend: Aufwärts
-   Intakt seit: 14 Tagen
+   Trend: Upward
+   Intact since: 14 days
 ```
 
-### Candlestick-Patterns
+### Candlestick Patterns
 
 ```bash
 kit candles BTC/USDT
 ```
 
-Erkannte Patterns:
+Detected patterns:
 - **Bullish:** Hammer, Engulfing, Morning Star, Dragonfly Doji
 - **Bearish:** Shooting Star, Engulfing, Evening Star, Gravestone Doji
 - **Neutral:** Doji, Spinning Top, Harami
 
-## Multi-Timeframe Analyse
+## Multi-Timeframe Analysis
 
 ```bash
 kit analyze BTC/USDT --mtf
 ```
 
 ```
-📊 Multi-Timeframe Analyse
+📊 Multi-Timeframe Analysis
 ═══════════════════════════════════════
          15m     1h      4h      1d
 ─────────────────────────────────────
@@ -170,7 +170,7 @@ RSI      62      58      55      52
 MACD     🟢      🟢      🟢      🟡
 Volume   High    Avg     Avg     High
 
-Konsens: 🟢 Bullish (alle Timeframes aligned)
+Consensus: 🟢 Bullish (all timeframes aligned)
 ```
 
 ## Support & Resistance
@@ -183,23 +183,23 @@ kit levels BTC/USDT
 📊 Support & Resistance Levels
 ═══════════════════════════════════════
         │
-$72,500 │ ════════ R3 (Historisch)
-$70,000 │ ════════ R2 (Psychologisch)
-$68,500 │ ════════ R1 (Aktuell)
+$72,500 │ ════════ R3 (Historical)
+$70,000 │ ════════ R2 (Psychological)
+$68,500 │ ════════ R1 (Current)
         │
-$67,432 │ ★ PREIS
+$67,432 │ ★ PRICE
         │
 $65,000 │ ════════ S1 (MA20)
-$63,500 │ ════════ S2 (Vorheriges Low)
-$61,000 │ ════════ S3 (Stark)
+$63,500 │ ════════ S2 (Previous Low)
+$61,000 │ ════════ S3 (Strong)
         │
 
-Stärkste Levels:
-• $70,000: Psychologisch + Fibonacci
+Strongest Levels:
+• $70,000: Psychological + Fibonacci
 • $65,000: MA20 + Previous Resistance
 ```
 
-## Fundamentale Analyse
+## Fundamental Analysis
 
 ```bash
 kit fundamentals BTC
@@ -220,11 +220,11 @@ Market Metrics:
 • Fear & Greed: 65 (Greed)
 
 Macro:
-• Fed Rate Decision: In 5 Tagen
+• Fed Rate Decision: In 5 days
 • ETF Flows: +$500M (7d)
 ```
 
-## Sentiment-Analyse
+## Sentiment Analysis
 
 ```bash
 kit sentiment BTC
@@ -251,14 +251,14 @@ Top Keywords:
 • "Institutional" (28 mentions)
 ```
 
-## Vergleichsanalyse
+## Comparison Analysis
 
 ```bash
 kit compare BTC ETH SOL
 ```
 
 ```
-📊 Asset Vergleich
+📊 Asset Comparison
 ═══════════════════════════════════════
          BTC        ETH        SOL
 ─────────────────────────────────────
@@ -274,7 +274,7 @@ Most Overbought: SOL (RSI 71)
 
 ## Custom Analysis
 
-### Eigene Indikatoren kombinieren
+### Combine Custom Indicators
 
 ```bash
 kit analyze BTC/USDT \
@@ -283,14 +283,14 @@ kit analyze BTC/USDT \
   --periods 50
 ```
 
-### Analyse speichern
+### Save Analysis
 
 ```bash
 kit analyze BTC/USDT --save btc-analysis
 kit analyze --load btc-analysis
 ```
 
-## Konfiguration
+## Configuration
 
 ```json
 {
@@ -306,16 +306,16 @@ kit analyze --load btc-analysis
 }
 ```
 
-## Nächste Schritte
+## Next Steps
 
 <Columns>
-  <Card title="Trading-Tools" href="/concepts/trading-tools" icon="wrench">
-    Alle verfügbaren Tools.
+  <Card title="Trading Tools" href="/concepts/trading-tools" icon="wrench">
+    All available tools.
   </Card>
   <Card title="Alert System" href="/skills/alert-system" icon="bell">
-    Alerts basierend auf Analyse.
+    Alerts based on analysis.
   </Card>
   <Card title="Auto-Trader" href="/skills/auto-trader" icon="bot">
-    Automatische Strategien.
+    Automatic strategies.
   </Card>
 </Columns>
