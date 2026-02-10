@@ -339,23 +339,23 @@ interface OnboardingState {
 }
 
 const TRADING_PLATFORMS = [
-  { id: 'binaryfaster', name: 'BinaryFaster', icon: '📊', fields: ['email', 'password'], hint: 'Binary Options Trading' },
-  { id: 'metatrader5', name: 'MetaTrader 5', icon: '📈', fields: ['server', 'login', 'password'], hint: 'Forex/CFD Trading' },
-  { id: 'binance', name: 'Binance', icon: '🟡', fields: ['apiKey', 'apiSecret'], hint: 'Crypto Exchange' },
-  { id: 'kraken', name: 'Kraken', icon: '🐙', fields: ['apiKey', 'apiSecret'], hint: 'Crypto Exchange' },
-  { id: 'coinbase', name: 'Coinbase', icon: '🔵', fields: ['apiKey', 'apiSecret'], hint: 'Crypto Exchange' },
-  { id: 'robinhood', name: 'Robinhood', icon: '🪶', fields: ['email', 'password'], hint: 'Stock Trading' },
-  { id: 'tradingview', name: 'TradingView', icon: '📺', fields: ['username', 'password'], hint: 'Charts & Signals' },
+  { id: 'binaryfaster', name: 'BinaryFaster', icon: '📊', configType: 'login', hint: 'Binary Options Trading', setupInfo: 'Email and password for wsauto.binaryfaster.com' },
+  { id: 'metatrader5', name: 'MetaTrader 5', icon: '📈', configType: 'local', hint: 'Forex/CFD (Local Terminal)', setupInfo: 'K.I.T. connects to your installed MT5 terminal via Python. Make sure MT5 is running and logged into your broker.' },
+  { id: 'binance', name: 'Binance', icon: '🟡', configType: 'apikey', hint: 'Crypto Exchange', setupInfo: 'API Key and Secret from binance.com/en/my/settings/api-management' },
+  { id: 'kraken', name: 'Kraken', icon: '🐙', configType: 'apikey', hint: 'Crypto Exchange', setupInfo: 'API Key and Secret from kraken.com/u/security/api' },
+  { id: 'coinbase', name: 'Coinbase', icon: '🔵', configType: 'apikey', hint: 'Crypto Exchange', setupInfo: 'API Key from coinbase.com/settings/api' },
+  { id: 'bybit', name: 'Bybit', icon: '🔶', configType: 'apikey', hint: 'Crypto Exchange', setupInfo: 'API Key and Secret from bybit.com/user/api-management' },
+  { id: 'tradingview', name: 'TradingView', icon: '📺', configType: 'webhook', hint: 'Chart Signals', setupInfo: 'Webhook URL for receiving TradingView alerts' },
 ];
 
 const CRYPTO_WALLETS = [
-  { id: 'metamask', name: 'MetaMask', icon: '🦊', fields: ['seedPhrase'], hint: 'Ethereum & EVM Chains' },
-  { id: 'ledger', name: 'Ledger', icon: '🔐', fields: ['deviceId'], hint: 'Hardware Wallet (USB)' },
-  { id: 'trezor', name: 'Trezor', icon: '🛡️', fields: ['deviceId'], hint: 'Hardware Wallet (USB)' },
-  { id: 'electrum', name: 'Electrum', icon: '⚡', fields: ['walletFile', 'password'], hint: 'Bitcoin Wallet' },
-  { id: 'phantom', name: 'Phantom', icon: '👻', fields: ['seedPhrase'], hint: 'Solana Wallet' },
-  { id: 'trustwallet', name: 'Trust Wallet', icon: '🔷', fields: ['seedPhrase'], hint: 'Multi-Chain Wallet' },
-  { id: 'exodus', name: 'Exodus', icon: '🌀', fields: ['email', 'password'], hint: 'Multi-Chain Wallet' },
+  { id: 'metamask', name: 'MetaMask', icon: '🦊', configType: 'browser', hint: 'Ethereum & EVM', setupInfo: 'Connect via browser extension. K.I.T. will prompt for signature when needed.' },
+  { id: 'walletconnect', name: 'WalletConnect', icon: '🔗', configType: 'qr', hint: 'Any Mobile Wallet', setupInfo: 'Scan QR code with your mobile wallet app' },
+  { id: 'ledger', name: 'Ledger', icon: '🔐', configType: 'usb', hint: 'Hardware Wallet', setupInfo: 'Connect via USB. Make sure Ledger Live is closed.' },
+  { id: 'trezor', name: 'Trezor', icon: '🛡️', configType: 'usb', hint: 'Hardware Wallet', setupInfo: 'Connect via USB. Approve on device.' },
+  { id: 'phantom', name: 'Phantom', icon: '👻', configType: 'browser', hint: 'Solana Wallet', setupInfo: 'Connect via browser extension' },
+  { id: 'rabby', name: 'Rabby', icon: '🐰', configType: 'browser', hint: 'Multi-Chain Wallet', setupInfo: 'Connect via browser extension' },
+  { id: 'coinbasewallet', name: 'Coinbase Wallet', icon: '🔵', configType: 'browser', hint: 'Multi-Chain Wallet', setupInfo: 'Connect via browser extension or mobile' },
 ];
 
 const PROVIDERS = [
@@ -428,7 +428,7 @@ export class ToolEnabledChatHandler {
         this.onboardingState.set(sessionId, { step: 'model', provider: provider.id });
         
         let modelList = `✅ **${provider.name}** selected!\n\n`;
-        modelList += `**Step 2/3: Choose your model:**\n\n`;
+        modelList += `**Step 2/12: Choose your model:**\n\n`;
         provider.models.forEach((m, i) => {
           modelList += `  [${i + 1}] ${m}\n`;
         });
@@ -447,7 +447,7 @@ export class ToolEnabledChatHandler {
           const model = provider.models[num - 1];
           this.onboardingState.set(sessionId, { ...state, step: 'apikey', model });
           
-          return `✅ **${model}** selected!\n\n**Step 3/3: Enter your ${provider.name} API key:**\n\n💡 Get your key from:\n• OpenAI: https://platform.openai.com/api-keys\n• Anthropic: https://console.anthropic.com/\n• Google: https://aistudio.google.com/apikey\n\n👉 Paste your API key:`;
+          return `✅ **${model}** selected!\n\n**Step 3/12: Enter your ${provider.name} API key:**\n\n💡 Get your key from:\n• OpenAI: https://platform.openai.com/api-keys\n• Anthropic: https://console.anthropic.com/\n• Google: https://aistudio.google.com/apikey\n\n👉 Paste your API key:`;
         }
       }
       return null;
@@ -472,7 +472,7 @@ export class ToolEnabledChatHandler {
         
         const provider = PROVIDERS.find(p => p.id === state.provider);
         let msg = `✅ **${provider?.name}** configured with **${state.model}**!\n\n`;
-        msg += `**Step 4/6: Connect a messaging channel:**\n\n`;
+        msg += `**Step 4/12: Connect a messaging channel:**\n\n`;
         CHANNELS.forEach((c, i) => {
           msg += `  [${i + 1}] ${c.icon} ${c.name}\n`;
         });
@@ -559,13 +559,30 @@ export class ToolEnabledChatHandler {
     if (state.step === 'platform_config' && state.currentPlatform) {
       const platform = TRADING_PLATFORMS.find(p => p.id === state.currentPlatform);
       if (platform) {
-        // Save credentials (simplified - in real app would parse properly)
-        this.saveToEnvFile(`${platform.id.toUpperCase()}_CREDENTIALS`, input);
+        const lowerInput = input.toLowerCase().trim();
         
-        const platforms = [...(state.platforms || []), { id: platform.id, configured: true }];
-        this.onboardingState.set(sessionId, { ...state, step: 'platform_more', platforms, currentPlatform: undefined });
+        // Handle different config types
+        if (platform.configType === 'local' || platform.configType === 'webhook') {
+          // Just need confirmation
+          if (lowerInput === 'ready' || lowerInput === 'done' || lowerInput === 'yes') {
+            const platforms = [...(state.platforms || []), { id: platform.id, configured: true }];
+            this.onboardingState.set(sessionId, { ...state, step: 'platform_more', platforms, currentPlatform: undefined });
+            return `✅ **${platform.name}** configured!\n\n**Add another trading platform?**\n\n  [1] ✅ Yes, add more\n  [2] ➡️ No, continue to wallets\n\n👉 Enter 1 or 2:`;
+          }
+          return this.getPlatformConfigPrompt(platform);
+        }
         
-        return `✅ **${platform.name}** configured!\n\n**Add another trading platform?**\n\n  [1] ✅ Yes, add more\n  [2] ➡️ No, continue to wallets\n\n👉 Enter 1 or 2:`;
+        // For login/apikey, need actual credentials
+        if (input.includes(':') || input.length > 10) {
+          this.saveToEnvFile(`${platform.id.toUpperCase()}_CREDENTIALS`, input);
+          
+          const platforms = [...(state.platforms || []), { id: platform.id, configured: true }];
+          this.onboardingState.set(sessionId, { ...state, step: 'platform_more', platforms, currentPlatform: undefined });
+          
+          return `✅ **${platform.name}** configured!\n\n**Add another trading platform?**\n\n  [1] ✅ Yes, add more\n  [2] ➡️ No, continue to wallets\n\n👉 Enter 1 or 2:`;
+        }
+        
+        return this.getPlatformConfigPrompt(platform);
       }
     }
 
@@ -600,17 +617,25 @@ export class ToolEnabledChatHandler {
       return this.getWalletSelectPrompt();
     }
 
-    // Step 7b: Wallet Configuration (seed/API)
+    // Step 7b: Wallet Configuration (browser/usb/qr - just confirmation)
     if (state.step === 'wallet_config' && state.currentWallet) {
       const wallet = CRYPTO_WALLETS.find(w => w.id === state.currentWallet);
       if (wallet) {
-        // Save wallet config (simplified)
-        this.saveToEnvFile(`${wallet.id.toUpperCase()}_CONFIG`, input);
+        const lowerInput = input.toLowerCase().trim();
         
-        const wallets = [...(state.wallets || []), { id: wallet.id, configured: true }];
-        this.onboardingState.set(sessionId, { ...state, step: 'wallet_more', wallets, currentWallet: undefined });
+        // All wallet types just need confirmation (no credentials stored!)
+        if (lowerInput === 'ready' || lowerInput === 'done' || lowerInput === 'connected' || lowerInput === 'yes') {
+          // Mark wallet as configured (no sensitive data stored)
+          this.saveToEnvFile(`${wallet.id.toUpperCase()}_ENABLED`, 'true');
+          
+          const wallets = [...(state.wallets || []), { id: wallet.id, configured: true }];
+          this.onboardingState.set(sessionId, { ...state, step: 'wallet_more', wallets, currentWallet: undefined });
+          
+          return `✅ **${wallet.name}** configured!\n\n**Add another wallet?**\n\n  [1] ✅ Yes, add more\n  [2] ➡️ No, continue to skills\n\n👉 Enter 1 or 2:`;
+        }
         
-        return `✅ **${wallet.name}** configured!\n\n**Add another wallet?**\n\n  [1] ✅ Yes, add more\n  [2] ➡️ No, continue to skills\n\n👉 Enter 1 or 2:`;
+        // Invalid input - show prompt again
+        return this.getWalletConfigPrompt(wallet);
       }
     }
 
@@ -638,7 +663,7 @@ export class ToolEnabledChatHandler {
           ? currentSkills.map(id => SKILL_CATEGORIES.find(c => c.id === id)?.name || id).join(', ')
           : 'All skills';
         this.onboardingState.set(sessionId, { ...state, step: 'user_name' });
-        return `✅ **Skills enabled:** ${selectedNames}\n\n---\n\n🎭 **Now let's get to know you!**\n\n**Step 8/11: What's your name?**\n\n👉 Enter your name:`;
+        return `✅ **Skills enabled:** ${selectedNames}\n\n---\n\n🎭 **Now let's get to know you!**\n\n**Step 9/12: What's your name?**\n\n👉 Enter your name:`;
       }
       
       // Check for "all" option
@@ -652,7 +677,7 @@ export class ToolEnabledChatHandler {
         if (nums.includes(allOption)) {
           const allSkillIds = SKILL_CATEGORIES.map(c => c.id);
           this.onboardingState.set(sessionId, { ...state, step: 'user_name', skills: allSkillIds });
-          return `✅ **ALL skills enabled!**\n\n---\n\n🎭 **Now let's get to know you!**\n\n**Step 8/11: What's your name?**\n\n👉 Enter your name:`;
+          return `✅ **ALL skills enabled!**\n\n---\n\n🎭 **Now let's get to know you!**\n\n**Step 9/12: What's your name?**\n\n👉 Enter your name:`;
         }
         
         const newSkills = [...currentSkills];
@@ -683,7 +708,7 @@ export class ToolEnabledChatHandler {
     if (state.step === 'user_name') {
       if (input.length >= 1) {
         this.onboardingState.set(sessionId, { ...state, step: 'user_goals', userName: input });
-        return `✅ Nice to meet you, **${input}**!\n\n**Step 9/11: What are your financial goals?**\n\n  [1] 💰 Grow wealth steadily (long-term investing)\n  [2] 🚀 Aggressive growth (high risk, high reward)\n  [3] 💵 Generate passive income\n  [4] 🎯 Short-term trading profits\n  [5] 🛡️ Preserve capital, beat inflation\n\n👉 Enter a number (1-5):`;
+        return `✅ Nice to meet you, **${input}**!\n\n**Step 10/12: What are your financial goals?**\n\n  [1] 💰 Grow wealth steadily (long-term investing)\n  [2] 🚀 Aggressive growth (high risk, high reward)\n  [3] 💵 Generate passive income\n  [4] 🎯 Short-term trading profits\n  [5] 🛡️ Preserve capital, beat inflation\n\n👉 Enter a number (1-5):`;
       }
       return `👉 Please enter your name:`;
     }
@@ -694,7 +719,7 @@ export class ToolEnabledChatHandler {
       const num = parseInt(input);
       if (num >= 1 && num <= 5) {
         this.onboardingState.set(sessionId, { ...state, step: 'user_risk', userGoals: goals[num - 1] });
-        return `✅ Goal: **${goals[num - 1]}**\n\n**Step 10/11: What's your risk tolerance?**\n\n  [1] 🐢 Conservative - Minimal risk, steady returns\n  [2] ⚖️ Balanced - Some risk for better returns\n  [3] 🔥 Aggressive - High risk, maximum potential\n\n👉 Enter a number (1-3):`;
+        return `✅ Goal: **${goals[num - 1]}**\n\n**Step 11/12: What's your risk tolerance?**\n\n  [1] 🐢 Conservative - Minimal risk, steady returns\n  [2] ⚖️ Balanced - Some risk for better returns\n  [3] 🔥 Aggressive - High risk, maximum potential\n\n👉 Enter a number (1-3):`;
       }
       return `👉 Please enter a number (1-5):`;
     }
@@ -705,7 +730,7 @@ export class ToolEnabledChatHandler {
       const num = parseInt(input);
       if (num >= 1 && num <= 3) {
         this.onboardingState.set(sessionId, { ...state, step: 'user_style', userRisk: risks[num - 1] });
-        return `✅ Risk: **${risks[num - 1]}**\n\n**Step 11/11: How should I communicate with you?**\n\n  [1] 📊 Professional - Formal, data-focused\n  [2] 😊 Friendly - Casual, supportive\n  [3] ⚡ Direct - Brief, action-oriented\n  [4] 🎓 Educational - Explain everything\n\n👉 Enter a number (1-4):`;
+        return `✅ Risk: **${risks[num - 1]}**\n\n**Step 12/12: How should I communicate with you?**\n\n  [1] 📊 Professional - Formal, data-focused\n  [2] 😊 Friendly - Casual, supportive\n  [3] ⚡ Direct - Brief, action-oriented\n  [4] 🎓 Educational - Explain everything\n\n👉 Enter a number (1-4):`;
       }
       return `👉 Please enter a number (1-3):`;
     }
@@ -850,21 +875,47 @@ Your personal AI financial agent is ready.
    */
   private getPlatformConfigPrompt(platform: typeof TRADING_PLATFORMS[0]): string {
     let msg = `✅ **${platform.name}** selected!\n\n`;
-    msg += `**Enter your credentials:**\n\n`;
+    msg += `📝 ${platform.setupInfo}\n\n`;
     
-    if (platform.fields.includes('email') && platform.fields.includes('password')) {
-      msg += `Format: \`email:password\`\n`;
-      msg += `Example: \`myemail@example.com:mypassword123\`\n\n`;
-    } else if (platform.fields.includes('apiKey') && platform.fields.includes('apiSecret')) {
-      msg += `Format: \`apiKey:apiSecret\`\n`;
-      msg += `Example: \`abc123xyz:secretkey456\`\n\n`;
-    } else if (platform.fields.includes('server')) {
-      msg += `Format: \`server:login:password\`\n`;
-      msg += `Example: \`ICMarkets-Demo:12345678:mypassword\`\n\n`;
+    switch (platform.configType) {
+      case 'login':
+        msg += `**Enter your login:**\n\n`;
+        msg += `Format: \`email:password\`\n`;
+        msg += `Example: \`myemail@example.com:mypassword123\`\n\n`;
+        msg += `⚠️ *Credentials are stored locally and encrypted.*\n\n`;
+        msg += `👉 Enter your ${platform.name} login:`;
+        break;
+        
+      case 'apikey':
+        msg += `**Enter your API credentials:**\n\n`;
+        msg += `Format: \`apiKey:apiSecret\`\n`;
+        msg += `Example: \`abc123xyz:secretkey456\`\n\n`;
+        msg += `⚠️ *API keys are stored locally and encrypted.*\n`;
+        msg += `💡 *Tip: Use read-only keys when possible for safety.*\n\n`;
+        msg += `👉 Enter your ${platform.name} API Key and Secret:`;
+        break;
+        
+      case 'local':
+        msg += `**K.I.T. will connect to your local ${platform.name} installation.**\n\n`;
+        msg += `✅ Make sure ${platform.name} is:\n`;
+        msg += `   • Installed on this computer\n`;
+        msg += `   • Running and logged into your broker\n`;
+        msg += `   • "Allow Algo Trading" is enabled\n\n`;
+        msg += `👉 Type "ready" when ${platform.name} is running:`;
+        break;
+        
+      case 'webhook':
+        msg += `**Set up webhook for ${platform.name} alerts:**\n\n`;
+        msg += `Your K.I.T. webhook URL will be:\n`;
+        msg += `\`http://localhost:18799/webhook/${platform.id}\`\n\n`;
+        msg += `Add this URL in your ${platform.name} alert settings.\n\n`;
+        msg += `👉 Type "done" when configured:`;
+        break;
+        
+      default:
+        msg += `👉 Type "done" to continue:`;
     }
     
-    msg += `⚠️ *Your credentials are stored locally and encrypted.*\n\n`;
-    msg += `👉 Enter your ${platform.name} credentials:`;
     return msg;
   }
 
@@ -894,27 +945,38 @@ Your personal AI financial agent is ready.
    */
   private getWalletConfigPrompt(wallet: typeof CRYPTO_WALLETS[0]): string {
     let msg = `✅ **${wallet.name}** selected!\n\n`;
+    msg += `📝 ${wallet.setupInfo}\n\n`;
     
-    if (wallet.fields.includes('seedPhrase')) {
-      msg += `**Enter your seed phrase (12 or 24 words):**\n\n`;
-      msg += `⚠️ *IMPORTANT: Your seed phrase is stored locally and encrypted.*\n`;
-      msg += `⚠️ *Never share your seed phrase with anyone!*\n\n`;
-      msg += `👉 Enter your seed phrase:`;
-    } else if (wallet.fields.includes('deviceId')) {
-      msg += `**Connect your ${wallet.name}:**\n\n`;
-      msg += `1. Plug in your ${wallet.name} device\n`;
-      msg += `2. Unlock it with your PIN\n`;
-      msg += `3. Type "connected" when ready\n\n`;
-      msg += `👉 Type "connected" when your device is ready:`;
-    } else if (wallet.fields.includes('walletFile')) {
-      msg += `**Enter your wallet details:**\n\n`;
-      msg += `Format: \`walletFilePath:password\`\n`;
-      msg += `Example: \`C:/wallets/default_wallet:mypassword\`\n\n`;
-      msg += `👉 Enter wallet path and password:`;
-    } else {
-      msg += `**Enter your login:**\n\n`;
-      msg += `Format: \`email:password\`\n\n`;
-      msg += `👉 Enter credentials:`;
+    switch (wallet.configType) {
+      case 'browser':
+        msg += `**Browser Extension Connection:**\n\n`;
+        msg += `1. Make sure ${wallet.name} extension is installed\n`;
+        msg += `2. K.I.T. will prompt for connection when needed\n`;
+        msg += `3. Approve the connection in your wallet\n\n`;
+        msg += `🔒 *K.I.T. NEVER asks for your seed phrase!*\n`;
+        msg += `🔒 *All transactions require your approval in the wallet.*\n\n`;
+        msg += `👉 Type "ready" to continue:`;
+        break;
+        
+      case 'qr':
+        msg += `**WalletConnect Setup:**\n\n`;
+        msg += `1. Open the K.I.T. dashboard in your browser\n`;
+        msg += `2. Go to Settings → Wallets → WalletConnect\n`;
+        msg += `3. Scan the QR code with your mobile wallet\n\n`;
+        msg += `👉 Type "ready" when connected:`;
+        break;
+        
+      case 'usb':
+        msg += `**Hardware Wallet Connection:**\n\n`;
+        msg += `1. Connect your ${wallet.name} via USB\n`;
+        msg += `2. Unlock it with your PIN\n`;
+        msg += `3. Open the relevant app (Ethereum, Bitcoin, etc.)\n\n`;
+        msg += `⚠️ *Make sure Ledger Live / Trezor Suite is CLOSED*\n\n`;
+        msg += `👉 Type "ready" when your device is connected:`;
+        break;
+        
+      default:
+        msg += `👉 Type "ready" to continue:`;
     }
     
     return msg;
@@ -924,7 +986,7 @@ Your personal AI financial agent is ready.
    * Get skills selection prompt
    */
   private getSkillsPrompt(state: OnboardingState, showSelected: boolean = false): string {
-    let msg = `**Step 7/11: Choose your skill sets:**\n\n`;
+    let msg = `**Step 8/12: Choose your skill sets:**\n\n`;
     msg += `*(Multi-select: enter numbers like "1,2,4" or one at a time)*\n\n`;
     
     SKILL_CATEGORIES.forEach((cat, i) => {
@@ -987,7 +1049,7 @@ Your personal AI financial agent is ready.
     this.onboardingState.set(sessionId, { step: 'provider' });
     
     let prompt = `🚀 **Welcome to K.I.T.!** Let's set up your AI provider.\n\n`;
-    prompt += `**Step 1/3: Choose your AI provider:**\n\n`;
+    prompt += `**Step 1/12: Choose your AI provider:**\n\n`;
     PROVIDERS.forEach((p, i) => {
       prompt += `  [${i + 1}] ${p.name}\n`;
     });
