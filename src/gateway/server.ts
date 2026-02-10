@@ -494,10 +494,24 @@ export class GatewayServer extends EventEmitter {
       
       ws.on('message', async (data) => {
         try {
-          const frame = JSON.parse(data.toString()) as ProtocolFrame;
+          const message = JSON.parse(data.toString());
           
-          // First frame must be connect
+          // Handle simple chat messages from dashboard
+          if (message.type === 'chat' && message.content) {
+            console.log(`[Chat] ${clientId}: ${message.content}`);
+            
+            // Get AI response
+            const response = await this.handleSimpleChat(message.content);
+            ws.send(JSON.stringify({ type: 'message', content: response }));
+            return;
+          }
+          
+          const frame = message as ProtocolFrame;
+          
+          // First frame must be connect (for protocol mode)
           if (!client.authenticated && frame.method !== PROTOCOL_METHODS.CONNECT) {
+            // Allow unauthenticated chat for dashboard
+            if (message.type === 'chat') return;
             ws.close(4001, 'First frame must be connect');
             return;
           }
@@ -693,6 +707,92 @@ export class GatewayServer extends EventEmitter {
       }]]),
       channels: new Map(),
     };
+  }
+
+  /**
+   * Handle simple chat messages from dashboard
+   */
+  private async handleSimpleChat(userMessage: string): Promise<string> {
+    // Try OpenAI first, then Anthropic
+    const openaiKey = process.env.OPENAI_API_KEY;
+    const anthropicKey = process.env.ANTHROPIC_API_KEY;
+    
+    if (openaiKey) {
+      try {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${openaiKey}`,
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [
+              {
+                role: 'system',
+                content: `You are K.I.T. (Knight Industries Trading), an autonomous AI financial agent. You help users manage their finances, trading, and investments. Be helpful, concise, and professional. You can help with:
+- Setting up exchange connections (Binance, MT5, etc.)
+- Portfolio tracking and analysis
+- Trading strategies and execution
+- Market analysis
+- Risk management
+
+If the user wants to set up exchanges or API keys, guide them through the process.`
+              },
+              { role: 'user', content: userMessage }
+            ],
+            max_tokens: 1000,
+          }),
+        });
+        
+        const data = await response.json() as any;
+        return data.choices?.[0]?.message?.content || 'I apologize, I could not generate a response.';
+      } catch (error) {
+        console.error('OpenAI API error:', error);
+        return 'Error connecting to OpenAI. Please check your API key.';
+      }
+    }
+    
+    if (anthropicKey) {
+      try {
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': anthropicKey,
+            'anthropic-version': '2023-06-01',
+          },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 1000,
+            system: `You are K.I.T. (Knight Industries Trading), an autonomous AI financial agent. You help users manage their finances, trading, and investments. Be helpful, concise, and professional.`,
+            messages: [{ role: 'user', content: userMessage }],
+          }),
+        });
+        
+        const data = await response.json() as any;
+        return data.content?.[0]?.text || 'I apologize, I could not generate a response.';
+      } catch (error) {
+        console.error('Anthropic API error:', error);
+        return 'Error connecting to Anthropic. Please check your API key.';
+      }
+    }
+    
+    return `👋 Hello! I'm K.I.T., your AI financial agent.
+
+To enable AI responses, please set one of these environment variables:
+- OPENAI_API_KEY
+- ANTHROPIC_API_KEY
+
+Example:
+  set OPENAI_API_KEY=your-key-here
+  kit start
+
+Once configured, I can help you with:
+- 📊 Portfolio management
+- 💹 Trading across exchanges
+- 📈 Market analysis
+- 🔔 Alerts and automation`;
   }
 
   /**
