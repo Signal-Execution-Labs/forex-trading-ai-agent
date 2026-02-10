@@ -700,9 +700,11 @@ export const BINARY_OPTIONS_HANDLERS: Record<string, (args: Record<string, unkno
           
           if (ourTrade) {
             // Check if won (profit > 0 or result contains 'win')
-            isWin = (ourTrade.profit && ourTrade.profit > 0) || 
-                    (ourTrade.result && ourTrade.result.toLowerCase().includes('win')) ||
-                    (ourTrade.status && ourTrade.status.toLowerCase().includes('win'));
+            isWin = Boolean(
+              (ourTrade.profit && ourTrade.profit > 0) || 
+              (ourTrade.result && ourTrade.result.toLowerCase().includes('win')) ||
+              (ourTrade.status && ourTrade.status.toLowerCase().includes('win'))
+            );
             console.log(`[BinaryFaster] Trade ${tradeResult.tradeId} result: ${isWin ? 'WIN' : 'LOSS'}`);
           } else {
             console.log(`[BinaryFaster] Trade ${tradeResult.tradeId} not found in history yet`);
