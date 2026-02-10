@@ -880,7 +880,13 @@ export class GatewayServer extends EventEmitter {
   private getDashboardData(): any {
     const fs = require('fs');
     const configPath = path.join(this.config.stateDir, 'config.json');
-    const skillsDir = path.join(__dirname, '..', '..', 'skills');
+    // Skills can be in multiple locations
+    const possibleSkillsDirs = [
+      path.join(__dirname, '..', '..', 'skills'),           // From dist/src/gateway
+      path.join(__dirname, '..', '..', '..', 'skills'),     // One more level up
+      path.join(process.cwd(), 'skills'),                    // From project root
+    ];
+    const skillsDir = possibleSkillsDirs.find(d => fs.existsSync(d)) || possibleSkillsDirs[2];
     
     // Load config
     let config: any = {};
@@ -890,8 +896,22 @@ export class GatewayServer extends EventEmitter {
     if (fs.existsSync(configPath)) {
       try {
         config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-        user = config.user;
+        // User can be in different places
+        user = config.user || { name: config.userName || config.name };
         channels = config.channels || {};
+      } catch (e) {
+        console.log('[Dashboard] Error loading config:', e);
+      }
+    }
+    
+    // Also check onboarding state for user name
+    const onboardingPath = path.join(this.config.stateDir, 'onboarding.json');
+    if (fs.existsSync(onboardingPath) && !user?.name) {
+      try {
+        const onboarding = JSON.parse(fs.readFileSync(onboardingPath, 'utf8'));
+        if (onboarding.data?.userName) {
+          user = { name: onboarding.data.userName };
+        }
       } catch {}
     }
     
