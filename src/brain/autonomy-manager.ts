@@ -383,7 +383,7 @@ export class AutonomyManager extends EventEmitter {
       );
     }
     
-    return lines.join('\\n');
+    return lines.join('\n');
   }
 }
 
