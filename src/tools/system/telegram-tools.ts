@@ -807,3 +807,328 @@ export const telegramGetUpdatesToolHandler: ToolHandler = async (args) => {
     };
   }
 };
+
+// ============================================================================
+// Telegram Sticker Tool (OpenClaw-inspired)
+// ============================================================================
+
+const STICKER_CACHE_PATH = path.join(KIT_HOME, 'telegram', 'sticker-cache.json');
+
+interface StickerCacheEntry {
+  fileId: string;
+  fileUniqueId: string;
+  emoji?: string;
+  setName?: string;
+  description?: string;
+  cachedAt: string;
+}
+
+function loadStickerCache(): Map<string, StickerCacheEntry> {
+  try {
+    if (fs.existsSync(STICKER_CACHE_PATH)) {
+      const data = JSON.parse(fs.readFileSync(STICKER_CACHE_PATH, 'utf8'));
+      return new Map(Object.entries(data));
+    }
+  } catch (e) {
+    console.error('[Telegram] Failed to load sticker cache:', e);
+  }
+  return new Map();
+}
+
+function saveStickerCache(cache: Map<string, StickerCacheEntry>): void {
+  try {
+    const dir = path.dirname(STICKER_CACHE_PATH);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(STICKER_CACHE_PATH, JSON.stringify(Object.fromEntries(cache), null, 2));
+  } catch (e) {
+    console.error('[Telegram] Failed to save sticker cache:', e);
+  }
+}
+
+export const telegramStickerToolDefinition: ToolDefinition = {
+  name: 'telegram_sticker',
+  description: 'Send a sticker to a Telegram chat by file_id. Get file_id from received stickers or sticker search.',
+  parameters: {
+    type: 'object',
+    properties: {
+      chatId: {
+        type: 'string',
+        description: 'Telegram chat ID to send sticker to',
+      },
+      fileId: {
+        type: 'string',
+        description: 'Telegram file_id of the sticker',
+      },
+      replyToMessageId: {
+        type: 'number',
+        description: 'Optional: Message ID to reply to',
+      },
+      messageThreadId: {
+        type: 'number',
+        description: 'Optional: Thread/topic ID for forum groups',
+      },
+    },
+    required: ['chatId', 'fileId'],
+  },
+};
+
+export const telegramStickerToolHandler: ToolHandler = async (args) => {
+  const { chatId, fileId, replyToMessageId, messageThreadId } = args as {
+    chatId: string;
+    fileId: string;
+    replyToMessageId?: number;
+    messageThreadId?: number;
+  };
+
+  if (!fs.existsSync(CONFIG_PATH)) {
+    return { success: false, error: 'Telegram not configured. Use telegram_setup first.' };
+  }
+
+  const config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+  const token = config.channels?.telegram?.token;
+
+  if (!token) {
+    return { success: false, error: 'Telegram not configured. Use telegram_setup first.' };
+  }
+
+  try {
+    const payload: any = {
+      chat_id: chatId,
+      sticker: fileId,
+    };
+
+    if (replyToMessageId) {
+      payload.reply_parameters = { message_id: replyToMessageId };
+    }
+    if (messageThreadId) {
+      payload.message_thread_id = messageThreadId;
+    }
+
+    const response = await fetch(`https://api.telegram.org/bot${token}/sendSticker`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json() as any;
+
+    if (!data.ok) {
+      return { success: false, error: data.description };
+    }
+
+    return {
+      success: true,
+      messageId: data.result.message_id,
+      chatId,
+      fileId,
+    };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Failed to send sticker' };
+  }
+};
+
+// ============================================================================
+// Telegram Sticker Search Tool (OpenClaw-inspired)
+// ============================================================================
+
+export const telegramStickerSearchToolDefinition: ToolDefinition = {
+  name: 'telegram_sticker_search',
+  description: 'Search cached stickers by description, emoji, or set name. Stickers are cached when received.',
+  parameters: {
+    type: 'object',
+    properties: {
+      query: {
+        type: 'string',
+        description: 'Search query (matches description, emoji, or set name)',
+      },
+      limit: {
+        type: 'number',
+        description: 'Maximum results (default 10)',
+      },
+    },
+    required: ['query'],
+  },
+};
+
+export const telegramStickerSearchToolHandler: ToolHandler = async (args) => {
+  const { query, limit = 10 } = args as { query: string; limit?: number };
+
+  const cache = loadStickerCache();
+  
+  if (cache.size === 0) {
+    return {
+      success: true,
+      count: 0,
+      stickers: [],
+      note: 'Sticker cache is empty. Stickers are cached when received from users.',
+    };
+  }
+
+  const queryLower = query.toLowerCase();
+  const matches: StickerCacheEntry[] = [];
+
+  for (const entry of cache.values()) {
+    const matchesDescription = entry.description?.toLowerCase().includes(queryLower);
+    const matchesEmoji = entry.emoji?.includes(query);
+    const matchesSetName = entry.setName?.toLowerCase().includes(queryLower);
+
+    if (matchesDescription || matchesEmoji || matchesSetName) {
+      matches.push(entry);
+      if (matches.length >= limit) break;
+    }
+  }
+
+  return {
+    success: true,
+    query,
+    count: matches.length,
+    stickers: matches.map(s => ({
+      fileId: s.fileId,
+      emoji: s.emoji,
+      setName: s.setName,
+      description: s.description,
+    })),
+  };
+};
+
+// ============================================================================
+// Telegram Sticker Cache Add (for gateway/channel to use)
+// ============================================================================
+
+export const telegramStickerCacheAddToolDefinition: ToolDefinition = {
+  name: 'telegram_sticker_cache_add',
+  description: 'Add a sticker to the cache with description. Used internally when processing received stickers.',
+  parameters: {
+    type: 'object',
+    properties: {
+      fileId: {
+        type: 'string',
+        description: 'Telegram file_id',
+      },
+      fileUniqueId: {
+        type: 'string',
+        description: 'Telegram file_unique_id (for deduplication)',
+      },
+      emoji: {
+        type: 'string',
+        description: 'Associated emoji',
+      },
+      setName: {
+        type: 'string',
+        description: 'Sticker set name',
+      },
+      description: {
+        type: 'string',
+        description: 'Vision-generated description of the sticker',
+      },
+    },
+    required: ['fileId', 'fileUniqueId'],
+  },
+};
+
+export const telegramStickerCacheAddToolHandler: ToolHandler = async (args) => {
+  const { fileId, fileUniqueId, emoji, setName, description } = args as {
+    fileId: string;
+    fileUniqueId: string;
+    emoji?: string;
+    setName?: string;
+    description?: string;
+  };
+
+  const cache = loadStickerCache();
+
+  // Check if already cached (by fileUniqueId)
+  if (cache.has(fileUniqueId)) {
+    const existing = cache.get(fileUniqueId)!;
+    // Update if new description provided
+    if (description && !existing.description) {
+      existing.description = description;
+      saveStickerCache(cache);
+      return { success: true, updated: true, cached: true };
+    }
+    return { success: true, updated: false, cached: true };
+  }
+
+  // Add to cache
+  const entry: StickerCacheEntry = {
+    fileId,
+    fileUniqueId,
+    emoji,
+    setName,
+    description,
+    cachedAt: new Date().toISOString(),
+  };
+
+  cache.set(fileUniqueId, entry);
+  saveStickerCache(cache);
+
+  return {
+    success: true,
+    cached: true,
+    new: true,
+    cacheSize: cache.size,
+  };
+};
+
+// ============================================================================
+// Telegram Get Sticker Set Tool (OpenClaw-inspired)
+// ============================================================================
+
+export const telegramGetStickerSetToolDefinition: ToolDefinition = {
+  name: 'telegram_get_sticker_set',
+  description: 'Get all stickers from a sticker set by name.',
+  parameters: {
+    type: 'object',
+    properties: {
+      name: {
+        type: 'string',
+        description: 'Name of the sticker set',
+      },
+    },
+    required: ['name'],
+  },
+};
+
+export const telegramGetStickerSetToolHandler: ToolHandler = async (args) => {
+  const { name } = args as { name: string };
+
+  if (!fs.existsSync(CONFIG_PATH)) {
+    return { success: false, error: 'Telegram not configured. Use telegram_setup first.' };
+  }
+
+  const config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+  const token = config.channels?.telegram?.token;
+
+  if (!token) {
+    return { success: false, error: 'Telegram not configured. Use telegram_setup first.' };
+  }
+
+  try {
+    const response = await fetch(`https://api.telegram.org/bot${token}/getStickerSet?name=${encodeURIComponent(name)}`);
+    const data = await response.json() as any;
+
+    if (!data.ok) {
+      return { success: false, error: data.description };
+    }
+
+    const stickerSet = data.result;
+
+    return {
+      success: true,
+      name: stickerSet.name,
+      title: stickerSet.title,
+      stickerType: stickerSet.sticker_type,
+      count: stickerSet.stickers.length,
+      stickers: stickerSet.stickers.slice(0, 50).map((s: any) => ({
+        fileId: s.file_id,
+        fileUniqueId: s.file_unique_id,
+        emoji: s.emoji,
+        type: s.type,
+      })),
+    };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Failed to get sticker set' };
+  }
+};

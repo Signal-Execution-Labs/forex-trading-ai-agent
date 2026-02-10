@@ -103,6 +103,15 @@ export {
   telegramGetChatIdToolHandler,
   telegramSetChatIdToolDefinition,
   telegramSetChatIdToolHandler,
+  // OpenClaw-inspired sticker tools
+  telegramStickerToolDefinition,
+  telegramStickerToolHandler,
+  telegramStickerSearchToolDefinition,
+  telegramStickerSearchToolHandler,
+  telegramStickerCacheAddToolDefinition,
+  telegramStickerCacheAddToolHandler,
+  telegramGetStickerSetToolDefinition,
+  telegramGetStickerSetToolHandler,
 } from './telegram-tools';
 
 // WhatsApp Tools
