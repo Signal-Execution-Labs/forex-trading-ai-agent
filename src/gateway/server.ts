@@ -34,6 +34,7 @@ import { HeartbeatManager, createHeartbeatManager, parseDuration } from './heart
 import { CronManager, createCronManager, CronJob } from './cron-manager';
 import { ChatManager, createChatManager, ChatSendParams, ChatHistoryParams, ChatAbortParams } from './chat-manager';
 import { getToolEnabledChatHandler, ToolEnabledChatHandler } from './tool-enabled-chat';
+import { TelegramChannel, createTelegramChannel } from '../channels/telegram-channel';
 
 // ============================================================================
 // Types
@@ -117,6 +118,9 @@ export class GatewayServer extends EventEmitter {
   private heartbeat: HeartbeatManager;
   private cron: CronManager;
   private chat: ChatManager;
+  
+  // Channels
+  private telegramChannel: TelegramChannel | null = null;
   
   // State
   private state: GatewayState;
@@ -283,6 +287,9 @@ export class GatewayServer extends EventEmitter {
     // Stop subsystems
     this.heartbeat.stop();
     this.cron.stop();
+    if (this.telegramChannel) {
+      this.telegramChannel.stop();
+    }
     
     // Flush sessions
     await this.sessions.flush();
@@ -338,6 +345,45 @@ export class GatewayServer extends EventEmitter {
           return true;
         }
       );
+    }
+
+    // Start Telegram channel if configured
+    this.startTelegramChannel();
+  }
+
+  /**
+   * Start Telegram channel for bidirectional messaging
+   */
+  private async startTelegramChannel(): Promise<void> {
+    try {
+      this.telegramChannel = createTelegramChannel();
+      
+      if (!this.telegramChannel) {
+        console.log('[Telegram] Not configured - use telegram_setup tool to connect');
+        return;
+      }
+
+      // Initialize tool chat handler for Telegram
+      const toolChatHandler = getToolEnabledChatHandler();
+
+      await this.telegramChannel.start(async (msg) => {
+        console.log(`[Telegram] Message from ${msg.username || msg.firstName}: ${msg.text}`);
+        
+        // Process message through AI with tools
+        const response = await toolChatHandler.processMessage(
+          `telegram_${msg.chatId}`,
+          msg.text,
+          () => {}, // No streaming for Telegram
+          () => {}, // No tool call display
+          () => {}  // No tool result display
+        );
+
+        return response;
+      });
+
+      console.log('📱 Telegram channel active - listening for messages');
+    } catch (error) {
+      console.error('[Telegram] Failed to start:', error);
     }
   }
   
