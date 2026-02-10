@@ -37,6 +37,7 @@ import { getToolEnabledChatHandler, ToolEnabledChatHandler } from './tool-enable
 import { TelegramChannel, createTelegramChannel } from '../channels/telegram-channel';
 import { WhatsAppChannel, createWhatsAppChannel, hasWhatsAppCredentials } from '../channels/whatsapp-channel';
 import { getBinaryFasterState } from '../tools/binary-options-tools';
+import { HooksManager, initHooks, getHooksManager } from './hooks';
 
 // ============================================================================
 // Types
@@ -291,6 +292,16 @@ export class GatewayServer extends EventEmitter {
     this.state.status = 'stopping';
     console.log('🛑 K.I.T. Gateway stopping...');
     
+    // Trigger gateway:shutdown hook
+    try {
+      const hooks = getHooksManager();
+      await hooks.trigger('gateway', 'shutdown', 'system', {
+        workspaceDir: this.config.workspaceDir,
+      });
+    } catch (error) {
+      console.error('[Hooks] Shutdown trigger failed:', error);
+    }
+    
     // Stop subsystems
     this.heartbeat.stop();
     this.cron.stop();
@@ -362,6 +373,32 @@ export class GatewayServer extends EventEmitter {
 
     // Start WhatsApp channel if configured
     this.startWhatsAppChannel();
+
+    // Initialize hooks system (OpenClaw-inspired)
+    this.initHooksSystem();
+  }
+
+  /**
+   * Initialize the hooks system
+   */
+  private async initHooksSystem(): Promise<void> {
+    try {
+      const hooks = await initHooks();
+      
+      // Trigger gateway:startup event
+      const result = await hooks.trigger('gateway', 'startup', 'system', {
+        workspaceDir: this.config.workspaceDir,
+        cfg: this.config as any,
+      });
+      
+      if (result.messages.length > 0) {
+        console.log(`[Hooks] Startup messages: ${result.messages.join(', ')}`);
+      }
+      
+      console.log(`✅ Hooks system initialized (${hooks.getHooks().length} hooks loaded)`);
+    } catch (error) {
+      console.error('[Hooks] Failed to initialize:', error);
+    }
   }
 
   /**
