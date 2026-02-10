@@ -4,7 +4,74 @@ Continuous research into professional finance apps to improve K.I.T.
 
 ---
 
-## Research Session: 2026-02-10 (Night Update - 22:16)
+## Research Session: 2026-02-11 (Night Session - 00:12)
+
+### Pionex Deep Dive
+
+**Source:** Coin Bureau Review 2025, Pionex Blog
+
+**Key Findings:**
+- **16 FREE built-in trading bots** - no subscription fees!
+- AI Strategy 2.0 uses backtests (7/30/180 days) to suggest optimal parameters
+- Maximum Drawdown indicator shown before copying
+- **Futures Grid Trading** earns 2x more than spot with same parameters
+- Smart Trade Bot for manual entries with automation
+
+**Bot Types:**
+1. Grid Trading Bot (spot & futures)
+2. Reverse Grid Bot
+3. DCA (Martingale) Bot
+4. Smart Trade Bot
+5. Infinity Grid
+6. TWAP Bot (Time-Weighted Average Price)
+7. Rebalancing Bot
+8. Leveraged Grid
+9. Spot-Futures Arbitrage Bot
+10-16. Various specialized bots
+
+**K.I.T. Already Has:** Grid Bot, DCA Bot, Smart Trade equivalents ✅
+**Missing:** TWAP Bot, Spot-Futures Arbitrage Bot, Leveraged Grid
+
+### DeBank DeFi Analysis
+
+**Source:** Medium/Coinmonks, Bitget Web3, DeBank Site
+
+**Key Findings:**
+- **1,300+ protocols tracked** across all EVM chains
+- Launched own blockchain in early 2025
+- Social features: Follow wallets, track whale activity
+- Monitors: tokens, LP positions, lending, borrowing, staking, farming, vesting, NFTs
+- Web3 social layer for DeFi
+
+**New Skill Implemented: `debank-aggregator` ✅**
+
+Features:
+- Multi-chain portfolio tracking (50+ chains)
+- Protocol position monitoring
+- Whale wallet tracking
+- Real-time portfolio alerts
+- Integration with K.I.T. tax-tracker
+
+**Files Created:**
+- `skills/debank-aggregator/SKILL.md` - Full documentation
+- `skills/debank-aggregator/debank-client.ts` - API client implementation
+- `skills/debank-aggregator/index.ts` - Skill exports
+
+**K.I.T. Advantages:**
+- Automation (auto-rebalance when drift)
+- Custom alerts (Telegram, Discord)
+- Cross-platform (CEX + DeFi + TradFi combined)
+- AI analysis of positions
+- Tax integration
+
+### eToro Update (from earlier research)
+
+**Latest News:** CopyTrader™ launched in US (Oct 2025)
+- Copy up to 100 traders at once
+- Filter by performance, sector, strategy
+- AI tools for Popular Investors
+
+---
 
 ### 3Commas Deep Dive
 
