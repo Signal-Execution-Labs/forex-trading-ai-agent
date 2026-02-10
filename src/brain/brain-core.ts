@@ -311,7 +311,7 @@ export class BrainCore extends EventEmitter {
   /**
    * Make a decision on an opportunity
    */
-  makeDecision(opportunityId: string): Decision | null {
+  async makeDecision(opportunityId: string): Promise<Decision | null> {
     return this.decisionEngine.makeDecision(
       opportunityId,
       this.autonomyManager.getLevel(),

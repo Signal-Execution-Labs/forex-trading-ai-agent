@@ -16,6 +16,13 @@ import {
   DMChannel,
   ChannelType,
   PermissionsBitField,
+  ThreadChannel,
+  ForumChannel,
+  ActivityType,
+  PresenceStatusData,
+  PollLayoutType,
+  ChannelType as DChannelType,
+  GuildTextBasedChannel,
 } from 'discord.js';
 
 const KIT_HOME = path.join(os.homedir(), '.kit');
@@ -432,6 +439,407 @@ export class DiscordChannel extends EventEmitter {
     } catch (error) {
       console.error('[Discord] Delete error:', error);
       return false;
+    }
+  }
+
+  // ============================================
+  // OpenClaw-style Poll Support
+  // ============================================
+
+  /**
+   * Create a poll in a channel
+   * @param channelId - Channel to send poll to
+   * @param question - Poll question (max 300 chars)
+   * @param answers - Poll answers (2-10 options, max 55 chars each)
+   * @param options - Additional poll options
+   */
+  async createPoll(
+    channelId: string,
+    question: string,
+    answers: string[],
+    options?: {
+      allowMultiselect?: boolean;
+      durationHours?: number; // Default 24, max 768 (32 days)
+      content?: string; // Optional message content
+    }
+  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    if (!this.client) return { success: false, error: 'Not connected' };
+
+    try {
+      const channel = await this.client.channels.fetch(channelId);
+      if (!channel || !channel.isTextBased()) {
+        return { success: false, error: 'Invalid channel or not text-based' };
+      }
+
+      // Validate inputs
+      if (answers.length < 2 || answers.length > 10) {
+        return { success: false, error: 'Poll must have 2-10 answers' };
+      }
+
+      if (question.length > 300) {
+        return { success: false, error: 'Question must be 300 characters or less' };
+      }
+
+      const invalidAnswer = answers.find(a => a.length > 55);
+      if (invalidAnswer) {
+        return { success: false, error: 'Each answer must be 55 characters or less' };
+      }
+
+      const durationHours = Math.min(options?.durationHours || 24, 768);
+
+      const textChannel = channel as TextChannel | DMChannel;
+      const message = await textChannel.send({
+        content: options?.content,
+        poll: {
+          question: { text: question },
+          answers: answers.map(text => ({ text })),
+          allowMultiselect: options?.allowMultiselect ?? false,
+          duration: durationHours,
+          layoutType: PollLayoutType.Default,
+        },
+      });
+
+      console.log(`[Discord] Poll created: "${question}" with ${answers.length} answers`);
+      return { success: true, messageId: message.id };
+    } catch (error) {
+      console.error('[Discord] Poll error:', error);
+      return { success: false, error: String(error) };
+    }
+  }
+
+  /**
+   * End a poll early
+   */
+  async endPoll(channelId: string, messageId: string): Promise<boolean> {
+    if (!this.client) return false;
+
+    try {
+      const channel = await this.client.channels.fetch(channelId);
+      if (!channel || !channel.isTextBased()) return false;
+
+      const message = await (channel as TextChannel | DMChannel).messages.fetch(messageId);
+      if (!message.poll) {
+        console.error('[Discord] Message does not contain a poll');
+        return false;
+      }
+
+      await message.poll.end();
+      return true;
+    } catch (error) {
+      console.error('[Discord] End poll error:', error);
+      return false;
+    }
+  }
+
+  // ============================================
+  // OpenClaw-style Thread Support
+  // ============================================
+
+  /**
+   * Create a thread from a message
+   */
+  async createThread(
+    channelId: string,
+    options: {
+      name: string;
+      messageId?: string; // If provided, creates thread from message
+      autoArchiveDuration?: 60 | 1440 | 4320 | 10080; // minutes (1h, 1d, 3d, 7d)
+      reason?: string;
+    }
+  ): Promise<{ success: boolean; threadId?: string; error?: string }> {
+    if (!this.client) return { success: false, error: 'Not connected' };
+
+    try {
+      const channel = await this.client.channels.fetch(channelId);
+      if (!channel || !('threads' in channel)) {
+        return { success: false, error: 'Channel does not support threads' };
+      }
+
+      const textChannel = channel as TextChannel;
+      
+      let thread: ThreadChannel;
+      if (options.messageId) {
+        const message = await textChannel.messages.fetch(options.messageId);
+        thread = await message.startThread({
+          name: options.name,
+          autoArchiveDuration: options.autoArchiveDuration || 1440,
+          reason: options.reason,
+        });
+      } else {
+        thread = await textChannel.threads.create({
+          name: options.name,
+          autoArchiveDuration: options.autoArchiveDuration || 1440,
+          reason: options.reason,
+        });
+      }
+
+      console.log(`[Discord] Thread created: ${options.name} (${thread.id})`);
+      return { success: true, threadId: thread.id };
+    } catch (error) {
+      console.error('[Discord] Create thread error:', error);
+      return { success: false, error: String(error) };
+    }
+  }
+
+  /**
+   * List threads in a guild
+   */
+  async listThreads(
+    guildId: string,
+    options?: {
+      active?: boolean;
+      archived?: boolean;
+      channelId?: string;
+    }
+  ): Promise<{ success: boolean; threads?: Array<{ id: string; name: string; channelId: string; archived: boolean }>; error?: string }> {
+    if (!this.client) return { success: false, error: 'Not connected' };
+
+    try {
+      const guild = await this.client.guilds.fetch(guildId);
+      const threads: Array<{ id: string; name: string; channelId: string; archived: boolean }> = [];
+
+      // Fetch active threads
+      if (options?.active !== false) {
+        const activeThreads = await guild.channels.fetchActiveThreads();
+        for (const [id, thread] of activeThreads.threads) {
+          if (!options?.channelId || thread.parentId === options.channelId) {
+            threads.push({
+              id,
+              name: thread.name,
+              channelId: thread.parentId || '',
+              archived: false,
+            });
+          }
+        }
+      }
+
+      return { success: true, threads };
+    } catch (error) {
+      console.error('[Discord] List threads error:', error);
+      return { success: false, error: String(error) };
+    }
+  }
+
+  /**
+   * Reply in a thread
+   */
+  async sendThreadMessage(threadId: string, content: string): Promise<boolean> {
+    if (!this.client) return false;
+
+    try {
+      const thread = await this.client.channels.fetch(threadId);
+      if (!thread || !thread.isThread()) {
+        console.error('[Discord] Invalid thread');
+        return false;
+      }
+
+      const chunks = this.chunkText(content);
+      for (const chunk of chunks) {
+        await (thread as ThreadChannel).send(chunk);
+        await new Promise(r => setTimeout(r, 100));
+      }
+
+      return true;
+    } catch (error) {
+      console.error('[Discord] Thread message error:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Archive/unarchive a thread
+   */
+  async setThreadArchived(threadId: string, archived: boolean): Promise<boolean> {
+    if (!this.client) return false;
+
+    try {
+      const thread = await this.client.channels.fetch(threadId);
+      if (!thread || !thread.isThread()) return false;
+
+      await (thread as ThreadChannel).setArchived(archived);
+      return true;
+    } catch (error) {
+      console.error('[Discord] Archive thread error:', error);
+      return false;
+    }
+  }
+
+  // ============================================
+  // OpenClaw-style Presence/Activity Control
+  // ============================================
+
+  /**
+   * Set bot presence (status and activity)
+   * @param options - Presence options
+   */
+  async setPresence(options: {
+    status?: 'online' | 'idle' | 'dnd' | 'invisible';
+    activityType?: 'playing' | 'streaming' | 'listening' | 'watching' | 'competing' | 'custom';
+    activityName?: string;
+    activityState?: string; // For custom type, this is the status text
+    activityUrl?: string; // For streaming type
+  }): Promise<boolean> {
+    if (!this.client?.user) return false;
+
+    try {
+      const activityTypeMap: Record<string, ActivityType> = {
+        playing: ActivityType.Playing,
+        streaming: ActivityType.Streaming,
+        listening: ActivityType.Listening,
+        watching: ActivityType.Watching,
+        competing: ActivityType.Competing,
+        custom: ActivityType.Custom,
+      };
+
+      const activities = options.activityType && options.activityName
+        ? [{
+            type: activityTypeMap[options.activityType] ?? ActivityType.Playing,
+            name: options.activityName,
+            state: options.activityState,
+            url: options.activityType === 'streaming' ? options.activityUrl : undefined,
+          }]
+        : options.activityType === 'custom' && options.activityState
+          ? [{
+              type: ActivityType.Custom,
+              name: 'Custom Status',
+              state: options.activityState,
+            }]
+          : [];
+
+      this.client.user.setPresence({
+        status: (options.status || 'online') as PresenceStatusData,
+        activities,
+      });
+
+      console.log(`[Discord] Presence updated: ${options.status || 'online'}, ${options.activityType || 'none'}`);
+      return true;
+    } catch (error) {
+      console.error('[Discord] Presence error:', error);
+      return false;
+    }
+  }
+
+  // ============================================
+  // OpenClaw-style Search Support
+  // ============================================
+
+  /**
+   * Search messages in a channel/guild
+   * Note: Discord.js doesn't have native search, this searches recent messages
+   */
+  async searchMessages(
+    channelId: string,
+    query: string,
+    options?: {
+      limit?: number;
+      authorId?: string;
+    }
+  ): Promise<{ success: boolean; messages?: Array<{ id: string; content: string; authorId: string; authorName: string; timestamp: Date }>; error?: string }> {
+    if (!this.client) return { success: false, error: 'Not connected' };
+
+    try {
+      const channel = await this.client.channels.fetch(channelId);
+      if (!channel || !channel.isTextBased()) {
+        return { success: false, error: 'Invalid channel' };
+      }
+
+      const textChannel = channel as TextChannel | DMChannel;
+      const limit = Math.min(options?.limit || 50, 100);
+      
+      // Fetch messages and filter
+      const fetched = await textChannel.messages.fetch({ limit: 100 });
+      const queryLower = query.toLowerCase();
+      
+      const results = fetched
+        .filter(msg => {
+          const matchesQuery = msg.content.toLowerCase().includes(queryLower);
+          const matchesAuthor = !options?.authorId || msg.author.id === options.authorId;
+          return matchesQuery && matchesAuthor;
+        })
+        .first(limit);
+
+      return {
+        success: true,
+        messages: Array.from(results.values()).map(msg => ({
+          id: msg.id,
+          content: msg.content,
+          authorId: msg.author.id,
+          authorName: msg.author.username,
+          timestamp: msg.createdAt,
+        })),
+      };
+    } catch (error) {
+      console.error('[Discord] Search error:', error);
+      return { success: false, error: String(error) };
+    }
+  }
+
+  // ============================================
+  // OpenClaw-style Pin Support
+  // ============================================
+
+  /**
+   * Pin a message
+   */
+  async pinMessage(channelId: string, messageId: string): Promise<boolean> {
+    if (!this.client) return false;
+
+    try {
+      const channel = await this.client.channels.fetch(channelId);
+      if (!channel || !channel.isTextBased()) return false;
+
+      const message = await (channel as TextChannel | DMChannel).messages.fetch(messageId);
+      await message.pin();
+      return true;
+    } catch (error) {
+      console.error('[Discord] Pin error:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Unpin a message
+   */
+  async unpinMessage(channelId: string, messageId: string): Promise<boolean> {
+    if (!this.client) return false;
+
+    try {
+      const channel = await this.client.channels.fetch(channelId);
+      if (!channel || !channel.isTextBased()) return false;
+
+      const message = await (channel as TextChannel | DMChannel).messages.fetch(messageId);
+      await message.unpin();
+      return true;
+    } catch (error) {
+      console.error('[Discord] Unpin error:', error);
+      return false;
+    }
+  }
+
+  /**
+   * List pinned messages in a channel
+   */
+  async listPins(channelId: string): Promise<{ success: boolean; messages?: Array<{ id: string; content: string; authorName: string }>; error?: string }> {
+    if (!this.client) return { success: false, error: 'Not connected' };
+
+    try {
+      const channel = await this.client.channels.fetch(channelId);
+      if (!channel || !channel.isTextBased()) {
+        return { success: false, error: 'Invalid channel' };
+      }
+
+      const pins = await (channel as TextChannel | DMChannel).messages.fetchPinned();
+      return {
+        success: true,
+        messages: Array.from(pins.values()).map(msg => ({
+          id: msg.id,
+          content: msg.content.substring(0, 200),
+          authorName: msg.author.username,
+        })),
+      };
+    } catch (error) {
+      console.error('[Discord] List pins error:', error);
+      return { success: false, error: String(error) };
     }
   }
 

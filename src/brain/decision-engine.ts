@@ -39,6 +39,53 @@ export interface DecisionEngineConfig {
   verbose: boolean;
 }
 
+/**
+ * Price provider interface for getting current asset prices
+ */
+export interface PriceProvider {
+  getPrice(symbol: string, market: string): Promise<number>;
+}
+
+/**
+ * Default price provider using hardcoded estimates
+ * (Fallback when no exchange is connected)
+ */
+class DefaultPriceProvider implements PriceProvider {
+  private defaultPrices: Record<string, number> = {
+    'BTC': 95000,
+    'ETH': 3200,
+    'SOL': 180,
+    'BNB': 680,
+    'XRP': 2.4,
+    'ADA': 0.95,
+    'DOGE': 0.32,
+    'EUR/USD': 1.04,
+    'GBP/USD': 1.26,
+    'USD/JPY': 152,
+    'GOLD': 2900,
+    'SPY': 600,
+    'AAPL': 230,
+    'TSLA': 380,
+  };
+
+  async getPrice(symbol: string, _market: string): Promise<number> {
+    // Try exact match first
+    if (this.defaultPrices[symbol]) {
+      return this.defaultPrices[symbol];
+    }
+    
+    // Try extracting base asset (e.g., BTC/USDT -> BTC)
+    const base = symbol.split('/')[0];
+    if (this.defaultPrices[base]) {
+      return this.defaultPrices[base];
+    }
+    
+    // Default fallback
+    console.warn(`⚠️ No price data for ${symbol}, using $100 as fallback`);
+    return 100;
+  }
+}
+
 const DEFAULT_CONFIG: DecisionEngineConfig = {
   minConfidence: 60,
   maxRiskScore: 70,
@@ -64,10 +111,19 @@ export class DecisionEngine extends EventEmitter {
   private goals: UserGoal[] = [];
   private opportunities: Map<string, MarketOpportunity> = new Map();
   private decisions: Decision[] = [];
+  private priceProvider: PriceProvider;
   
-  constructor(config: Partial<DecisionEngineConfig> = {}) {
+  constructor(config: Partial<DecisionEngineConfig> = {}, priceProvider?: PriceProvider) {
     super();
     this.config = { ...DEFAULT_CONFIG, ...config };
+    this.priceProvider = priceProvider || new DefaultPriceProvider();
+  }
+  
+  /**
+   * Set a custom price provider (e.g., connected to an exchange)
+   */
+  setPriceProvider(provider: PriceProvider): void {
+    this.priceProvider = provider;
   }
   
   // ============================================
@@ -203,11 +259,11 @@ export class DecisionEngine extends EventEmitter {
   /**
    * Make a decision on an opportunity
    */
-  makeDecision(
+  async makeDecision(
     opportunityId: string,
     autonomyLevel: number,
     portfolioValue: number
-  ): Decision | null {
+  ): Promise<Decision | null> {
     const opportunity = this.opportunities.get(opportunityId);
     if (!opportunity) {
       console.error(`Opportunity ${opportunityId} not found`);
@@ -221,8 +277,8 @@ export class DecisionEngine extends EventEmitter {
     // Confidence check
     const confidenceCheckPassed = opportunity.confidenceScore >= this.config.minConfidence;
     
-    // Build trade action
-    const action = this.buildTradeAction(opportunity, portfolioValue);
+    // Build trade action (async to fetch current price)
+    const action = await this.buildTradeAction(opportunity, portfolioValue);
     
     // Determine if approval needed
     const requiresApproval = autonomyLevel === 1 || !riskCheckPassed || !confidenceCheckPassed;
@@ -323,16 +379,26 @@ export class DecisionEngine extends EventEmitter {
   // Helpers
   // ============================================
   
-  private buildTradeAction(opportunity: MarketOpportunity, portfolioValue: number): TradeAction {
+  private async buildTradeAction(opportunity: MarketOpportunity, portfolioValue: number): Promise<TradeAction> {
     // Position sizing based on risk
     const riskPercent = Math.max(1, 5 - (opportunity.riskScore / 25)); // 1-5% based on risk
     const positionSize = (portfolioValue * riskPercent) / 100;
+    
+    // Get current price for the asset
+    const currentPrice = await this.priceProvider.getPrice(
+      opportunity.asset.symbol,
+      opportunity.asset.market
+    );
+    
+    // Calculate quantity based on position size and current price
+    const quantity = positionSize / currentPrice;
     
     return {
       type: opportunity.type === 'yield' ? 'stake' : 'market',
       asset: opportunity.asset,
       side: opportunity.action === 'buy' || opportunity.action === 'stake' ? 'buy' : 'sell',
-      amount: positionSize / (1), // TODO: Get current price
+      amount: quantity,
+      price: currentPrice, // Include price for reference
     };
   }
   
