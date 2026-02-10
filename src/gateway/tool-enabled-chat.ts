@@ -205,7 +205,8 @@ Note: WhatsApp uses the Baileys library (like WhatsApp Web). No API key needed!
 
 ## Communication
 - Be friendly and helpful
-- **Default language is ENGLISH** - only switch to another language if the user explicitly asks (e.g., "sprich deutsch", "auf deutsch bitte")
+- **ALWAYS USE ENGLISH** - Never switch to German or other languages, even if user writes in another language
+- Keep ALL responses, prompts, and onboarding steps in English
 - Use emojis sparingly but appropriately
 - Explain what you're doing when using tools
 

@@ -178,14 +178,22 @@ export class GatewayServer extends EventEmitter {
         return;
       }
       
-      // API status endpoint
+      // API status endpoint - returns full dashboard data
       if (req.url === '/api/status') {
+        const dashboardData = this.getDashboardData();
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({
           status: this.state.status,
           agent: this.config.agent,
           health: this.getHealth(),
           wsUrl: `ws://${this.config.host}:${this.config.port}`,
+          // Dashboard data
+          portfolio: dashboardData.portfolio,
+          skillsActive: dashboardData.skillsActive,
+          skillsTotal: dashboardData.skillsTotal,
+          skills: dashboardData.skillsList,
+          channels: dashboardData.channels,
+          user: dashboardData.user,
         }));
         return;
       }

@@ -598,6 +598,7 @@
       fetch('/api/status')
         .then(r => r.json())
         .then(data => {
+          // Uptime
           if (data.health) {
             const uptimeMs = data.health.uptime || 0;
             const hours = Math.floor(uptimeMs / 3600000);
@@ -605,14 +606,57 @@
             document.getElementById('uptime').textContent = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
             document.getElementById('connections').textContent = data.health.clients || 1;
           }
+          
+          // Portfolio
           if (data.portfolio) {
             document.getElementById('portfolioValue').textContent = '$' + (data.portfolio.totalValue || 0).toLocaleString();
           }
-          if (data.skillsActive !== undefined) {
-            document.getElementById('skillsCount').textContent = `${data.skillsActive}/${data.skillsTotal || 37}`;
+          
+          // Skills
+          document.getElementById('skillsCount').textContent = `${data.skillsActive || 0}/${data.skillsTotal || 37}`;
+          if (data.skills && data.skills.length) {
+            const skillsList = document.getElementById('skillsList');
+            skillsList.innerHTML = data.skills.slice(0, 8).map(s => `
+              <div class="skill-item">
+                <span class="skill-name">${s.name}</span>
+                <span class="skill-badge ${s.active ? 'active' : 'inactive'}">${s.active ? 'Active' : 'Ready'}</span>
+              </div>
+            `).join('');
+            if (data.skillsTotal > 8) {
+              skillsList.innerHTML += `<div style="text-align: center; color: #666; font-size: 0.8rem;">+${data.skillsTotal - 8} more</div>`;
+            }
+          }
+          
+          // User name
+          if (data.user?.name) {
+            document.getElementById('userName').textContent = data.user.name;
+          }
+          
+          // Channels
+          if (data.channels) {
+            const channelsList = document.getElementById('channelsList');
+            channelsList.innerHTML = '';
+            const channelNames = { telegram: 'Telegram', whatsapp: 'WhatsApp' };
+            for (const [id, info] of Object.entries(data.channels)) {
+              const connected = info.connected;
+              const name = channelNames[id] || id;
+              const extra = info.username ? ` @${info.username}` : '';
+              channelsList.innerHTML += `
+                <div class="channel-item">
+                  <span class="channel-dot ${connected ? 'connected' : 'disconnected'}"></span>
+                  <span>${name}${extra}</span>
+                </div>
+              `;
+            }
+            channelsList.innerHTML += `
+              <div class="channel-item">
+                <span class="channel-dot connected"></span>
+                <span>Dashboard (this)</span>
+              </div>
+            `;
           }
         })
-        .catch(() => {});
+        .catch(err => console.log('Status refresh error:', err));
     }
     
     // Event listeners
