@@ -1,0 +1,55 @@
+# Grid Bot Configuration
+
+grid_bot:
+  # Default exchange
+  exchange: binance
+  
+  # Default parameters
+  default_grids: 20
+  min_profit_per_grid: 0.3  # 0.3%
+  
+  # Risk management
+  max_investment: 10000  # Max investment per bot
+  stop_loss_percent: 15  # Stop if price drops 15% below range
+  take_profit_percent: 50  # Take profit if 50% gains
+  
+  # Order settings
+  use_market_orders: false  # Use limit orders for grids
+  order_timeout: 86400  # Cancel unfilled orders after 24 hours
+  
+  # Monitoring
+  check_interval: 5  # Check orders every 5 seconds
+  price_update_interval: 1  # Update price every second
+
+# Notification settings
+notifications:
+  on_fill: true
+  on_profit: true
+  on_stop_loss: true
+  on_take_profit: true
+  daily_report: true
+
+# Saved bot configurations
+saved_bots:
+  btc-grid:
+    symbol: BTCUSDT
+    lower_price: 40000
+    upper_price: 50000
+    num_grids: 20
+    investment: 1000
+    grid_type: spot
+    spacing: arithmetic
+    
+  eth-infinity:
+    symbol: ETHUSDT
+    lower_price: 2000
+    num_grids: 50
+    investment: 500
+    grid_type: infinity
+    spacing: geometric
+
+# API keys (use environment variables in production!)
+# api:
+#   binance:
+#     key: ${BINANCE_API_KEY}
+#     secret: ${BINANCE_API_SECRET}

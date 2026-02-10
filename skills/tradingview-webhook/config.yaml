@@ -1,0 +1,51 @@
+# TradingView Webhook Configuration
+
+webhook:
+  port: 8080
+  host: "0.0.0.0"
+  secret: null  # Set your secret key here for authentication
+  log_file: "webhook_alerts.log"
+  log_level: "INFO"
+  max_history: 100
+
+# Strategy configurations
+strategies:
+  # Example strategies - configure your own
+  default:
+    exchange: binance
+    default_quantity: 0.01
+    use_market_orders: true
+    enabled: true
+  
+  # MA Cross Strategy
+  ma-cross:
+    exchange: binance
+    default_quantity: 0.02
+    use_market_orders: true
+    enabled: true
+  
+  # RSI Strategy
+  rsi-oversold:
+    exchange: bybit
+    default_quantity: 100  # For contracts
+    use_market_orders: false
+    enabled: true
+  
+  # Scalping Strategy
+  scalper:
+    exchange: binance
+    default_quantity: 0.005
+    use_market_orders: true
+    enabled: true
+
+# Notification settings
+notifications:
+  telegram: true
+  discord: false
+  email: false
+
+# Risk management
+risk:
+  max_daily_trades: 50
+  max_position_size: 1.0  # Max 1 BTC equivalent
+  cooldown_seconds: 60  # Min time between trades on same symbol
