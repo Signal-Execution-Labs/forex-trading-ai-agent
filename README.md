@@ -365,5 +365,7 @@ K.I.T. is a **tool**, not financial advice. Trading involves risk.
 
 <p align="center">
   <a href="https://github.com/kayzaa/k.i.t.-bot">GitHub</a> •
+  <a href="QUICKSTART.md">Quick Start</a> •
+  <a href="CHANGELOG.md">Changelog</a> •
   <a href="https://youtube.com/@TraderLifestyle">YouTube</a>
 </p>
