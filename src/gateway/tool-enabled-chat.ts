@@ -434,10 +434,10 @@ export class ToolEnabledChatHandler {
     this.toolRegistry = getToolRegistry();
     
     // Log loaded tools for debugging
-    const tools = this.toolRegistry.listTools();
+    const tools = this.toolRegistry.list();
     console.log(`   Chat handler loaded ${tools.length} tools`);
-    const mt5Tools = tools.filter(t => t.name.startsWith('mt5_'));
-    console.log(`   MT5 Tools available: ${mt5Tools.length > 0 ? mt5Tools.map(t => t.name).join(', ') : 'NONE'}`);
+    const mt5Tools = tools.filter((t: { definition: { name: string } }) => t.definition.name.startsWith('mt5_'));
+    console.log(`   MT5 Tools available: ${mt5Tools.length > 0 ? mt5Tools.map((t: { definition: { name: string } }) => t.definition.name).join(', ') : 'NONE'}`);
     
     this.config = {
       model: config?.model || 'gpt-4o-mini',
