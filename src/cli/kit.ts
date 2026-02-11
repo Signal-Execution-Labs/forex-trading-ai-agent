@@ -853,66 +853,6 @@ program
   });
 
 // ═══════════════════════════════════════════════════════════════
-// RESET (Workspace Reset)
-// ═══════════════════════════════════════════════════════════════
-program
-  .command('reset')
-  .description('Reset K.I.T. workspace and configuration')
-  .option('-f, --force', 'Skip confirmation prompt')
-  .option('--workspace-only', 'Only reset workspace files, keep config')
-  .option('--config-only', 'Only reset config, keep workspace')
-  .action(async (options) => {
-    const workspaceDir = path.join(KIT_HOME, 'workspace');
-    const configPath = path.join(KIT_HOME, 'config.json');
-    const onboardingPath = path.join(KIT_HOME, 'onboarding.json');
-    
-    if (!options.force) {
-      const readline = await import('readline');
-      const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-      
-      const confirmed = await new Promise<boolean>((resolve) => {
-        rl.question('\n⚠️  This will reset your K.I.T. configuration. Continue? (y/N): ', (answer) => {
-          rl.close();
-          resolve(answer.toLowerCase() === 'y' || answer.toLowerCase() === 'yes');
-        });
-      });
-      
-      if (!confirmed) {
-        console.log('   Cancelled.\n');
-        return;
-      }
-    }
-    
-    console.log('\n🔄 Resetting K.I.T...\n');
-    
-    // Reset workspace
-    if (!options.configOnly) {
-      const workspaceFiles = ['SOUL.md', 'USER.md', 'AGENTS.md', 'MEMORY.md'];
-      for (const file of workspaceFiles) {
-        const filePath = path.join(workspaceDir, file);
-        if (fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
-          console.log(`   ✅ Deleted: ${file}`);
-        }
-      }
-    }
-    
-    // Reset config
-    if (!options.workspaceOnly) {
-      if (fs.existsSync(configPath)) {
-        fs.unlinkSync(configPath);
-        console.log('   ✅ Deleted: config.json');
-      }
-      if (fs.existsSync(onboardingPath)) {
-        fs.unlinkSync(onboardingPath);
-        console.log('   ✅ Deleted: onboarding.json');
-      }
-    }
-    
-    console.log('\n✅ Reset complete! Run "kit onboard" to set up again.\n');
-  });
-
-// ═══════════════════════════════════════════════════════════════
 // TEST (Integration Tests)
 // ═══════════════════════════════════════════════════════════════
 program
