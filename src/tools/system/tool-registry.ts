@@ -85,7 +85,16 @@ export const TOOL_GROUPS: Record<string, string[]> = {
   'group:tts': ['tts_speak', 'tts_voices', 'tts_play'],
   'group:onboarding': ['onboarding_start', 'onboarding_continue', 'onboarding_status'],
   'group:config': ['config_get', 'config_set', 'config_delete', 'env_set', 'status', 'user_profile'],
-  'group:skills': ['skills_list', 'skills_enable', 'skills_disable', 'skills_setup'],
+  'group:skills': ['skills_list', 'skills_enable', 'skills_disable', 'skills_setup', 'skill_run', 'skill_info'],
+  // Python skills from /skills/ directory - dynamically registered
+  'group:python_skills': [
+    'skill_smart_router', 'skill_arbitrage_finder', 'skill_sentiment_analyzer',
+    'skill_whale_tracker', 'skill_portfolio_tracker', 'skill_signal_copier',
+    'skill_backtester', 'skill_risk_calculator', 'skill_tax_calculator',
+    'skill_alert_system', 'skill_auto_trader', 'skill_grid_bot',
+    'skill_dca_bot', 'skill_correlation_matrix', 'skill_market_analysis',
+    // ... more are dynamically added during registration
+  ],
 };
 
 /**
@@ -404,7 +413,11 @@ import {
   skillsEnableToolDefinition, skillsEnableToolHandler,
   skillsDisableToolDefinition, skillsDisableToolHandler,
   skillsSetupToolDefinition, skillsSetupToolHandler,
+  skillRunToolDefinition, skillRunToolHandler,
+  skillInfoToolDefinition, skillInfoToolHandler,
 } from './skills-tools';
+
+import { registerAllSkills, discoverSkills } from '../skill-bridge';
 
 import {
   onboardingStartToolDefinition, onboardingStartToolHandler,
@@ -537,6 +550,8 @@ export function createDefaultToolRegistry(workspaceDir?: string): ToolRegistry {
   registry.register(skillsEnableToolDefinition, skillsEnableToolHandler, 'system');
   registry.register(skillsDisableToolDefinition, skillsDisableToolHandler, 'system');
   registry.register(skillsSetupToolDefinition, skillsSetupToolHandler, 'system');
+  registry.register(skillRunToolDefinition, skillRunToolHandler, 'system');
+  registry.register(skillInfoToolDefinition, skillInfoToolHandler, 'system');
 
   // Onboarding tools
   registry.register(onboardingStartToolDefinition, onboardingStartToolHandler, 'system');
@@ -685,6 +700,26 @@ export function createDefaultToolRegistry(workspaceDir?: string): ToolRegistry {
 
   // Initialize Trading Brain on startup
   initTradingBrain();
+
+  // ============================================================================
+  // PYTHON SKILLS - Auto-register all implemented Python skills from /skills/
+  // ============================================================================
+  try {
+    const skillsDir = path.join(process.cwd(), 'skills');
+    const { registered, skipped, skills } = registerAllSkills(registry, skillsDir);
+    console.log(`🐍 Registered ${registered} Python skills (${skipped} planned/skipped)`);
+    
+    // Log priority skills status
+    const prioritySkills = ['smart-router', 'arbitrage-finder', 'sentiment-analyzer', 'whale-tracker'];
+    for (const priority of prioritySkills) {
+      const skill = skills.find(s => s.slug === priority);
+      if (skill?.hasImplementation) {
+        console.log(`   ✅ ${skill.emoji} ${skill.toolName}`);
+      }
+    }
+  } catch (e) {
+    console.warn('⚠️  Could not register Python skills:', e);
+  }
 
   return registry;
 }

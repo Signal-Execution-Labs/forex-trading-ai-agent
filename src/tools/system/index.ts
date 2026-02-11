@@ -69,7 +69,23 @@ export {
   skillsDisableToolHandler,
   skillsSetupToolDefinition,
   skillsSetupToolHandler,
+  skillRunToolDefinition,
+  skillRunToolHandler,
+  skillInfoToolDefinition,
+  skillInfoToolHandler,
 } from './skills-tools';
+
+// Skill Bridge (Python skills from /skills/)
+export {
+  discoverSkills,
+  executeSkill,
+  registerAllSkills,
+  getSkill,
+  listSkillsWithStatus,
+  createSkillToolDefinition,
+  createSkillToolHandler,
+} from '../skill-bridge';
+export type { SkillInfo, SkillExecutionResult } from '../skill-bridge';
 
 // Onboarding Tools
 export {

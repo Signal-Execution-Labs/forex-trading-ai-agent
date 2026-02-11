@@ -19,6 +19,18 @@
 // System Tools (OpenClaw-style)
 export * from './system';
 
+// Skill Bridge - Python skills from /skills/
+export {
+  discoverSkills,
+  executeSkill,
+  registerAllSkills,
+  getSkill,
+  listSkillsWithStatus,
+  createSkillToolDefinition,
+  createSkillToolHandler,
+} from './skill-bridge';
+export type { SkillInfo, SkillExecutionResult } from './skill-bridge';
+
 // Types
 export * from './types';
 

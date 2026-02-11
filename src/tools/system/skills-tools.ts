@@ -1,16 +1,20 @@
 /**
  * K.I.T. Skills Tools
  * Manage skills/channels like OpenClaw
+ * 
+ * Now with REAL skill discovery from /skills/ directory!
  */
 
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { ToolDefinition, ToolHandler } from './tool-registry';
+import { discoverSkills, listSkillsWithStatus, getSkill, executeSkill, SkillInfo } from '../skill-bridge';
 
 const CONFIG_DIR = path.join(os.homedir(), '.kit');
 const CONFIG_PATH = path.join(CONFIG_DIR, 'config.json');
 const SKILLS_DIR = path.join(CONFIG_DIR, 'skills');
+const PROJECT_SKILLS_DIR = path.join(process.cwd(), 'skills');
 
 // ============================================================================
 // Available Skills
@@ -147,14 +151,19 @@ const AVAILABLE_SKILLS: SkillDefinition[] = [
 
 export const skillsListToolDefinition: ToolDefinition = {
   name: 'skills_list',
-  description: 'List all available skills/integrations and their status',
+  description: 'List all available skills (60+ Python skills + integrations) and their status. Shows implemented vs planned skills.',
   parameters: {
     type: 'object',
     properties: {
       category: {
         type: 'string',
-        enum: ['channel', 'trading', 'analysis', 'automation', 'utility', 'all'],
+        enum: ['channel', 'trading', 'analysis', 'automation', 'utility', 'intelligence', 'all'],
         description: 'Filter by category',
+      },
+      source: {
+        type: 'string',
+        enum: ['all', 'python', 'integrations'],
+        description: 'Filter by source: python (skills/), integrations (channels/exchanges), or all',
       },
     },
     required: [],
@@ -217,27 +226,73 @@ function isSkillEnabled(skill: SkillDefinition, config: any): boolean {
 }
 
 export const skillsListToolHandler: ToolHandler = async (args, context) => {
-  const { category = 'all' } = args as { category?: string };
+  const { category = 'all', source = 'all' } = args as { category?: string; source?: string };
   
   const config = loadConfig();
   
-  const skills = AVAILABLE_SKILLS
+  // Integration skills (channels, exchanges, etc.)
+  const integrationSkills = AVAILABLE_SKILLS
     .filter(s => category === 'all' || s.category === category)
     .map(skill => ({
       id: skill.id,
       name: skill.name,
       description: skill.description,
       category: skill.category,
+      type: 'integration' as const,
       configured: isSkillConfigured(skill, config),
       enabled: isSkillEnabled(skill, config),
       configRequired: skill.configRequired,
+      implementation: 'typescript',
     }));
   
+  // Python skills from /skills/ directory
+  const pythonSkillsData = listSkillsWithStatus(PROJECT_SKILLS_DIR);
+  const pythonSkills = pythonSkillsData.skills
+    .filter(s => category === 'all' || s.category === category)
+    .map(skill => ({
+      id: skill.slug,
+      name: skill.name,
+      description: skill.description,
+      category: skill.category,
+      type: 'python_skill' as const,
+      configured: true, // Python skills don't need config
+      enabled: skill.hasImplementation,
+      configRequired: [],
+      implementation: skill.implementationType,
+      emoji: skill.emoji,
+      tier: skill.tier,
+      toolName: skill.toolName,
+      mainScript: skill.mainScript,
+    }));
+  
+  // Combine based on source filter
+  let allSkills: any[] = [];
+  if (source === 'all' || source === 'integrations') {
+    allSkills = [...allSkills, ...integrationSkills];
+  }
+  if (source === 'all' || source === 'python') {
+    allSkills = [...allSkills, ...pythonSkills];
+  }
+  
+  // Summary by category
+  const byCategory: Record<string, any[]> = {};
+  for (const skill of allSkills) {
+    if (!byCategory[skill.category]) {
+      byCategory[skill.category] = [];
+    }
+    byCategory[skill.category].push(skill);
+  }
+  
   return {
-    total: skills.length,
-    configured: skills.filter(s => s.configured).length,
-    enabled: skills.filter(s => s.enabled).length,
-    skills,
+    total: allSkills.length,
+    configured: allSkills.filter(s => s.configured).length,
+    enabled: allSkills.filter(s => s.enabled).length,
+    integrations: integrationSkills.length,
+    pythonSkills: pythonSkills.length,
+    implemented: pythonSkills.filter(s => s.implementation !== 'planned').length,
+    planned: pythonSkills.filter(s => s.implementation === 'planned').length,
+    byCategory,
+    skills: allSkills,
   };
 };
 
@@ -477,5 +532,139 @@ export const skillsSetupToolHandler: ToolHandler = async (args, context) => {
       `Required config: ${skill.configRequired.join(', ') || 'None'}`,
     ],
     example: instructions?.example || null,
+  };
+};
+
+// ============================================================================
+// Skill Run Tool - Execute Python skills directly
+// ============================================================================
+
+export const skillRunToolDefinition: ToolDefinition = {
+  name: 'skill_run',
+  description: 'Execute a Python skill from /skills/ directory. Use skills_list to see available skills.',
+  parameters: {
+    type: 'object',
+    properties: {
+      skill: {
+        type: 'string',
+        description: 'Skill name or slug (e.g., "smart-router", "arbitrage-finder", "whale-tracker")',
+      },
+      action: {
+        type: 'string',
+        description: 'Action to perform (depends on skill)',
+      },
+      symbol: {
+        type: 'string',
+        description: 'Trading symbol (e.g., "BTC/USDT")',
+      },
+      amount: {
+        type: 'number',
+        description: 'Amount for operation',
+      },
+      params: {
+        type: 'object',
+        description: 'Additional parameters as JSON object',
+      },
+    },
+    required: ['skill'],
+  },
+};
+
+export const skillRunToolHandler: ToolHandler = async (args, context) => {
+  const { skill: skillName, ...skillArgs } = args as { skill: string; [key: string]: any };
+  
+  // Find the skill
+  const skill = getSkill(skillName, PROJECT_SKILLS_DIR);
+  
+  if (!skill) {
+    // List available skills
+    const allSkills = discoverSkills(PROJECT_SKILLS_DIR);
+    const implementedSkills = allSkills
+      .filter(s => s.hasImplementation)
+      .map(s => `${s.emoji} ${s.slug}`);
+    
+    return {
+      success: false,
+      error: `Unknown skill: ${skillName}`,
+      hint: 'Use skills_list to see all available skills',
+      implementedSkills: implementedSkills.slice(0, 20),
+      totalAvailable: implementedSkills.length,
+    };
+  }
+  
+  if (!skill.hasImplementation) {
+    return {
+      success: false,
+      error: `Skill "${skill.name}" is planned but not yet implemented`,
+      skill: skill.name,
+      status: 'planned',
+    };
+  }
+  
+  // Execute the skill
+  const result = await executeSkill(skill, skillArgs);
+  
+  return {
+    skill: skill.name,
+    toolName: skill.toolName,
+    emoji: skill.emoji,
+    ...result,
+  };
+};
+
+// ============================================================================
+// Skill Info Tool - Get detailed info about a specific skill
+// ============================================================================
+
+export const skillInfoToolDefinition: ToolDefinition = {
+  name: 'skill_info',
+  description: 'Get detailed information about a specific Python skill',
+  parameters: {
+    type: 'object',
+    properties: {
+      skill: {
+        type: 'string',
+        description: 'Skill name or slug',
+      },
+    },
+    required: ['skill'],
+  },
+};
+
+export const skillInfoToolHandler: ToolHandler = async (args, context) => {
+  const { skill: skillName } = args as { skill: string };
+  
+  const skill = getSkill(skillName, PROJECT_SKILLS_DIR);
+  
+  if (!skill) {
+    return {
+      success: false,
+      error: `Unknown skill: ${skillName}`,
+    };
+  }
+  
+  // Read SKILL.md for full documentation
+  let documentation = '';
+  if (fs.existsSync(skill.skillMdPath)) {
+    documentation = fs.readFileSync(skill.skillMdPath, 'utf8');
+    // Truncate if too long
+    if (documentation.length > 4000) {
+      documentation = documentation.substring(0, 4000) + '\n\n... (truncated)';
+    }
+  }
+  
+  return {
+    name: skill.name,
+    slug: skill.slug,
+    toolName: skill.toolName,
+    emoji: skill.emoji,
+    description: skill.description,
+    category: skill.category,
+    tier: skill.tier,
+    implementation: skill.implementationType,
+    mainScript: skill.mainScript,
+    scriptPath: skill.scriptPath,
+    hasImplementation: skill.hasImplementation,
+    documentation,
   };
 };
