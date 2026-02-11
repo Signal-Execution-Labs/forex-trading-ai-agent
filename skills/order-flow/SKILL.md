@@ -1,149 +1,126 @@
-# Order Flow Analysis Skill
+# Institutional Order Flow Skill
 
-Professional tape reading and order flow analysis for market microstructure insights.
+Track and analyze smart money movements in real-time.
+
+## Description
+
+This skill provides institutional-grade order flow analysis, detecting whale movements, dark pool activity, and smart money positioning across multiple markets.
 
 ## Capabilities
 
-### Tape Reading
-- Real-time trade tape with filtering
-- Large trade highlighting (whale detection)
-- Trade classification (buy/sell aggressor)
-- Trade velocity and acceleration
-- Cluster analysis (price levels with high activity)
+### Order Flow Detection
+- **Delta Analysis** - Buy/sell imbalance detection
+- **Volume Profile** - Price levels with high activity
+- **Footprint Charts** - Bid/ask at each price level
+- **Cumulative Delta** - Running total of buy/sell pressure
 
-### Delta Analysis
-- Cumulative Volume Delta (CVD)
-- Delta divergence detection
-- Delta at price levels
-- Session delta profile
-- Delta momentum indicators
+### Smart Money Tracking
+- **Whale Alerts** - Large order detection ($100K+)
+- **Iceberg Detection** - Hidden order identification
+- **Spoofing Detection** - Fake order wall identification
+- **Block Trade Alerts** - Off-exchange large transactions
 
-### Footprint Charts
-- Volume footprint (bid/ask at each level)
-- Delta footprint
-- Imbalance footprint
-- Diagonal imbalance detection
-- Stacked imbalance patterns
+### Dark Pool Analysis
+- **Dark Pool Prints** - Hidden liquidity execution
+- **ATS Volume** - Alternative Trading System activity
+- **Cross-Market Flow** - Correlated movements
 
-### Order Book Analysis
-- Depth of market (DOM) visualization
-- Large order detection (icebergs, spoofing)
-- Order book imbalance ratio
-- Level 2 absorption analysis
-- Hidden liquidity estimation
+### Institutional Signals
+- **COT Data** - Commitment of Traders positioning
+- **Options Flow** - Unusual options activity
+- **Put/Call Ratio** - Sentiment from derivatives
+- **Open Interest** - Position changes
 
-### Market Profile
-- Value area (VA) calculation
-- Point of Control (POC)
-- Single prints detection
-- Poor highs/lows identification
-- Initial balance analysis
+## Usage
 
-### Volume Profile
-- Volume at price (VAP)
-- High volume nodes (HVN)
-- Low volume nodes (LVN)
-- Naked POC levels
-- Volume profile shape analysis
+```typescript
+// Get real-time order flow
+const flow = await kit.skill('order-flow', 'analyze', {
+  symbol: 'BTC/USDT',
+  exchange: 'binance',
+  depth: 20,
+  period: '15m'
+});
 
-## Indicators
+// Track whale movements
+const whales = await kit.skill('order-flow', 'whales', {
+  minSize: 100000,  // $100K minimum
+  symbols: ['BTC/USDT', 'ETH/USDT'],
+  window: '1h'
+});
 
-### Custom Indicators
-- **Aggression Index** - Buy vs sell pressure ratio
-- **Absorption Detector** - Large orders absorbing flow
-- **Sweep Detector** - Liquidity sweeps
-- **Imbalance Scanner** - Bid/ask imbalances
-- **Exhaustion Signal** - Volume climax detection
+// Dark pool activity
+const darkPool = await kit.skill('order-flow', 'dark-pool', {
+  symbol: 'AAPL',
+  source: 'finra'
+});
 
-### Standard Indicators
-- Cumulative Delta
-- Volume-Weighted Average Price (VWAP)
-- VWAP bands (1σ, 2σ, 3σ)
-- Session volume profile
-- Time and Sales filter
+// Get institutional positioning
+const cot = await kit.skill('order-flow', 'cot', {
+  instrument: 'ES',  // E-mini S&P 500
+  period: 'weekly'
+});
+```
+
+## Output Format
+
+```json
+{
+  "symbol": "BTC/USDT",
+  "timestamp": "2026-02-11T21:30:00Z",
+  "orderFlow": {
+    "delta": 1250000,
+    "cumulativeDelta": 5680000,
+    "buyVolume": 3400000,
+    "sellVolume": 2150000,
+    "signal": "bullish_absorption"
+  },
+  "whaleActivity": {
+    "count": 3,
+    "netPosition": "long",
+    "largestOrder": {
+      "size": 450000,
+      "side": "buy",
+      "time": "21:28:45"
+    }
+  },
+  "microstructure": {
+    "spread": 0.01,
+    "depth": {
+      "bids": 2800000,
+      "asks": 2100000
+    },
+    "imbalance": 0.33,
+    "icebergDetected": false
+  },
+  "signal": {
+    "direction": "long",
+    "confidence": 0.78,
+    "reason": "Strong buy delta with whale accumulation"
+  }
+}
+```
 
 ## Configuration
 
 ```json
 {
-  "skills": {
-    "order-flow": {
-      "enabled": true,
-      "symbols": ["BTCUSDT", "ES", "NQ"],
-      "largeTradeThreshold": 100000,
-      "imbalanceRatio": 3.0,
-      "deltaAlerts": true,
-      "tapeSpeed": "fast",
-      "footprintInterval": "5m"
-    }
-  }
+  "exchanges": ["binance", "coinbase", "kraken"],
+  "whaleThreshold": 100000,
+  "updateInterval": 1000,
+  "alertChannels": ["telegram", "discord"],
+  "darkPoolSources": ["finra", "otc"],
+  "cotSchedule": "weekly"
 }
 ```
 
-## Commands
+## Events
 
-- `flow tape [symbol]` - Show filtered trade tape
-- `flow delta [symbol]` - Cumulative delta chart
-- `flow footprint [symbol]` - Footprint chart
-- `flow profile [symbol]` - Volume profile
-- `flow imbalance [symbol]` - Current imbalances
-- `flow whales [symbol]` - Large trade alerts
-- `flow dom [symbol]` - Depth of market
+- `order-flow:whale-detected` - Large order detected
+- `order-flow:iceberg-found` - Hidden order identified
+- `order-flow:imbalance-alert` - Significant buy/sell imbalance
+- `order-flow:dark-pool-print` - Large dark pool transaction
 
-## API Endpoints
+## Author
 
-- `GET /api/flow/tape/:symbol` - Real-time tape
-- `GET /api/flow/delta/:symbol` - CVD data
-- `GET /api/flow/footprint/:symbol` - Footprint data
-- `GET /api/flow/profile/:symbol` - Volume profile
-- `GET /api/flow/imbalances/:symbol` - Imbalance levels
-- `WS /api/flow/stream/:symbol` - WebSocket tape
-
-## Example Output
-
-```
-📊 BTC Order Flow Analysis
-
-🔥 Trade Tape (Last 10 Large Trades):
-├─ 14:23:45 | BUY  | 2.5 BTC @ $97,234 | $243,085 🐋
-├─ 14:23:42 | SELL | 1.8 BTC @ $97,230 | $175,014
-├─ 14:23:38 | BUY  | 3.2 BTC @ $97,235 | $311,152 🐋
-└─ ...
-
-📈 Delta Analysis:
-├─ Session Delta: +$2.4M (bullish)
-├─ 5m Delta: +$180K
-├─ Delta Divergence: ⚠️ Price up, delta flat
-└─ Aggression: 62% buyers
-
-🎯 Key Levels (Volume Profile):
-├─ POC: $97,150 (highest volume)
-├─ VAH: $97,380 (value area high)
-├─ VAL: $96,920 (value area low)
-└─ Naked POC: $95,800 (unfilled)
-
-⚡ Imbalances Detected:
-├─ $97,300: 4.2x buy imbalance
-├─ $97,150: 3.8x sell imbalance
-└─ Diagonal: Bullish stacked imbalance
-
-💡 Signal: Buy pressure absorbing at $97,150 POC
-   Targets: $97,380 VAH, $97,500 swing high
-```
-
-## Integrations
-
-- TradingView (custom indicators)
-- Sierra Chart (data export)
-- Bookmap (DOM feed)
-- QuantTower (footprint sync)
-- Exchange WebSocket APIs
-
-## Educational Content
-
-Built-in tutorials for:
-- Reading the tape effectively
-- Understanding delta divergences
-- Using footprint charts
-- Identifying absorption patterns
-- Trading with order flow confirmation
+K.I.T. Financial Agent Framework

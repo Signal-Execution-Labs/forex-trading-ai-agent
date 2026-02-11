@@ -1,0 +1,51 @@
+{
+  "id": "order-flow",
+  "name": "Institutional Order Flow",
+  "version": "1.0.0",
+  "description": "Track and analyze smart money movements - whale detection, dark pool activity, COT positioning",
+  "author": "K.I.T. Team",
+  "category": "analysis",
+  "tags": ["order-flow", "whale-tracking", "dark-pool", "institutional", "cot", "smart-money"],
+  "main": "order_flow.py",
+  "commands": [
+    {
+      "name": "analyze",
+      "description": "Analyze real-time order flow for a symbol",
+      "args": ["symbol", "exchange?", "depth?", "period?"]
+    },
+    {
+      "name": "whales",
+      "description": "Detect whale orders above threshold",
+      "args": ["symbols", "min_size?", "window?"]
+    },
+    {
+      "name": "dark-pool",
+      "description": "Analyze dark pool activity",
+      "args": ["symbol", "source?"]
+    },
+    {
+      "name": "cot",
+      "description": "Get Commitment of Traders positioning data",
+      "args": ["instrument", "period?"]
+    },
+    {
+      "name": "iceberg",
+      "description": "Detect hidden iceberg orders",
+      "args": ["symbol", "exchange?"]
+    }
+  ],
+  "events": [
+    "order-flow:whale-detected",
+    "order-flow:iceberg-found",
+    "order-flow:imbalance-alert",
+    "order-flow:dark-pool-print"
+  ],
+  "config": {
+    "exchanges": ["binance", "coinbase", "kraken"],
+    "whaleThreshold": 100000,
+    "updateInterval": 1000,
+    "darkPoolSources": ["finra", "otc"]
+  },
+  "requirements": ["python>=3.8"],
+  "enabled": true
+}
