@@ -36,7 +36,8 @@ export interface MemoryConfig {
 
 export interface AIConfig {
   defaultProvider?: string;
-  providers?: Record<string, { apiKey?: string; enabled?: boolean }>;
+  defaultModel?: string;
+  providers?: Record<string, { apiKey?: string; enabled?: boolean; model?: string }>;
 }
 
 export interface TradingConfig {

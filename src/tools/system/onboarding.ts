@@ -193,6 +193,7 @@ const STEPS: Step[] = [
 *Enterprise-Grade Autonomous Financial Agent*
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 **Step 1 of 13** - Welcome
 
 Welcome. I am K.I.T., your autonomous financial agent.
 
@@ -213,9 +214,9 @@ My capabilities:
   {
     id: 'goals',
     prompt: `
-💰 **Financial Objectives**
+📋 **Step 2 of 13** - Financial Objectives
 
-What are your primary goals?
+💰 What are your primary goals?
 
 1. **Wealth Building** - Long-term portfolio growth
 2. **Passive Income** - Dividends, yield, staking
@@ -241,9 +242,9 @@ Select (1-5):
   {
     id: 'experience',
     prompt: `
-📊 **Trading Experience**
+📋 **Step 3 of 13** - Trading Experience
 
-Your experience level determines how I communicate:
+📊 Your experience level determines how I communicate:
 
 1. **Beginner** - New to trading, need guidance
 2. **Intermediate** - Know the basics, some experience
@@ -262,9 +263,9 @@ Select (1-4):
   {
     id: 'risk',
     prompt: `
-⚖️ **Risk Profile**
+📋 **Step 4 of 13** - Risk Profile
 
-How much risk can you tolerate?
+⚖️ How much risk can you tolerate?
 
 1. **Conservative** - Capital preservation priority. Max 2% per trade.
 2. **Moderate** - Balanced approach. Max 5% per trade.
@@ -286,9 +287,9 @@ Select (1-4):
   {
     id: 'markets',
     prompt: `
-🌍 **Target Markets**
+📋 **Step 5 of 13** - Target Markets
 
-Which markets do you want to trade? (Select multiple: e.g., "1,2,3")
+🌍 Which markets do you want to trade? (Select multiple: e.g., "1,2,3")
 
 1. **Crypto** - Bitcoin, Ethereum, Altcoins
 2. **Forex** - Currency pairs (EUR/USD, GBP/USD)
@@ -312,9 +313,9 @@ Select (e.g., 1,2,4):
   {
     id: 'autonomy',
     prompt: `
-🤖 **Autonomy Level**
+📋 **Step 6 of 13** - Autonomy Level
 
-How much control should K.I.T. have?
+🤖 How much control should K.I.T. have?
 
 1. **Manual** - I suggest, you execute everything
 2. **Semi-Auto** - I execute small trades, confirm large ones
@@ -332,7 +333,9 @@ Select (1-3):
   {
     id: 'timezone',
     prompt: `
-🕐 **Timezone**
+📋 **Step 7 of 13** - Timezone
+
+🕐 Select your timezone:
 
 1. Europe/Berlin (CET)
 2. Europe/London (GMT)
@@ -353,9 +356,9 @@ Select (1-6) or enter custom (e.g., "Europe/Vienna"):
   {
     id: 'ai_provider',
     prompt: `
-🧠 **AI Provider**
+📋 **Step 8 of 13** - AI Provider
 
-Which AI provider for K.I.T.'s intelligence?
+🧠 Which AI provider for K.I.T.'s intelligence?
 
 **Cloud Providers:**
 1. **Anthropic** (Claude) - Recommended for trading
@@ -395,9 +398,9 @@ Select (1-9):
   {
     id: 'ai_model',
     prompt: `
-🤖 **Model Selection**
+📋 **Step 9 of 13** - Model Selection
 
-Select the model for your provider:
+🤖 Select the model for your provider:
 
 **Anthropic:**
 1. claude-opus-4-5 (Most capable)
@@ -448,9 +451,9 @@ Select (1-15) or enter custom model ID:
   {
     id: 'ollama_model',
     prompt: `
-🖥️ **Ollama Local Model**
+📋 **Step 9 of 13** - Ollama Local Model
 
-Enter the Ollama model name you have installed:
+🖥️ Enter the Ollama model name you have installed:
 
 Common models:
 - llama3.3 (Latest Llama)
@@ -473,9 +476,9 @@ Enter model name (e.g., llama3.3):
   {
     id: 'ai_key',
     prompt: `
-🔑 **API Key**
+📋 **Step 10 of 13** - API Key
 
-Enter your API key:
+🔑 Enter your API key:
 
 **Where to get it:**
 - Anthropic: https://console.anthropic.com/
@@ -548,9 +551,9 @@ Paste your API key:
   {
     id: 'channel_select',
     prompt: `
-📱 **Communication Channels**
+📋 **Step 11 of 13** - Communication Channels
 
-How do you want to communicate with K.I.T.?
+📱 How do you want to communicate with K.I.T.?
 
 **Ready:**
 1. Telegram - Bot token from @BotFather
@@ -585,9 +588,9 @@ Select (1-7):
   {
     id: 'channel_token',
     prompt: `
-🔧 **Channel Setup**
+📋 **Step 12 of 13** - Channel Setup
 
-Enter your bot token:
+🔧 Enter your bot token:
 
 **Telegram:** Get from @BotFather → /newbot
 **Discord:** Developer Portal → Bot → Token
@@ -614,9 +617,9 @@ Enter your bot token:
   {
     id: 'telegram_chat_id',
     prompt: `
-📱 **Telegram Chat ID**
+📋 **Step 12b of 13** - Telegram Chat ID
 
-K.I.T. needs your Chat ID to send you messages.
+📱 K.I.T. needs your Chat ID to send you messages.
 
 **How to get it:**
 1. Send a message to your bot on Telegram
@@ -642,9 +645,9 @@ Or use the telegram_get_chat_id tool after sending a message to your bot.
   {
     id: 'whatsapp_info',
     prompt: `
-📱 **WhatsApp Setup**
+📋 **Step 12 of 13** - WhatsApp Setup
 
-WhatsApp requires scanning a QR code (like WhatsApp Web).
+📱 WhatsApp requires scanning a QR code (like WhatsApp Web).
 
 After onboarding, run:
 \`kit whatsapp login\`
@@ -666,9 +669,9 @@ Or press Enter to skip:
   {
     id: 'trading_style',
     prompt: `
-📈 **K.I.T. Trading Style**
+📋 **Step 13 of 13** - Trading Style
 
-How should K.I.T. approach trading?
+📈 How should K.I.T. approach trading?
 
 1. **Conservative** - Focus on risk, prefer safer opportunities
 2. **Balanced** - Equal weight to risk and opportunity

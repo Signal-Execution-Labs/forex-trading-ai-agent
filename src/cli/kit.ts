@@ -704,5 +704,194 @@ program
     }
   });
 
+// ═══════════════════════════════════════════════════════════════
+// RESET (Workspace Reset)
+// ═══════════════════════════════════════════════════════════════
+program
+  .command('reset')
+  .description('Reset K.I.T. workspace and configuration')
+  .option('-f, --force', 'Skip confirmation prompt')
+  .option('--workspace-only', 'Only reset workspace files, keep config')
+  .option('--config-only', 'Only reset config, keep workspace')
+  .action(async (options) => {
+    const workspaceDir = path.join(KIT_HOME, 'workspace');
+    const configPath = path.join(KIT_HOME, 'config.json');
+    const onboardingPath = path.join(KIT_HOME, 'onboarding.json');
+    
+    if (!options.force) {
+      const readline = await import('readline');
+      const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+      
+      const confirmed = await new Promise<boolean>((resolve) => {
+        rl.question('\n⚠️  This will reset your K.I.T. configuration. Continue? (y/N): ', (answer) => {
+          rl.close();
+          resolve(answer.toLowerCase() === 'y' || answer.toLowerCase() === 'yes');
+        });
+      });
+      
+      if (!confirmed) {
+        console.log('   Cancelled.\n');
+        return;
+      }
+    }
+    
+    console.log('\n🔄 Resetting K.I.T...\n');
+    
+    // Reset workspace
+    if (!options.configOnly) {
+      const workspaceFiles = ['SOUL.md', 'USER.md', 'AGENTS.md', 'MEMORY.md'];
+      for (const file of workspaceFiles) {
+        const filePath = path.join(workspaceDir, file);
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+          console.log(`   ✅ Deleted: ${file}`);
+        }
+      }
+    }
+    
+    // Reset config
+    if (!options.workspaceOnly) {
+      if (fs.existsSync(configPath)) {
+        fs.unlinkSync(configPath);
+        console.log('   ✅ Deleted: config.json');
+      }
+      if (fs.existsSync(onboardingPath)) {
+        fs.unlinkSync(onboardingPath);
+        console.log('   ✅ Deleted: onboarding.json');
+      }
+    }
+    
+    console.log('\n✅ Reset complete! Run "kit onboard" to set up again.\n');
+  });
+
+// ═══════════════════════════════════════════════════════════════
+// TEST (Integration Tests)
+// ═══════════════════════════════════════════════════════════════
+program
+  .command('test')
+  .description('Run integration tests')
+  .option('-v, --verbose', 'Show detailed output')
+  .option('--gateway', 'Test gateway connection only')
+  .option('--ai', 'Test AI provider connection only')
+  .action(async (options) => {
+    console.log('\n🧪 K.I.T. Integration Tests\n');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+    
+    let passed = 0;
+    let failed = 0;
+    
+    // Test 1: Config exists
+    const configPath = path.join(KIT_HOME, 'config.json');
+    if (fs.existsSync(configPath)) {
+      console.log('✅ Config file exists');
+      passed++;
+    } else {
+      console.log('❌ Config file missing (run kit onboard)');
+      failed++;
+    }
+    
+    // Test 2: Workspace exists
+    const workspaceDir = path.join(KIT_HOME, 'workspace');
+    if (fs.existsSync(workspaceDir)) {
+      console.log('✅ Workspace directory exists');
+      passed++;
+    } else {
+      console.log('❌ Workspace directory missing');
+      failed++;
+    }
+    
+    // Test 3: Workspace files
+    const workspaceFiles = ['SOUL.md', 'USER.md', 'AGENTS.md'];
+    for (const file of workspaceFiles) {
+      const filePath = path.join(workspaceDir, file);
+      if (fs.existsSync(filePath)) {
+        console.log(`✅ ${file} exists`);
+        passed++;
+      } else {
+        console.log(`⚠️  ${file} missing (optional)`);
+      }
+    }
+    
+    // Test 4: Gateway connection
+    if (!options.ai) {
+      try {
+        const { loadConfig } = await import('../config');
+        const config = loadConfig();
+        const ws = await import('ws');
+        
+        const gatewayUrl = `ws://${config.gateway?.host || '127.0.0.1'}:${config.gateway?.port || 18799}`;
+        console.log(`\n🔌 Testing gateway at ${gatewayUrl}...`);
+        
+        const connected = await new Promise<boolean>((resolve) => {
+          const client = new ws.default(gatewayUrl);
+          const timeout = setTimeout(() => {
+            client.close();
+            resolve(false);
+          }, 3000);
+          
+          client.on('open', () => {
+            clearTimeout(timeout);
+            client.close();
+            resolve(true);
+          });
+          
+          client.on('error', () => {
+            clearTimeout(timeout);
+            resolve(false);
+          });
+        });
+        
+        if (connected) {
+          console.log('✅ Gateway connection successful');
+          passed++;
+        } else {
+          console.log('⚠️  Gateway not running (run kit start)');
+        }
+      } catch (err: any) {
+        console.log(`⚠️  Gateway test skipped: ${err.message}`);
+      }
+    }
+    
+    // Test 5: AI provider
+    if (!options.gateway) {
+      try {
+        const { loadConfig } = await import('../config');
+        const config = loadConfig();
+        
+        if (config.ai?.defaultProvider) {
+          const provider = config.ai.defaultProvider;
+          const providerConfig = config.ai.providers?.[provider];
+          
+          if (providerConfig?.apiKey) {
+            console.log(`\n🧠 Testing AI provider (${provider})...`);
+            console.log(`✅ ${provider} API key configured`);
+            passed++;
+            
+            if (options.verbose) {
+              console.log(`   Model: ${config.ai.defaultModel || 'default'}`);
+              console.log(`   Key: ${providerConfig.apiKey.substring(0, 10)}...`);
+            }
+          } else {
+            console.log(`⚠️  ${provider} API key not configured`);
+          }
+        } else {
+          console.log('⚠️  No AI provider configured');
+        }
+      } catch (err: any) {
+        console.log(`⚠️  AI test skipped: ${err.message}`);
+      }
+    }
+    
+    // Summary
+    console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log(`\n📊 Results: ${passed} passed, ${failed} failed\n`);
+    
+    if (failed === 0) {
+      console.log('🎉 All tests passed! K.I.T. is ready.\n');
+    } else {
+      console.log('⚠️  Some tests failed. Run "kit doctor" for diagnostics.\n');
+    }
+  });
+
 // Parse and execute
 program.parse();
