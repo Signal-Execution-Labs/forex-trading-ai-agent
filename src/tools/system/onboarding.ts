@@ -766,19 +766,32 @@ ${state.data.selectedChannel === 'telegram' ? '3. Message your Telegram bot to s
 
 export const onboardingStartToolDefinition: ToolDefinition = {
   name: 'onboarding_start',
-  description: 'Start or restart K.I.T. onboarding. Use reset=true to reconfigure.',
+  description: 'Start or restart K.I.T. onboarding. Use reset=true to reconfigure. When reset=true with existing config, confirm=true is required.',
   parameters: {
     type: 'object',
     properties: {
-      reset: { type: 'boolean', description: 'Reset and start fresh' },
+      reset: { type: 'boolean', description: 'Reset and start fresh (requires confirm=true if config exists)' },
+      confirm: { type: 'boolean', description: 'Confirm reset of existing configuration' },
     },
     required: [],
   },
 };
 
 export const onboardingStartToolHandler: ToolHandler = async (args) => {
-  const { reset = false } = args as { reset?: boolean };
+  const { reset = false, confirm = false } = args as { reset?: boolean; confirm?: boolean };
   let state = loadState();
+  const existingConfig = loadConfig();
+  const hasExistingConfig = existingConfig.onboarded === true || state.completed;
+  
+  // Safety check: require confirmation for reset when config exists
+  if (reset && hasExistingConfig && !confirm) {
+    return {
+      status: 'confirmation_required',
+      message: `⚠️ **Reset Confirmation Required**\n\nYou have an existing K.I.T. configuration:\n- User: ${existingConfig.user?.name || state.data.userName || 'Unknown'}\n- AI Provider: ${existingConfig.ai?.defaultProvider || state.data.aiProvider || 'Not set'}\n- Configured since: ${state.startedAt || 'Unknown'}\n\nTo reset and start fresh, call onboarding_start with reset=true AND confirm=true.\n\n⚠️ This will erase all onboarding data and require reconfiguration.`,
+      existingUser: existingConfig.user?.name || state.data.userName,
+      existingProvider: existingConfig.ai?.defaultProvider || state.data.aiProvider,
+    };
+  }
   
   if (reset || !state.started) {
     state = { started: true, completed: false, currentStep: 'welcome', completedSteps: [], data: {}, startedAt: new Date().toISOString() };

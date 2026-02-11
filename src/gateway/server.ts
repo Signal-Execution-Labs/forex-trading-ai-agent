@@ -162,10 +162,37 @@ export class GatewayServer extends EventEmitter {
     this.httpServer = createServer((req, res) => {
       const fs = require('fs');
       
+      // Version endpoint (for quick checks)
+      if (req.url === '/version') {
+        const packageJson = require('../../package.json');
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          name: packageJson.name,
+          version: packageJson.version,
+          description: packageJson.description,
+        }));
+        return;
+      }
+      
       // Health endpoint
       if (req.url === '/health') {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(this.getHealth()));
+        return;
+      }
+      
+      // Ready endpoint (for k8s/docker health probes)
+      if (req.url === '/ready') {
+        const isReady = this.state.status === 'running';
+        res.writeHead(isReady ? 200 : 503, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ready: isReady, status: this.state.status }));
+        return;
+      }
+      
+      // Live endpoint (for k8s/docker liveness probes)
+      if (req.url === '/live') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ live: true, timestamp: new Date().toISOString() }));
         return;
       }
       
@@ -814,9 +841,19 @@ export class GatewayServer extends EventEmitter {
       ? Date.now() - this.state.startedAt.getTime()
       : 0;
     
+    // Get version info
+    let version = '2.0.0';
+    try {
+      const packageJson = require('../../package.json');
+      version = packageJson.version;
+    } catch {}
+    
     return {
       status: this.state.status === 'running' ? 'healthy' : 'degraded',
+      version,
       uptime,
+      uptimeFormatted: this.formatUptime(uptime),
+      startedAt: this.state.startedAt?.toISOString(),
       clients: this.state.clients.size,
       sessions: this.sessions.list().length,
       agent: {
@@ -832,7 +869,27 @@ export class GatewayServer extends EventEmitter {
         enabled: this.config.cron.enabled,
         jobCount: this.cron.list().length,
       },
+      memory: {
+        heapUsed: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+        heapTotal: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
+        rss: Math.round(process.memoryUsage().rss / 1024 / 1024),
+      },
     };
+  }
+  
+  /**
+   * Format uptime as human-readable string
+   */
+  private formatUptime(ms: number): string {
+    const seconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    
+    if (days > 0) return `${days}d ${hours % 24}h ${minutes % 60}m`;
+    if (hours > 0) return `${hours}h ${minutes % 60}m ${seconds % 60}s`;
+    if (minutes > 0) return `${minutes}m ${seconds % 60}s`;
+    return `${seconds}s`;
   }
   
   /**
