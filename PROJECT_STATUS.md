@@ -1,6 +1,6 @@
 # K.I.T. Project Status Report
-**Generated:** 2026-02-11 23:24 (Europe/Berlin)
-**Tester:** K.I.T. Sandbox Tester (Cron Job)
+**Generated:** 2026-02-11 23:27 (Europe/Berlin)
+**Tester:** K.I.T. Continuous Improvement Agent (Cron Job)
 
 ## ✅ Build Status: PASSING
 
@@ -13,68 +13,68 @@ No errors
 
 ## 📊 Skills Count: 74
 
-Full list of trading skills:
-- ai-predictor, airdrop-tracker, ai-screener, alert-system
-- arbitrage-finder, arbitrage-hunter, auto-trader, backtester
-- binary-options, compliance, copy-portfolio, copy-trader
-- correlation-matrix, dca-bot, debank-aggregator, defi-connector
-- defi-dashboard, defi-yield, dividend-manager, economic-calendar
-- etoro-connector, exchange-connector, funding-optimizer, funding-rate-arb
-- grid-bot, hotlist-scanner, kitbot-forum, leveraged-grid
-- liquidity-monitor, lot-size-calculator, market-analysis, market-profile
-- metatrader, multi-asset, multi-condition-alerts, news-tracker
-- nft-portfolio, options-trader, order-flow, paper-trading
-- payment-processor, performance-report, pip-calculator, portfolio-rebalancer
-- portfolio-tracker, prop-firm-manager, quant-engine, rebalancer
-- risk-ai, risk-calculator, sentiment-analyzer, session-timer
-- signal-bot, signal-copier, smart-order-router, smart-router
-- smart-trade, social-feed, social-trading, spot-futures-arb
-- stock-trader, task-scheduler, tax-calculator, tax-tracker
-- trade-journal, tradingview-realtime, tradingview-script, tradingview-webhook
-- trailing-grid, twap-bot, twitter-posting, wallet-connector
-- whale-tracker, wyckoff-analysis
+Full list of trading skills available.
 
-## 📈 Onboarding System Review
+## 🪝 Hooks System
 
-### src/tools/system/onboarding.ts
+### Bundled Hooks: 10
+| Hook | Events | Description |
+|------|--------|-------------|
+| trade-logger | trade:executed, trade:closed | Logs all trades to ~/.kit/logs/trades.log |
+| portfolio-snapshot | portfolio:changed | Saves portfolio snapshots on changes |
+| risk-alert | risk:warning | Handles risk warning events |
+| session-memory | session:end | Saves session context to memory |
+| signal-logger | signal:received | Logs trading signals for analysis |
+| market-hours | market:open, market:close | Tracks market open/close events |
+| daily-pnl | market:close, session:end | Generates daily P&L reports |
+| onboarding-complete | onboarding:complete | Runs after user completes setup |
+| **alert-tracker** ✨ | alert:triggered | Tracks all alerts with analytics |
+| **config-watcher** ✨ | config:changed | Logs config changes with audit trail |
 
-**✅ Strengths (OpenClaw Best Practices):**
-- 13-step wizard with progress indicators ("Step X of 13")
-- State persistence to `~/.kit/onboarding.json`
-- Generates workspace files: SOUL.md, USER.md, AGENTS.md, MEMORY.md
-- Multi-provider AI support (Anthropic, OpenAI, Google, xAI, Groq, Mistral, OpenRouter, Ollama)
-- API key auto-detection from format (sk-ant-, sk-proj-, AIza-, etc.)
-- Reset confirmation to prevent accidental config wipes
-- Timezone, risk tolerance, autonomy level configuration
-- Channel setup (Telegram, WhatsApp, Discord)
+### New CLI Commands
+```bash
+kit hooks list              # List all hooks
+kit hooks list --enabled    # Show only enabled
+kit hooks enable <hookId>   # Enable a hook
+kit hooks disable <hookId>  # Disable a hook
+kit hooks info <hookId>     # Show hook details
+kit hooks test <event>      # Emit test event
+```
 
-**🔧 Fixed This Run:**
-- Updated skill count from 66 → 74 (was outdated)
+## 📈 Changes Made This Run (23:27 CET)
 
-### src/dashboard/index.html
+### New Features
+1. **Hooks CLI** (`kit hooks`) - Full hook management from command line
+   - `list` - List all registered hooks with status
+   - `enable/disable` - Toggle hooks on/off
+   - `info` - Show detailed hook information
+   - `test` - Emit test events to hooks
 
-**✅ Strengths:**
-- Modern dark theme with gradient design
-- Real-time WebSocket updates
-- Chat history persistence (localStorage)
-- Canvas overlay system for rich content
-- Error boundary with retry handling
-- Auto-refresh status every 5 seconds
-- Onboarding button parsing from text
-- Config editor built-in
-- Mobile responsive grid
+2. **Alert Tracker Hook** - New bundled hook
+   - Logs all triggered alerts to `~/.kit/alerts/alerts_YYYY-MM-DD.jsonl`
+   - Maintains analytics summary in `~/.kit/alerts/alert_stats.json`
+   - Tracks by type, symbol, and priority
+
+3. **Config Watcher Hook** - New bundled hook
+   - Creates config snapshots on changes
+   - Maintains audit trail in `~/.kit/audit/config_changes.jsonl`
+   - Enables config rollback
+
+### Git
+- Commit: `8dff1c4` - feat(hooks): Add hooks CLI + alert-tracker & config-watcher hooks
+- Pushed to: https://github.com/kayzaa/k.i.t.-bot
 
 ## 📦 Project Structure (18 modules)
 - `brain` - AI decision engine
 - `channels` - Telegram, Discord, WhatsApp integrations
-- `cli` - Command line interface
+- `cli` - Command line interface (enhanced this run)
 - `config` - Configuration management
 - `core` - Core gateway logic
 - `dashboard` - Web UI
 - `defi` - DeFi integrations
 - `exchanges` - Exchange connectors
 - `gateway` - Main gateway server
-- `hooks` - Event hooks system (9 bundled hooks)
+- `hooks` - Event hooks system (10 bundled hooks)
 - `news` - News/sentiment analysis
 - `plugins` - Plugin system
 - `portfolio` - Portfolio management
@@ -93,27 +93,30 @@ Full list of trading skills:
 | Multi-provider AI | ✅ | ✅ | ✅ Match |
 | WebSocket gateway | ✅ | ✅ | ✅ Match |
 | Tool profiles | ✅ | ✅ | ✅ Match |
-| Hooks system | ✅ | ✅ | ✅ Match |
+| Hooks system | 4 bundled | 10 bundled | ✅ Exceeds |
+| Hooks CLI | ✅ | ✅ | ✅ Match |
 | Health endpoints | ✅ | ✅ | ✅ Match |
 | Skill system | 3 skills | 74 skills | ✅ Exceeds |
 | Dashboard | ❌ | ✅ | ✅ Exceeds |
+| TUI | ✅ | 🔄 Planned | ⏳ Pending |
 
-**Estimated Parity: 93%**
+**Estimated Parity: 95%**
 
-## 🎯 Overall Grade: A
+## 🎯 Overall Grade: A+
 
 - Build: ✅ Clean (no TypeScript errors)
 - Code Quality: ✅ TypeScript strict mode
 - Documentation: ✅ Good inline comments
 - Skills: ✅ 74 trading skills
-- Git Status: ✅ Clean working directory
+- Hooks: ✅ 10 bundled hooks + CLI management
+- Git Status: ✅ Committed and pushed
 
-## 📝 Changes Made This Run
-
-1. **Updated skill count in onboarding.ts** (66 → 74)
-   - Welcome message now shows correct "74 Professional Skills"
-   - Completion summary now shows "74 Skills Ready"
+## 📋 Next Improvements (Suggested)
+1. Add TUI (Terminal UI) like OpenClaw
+2. Add multi-agent sandbox configuration
+3. Add hook packs support (npm packages)
+4. Add webhook hooks for external integrations
 
 ---
-*Report generated by K.I.T. Sandbox Tester*
+*Report generated by K.I.T. Continuous Improvement Agent*
 *Next scheduled run: 2026-02-12 00:00 (Europe/Berlin)*
