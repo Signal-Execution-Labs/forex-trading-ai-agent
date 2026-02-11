@@ -108,7 +108,14 @@ export const MT5_TOOLS: ChatToolDef[] = [
  * Execute Python MT5 script and return JSON result
  */
 function execMT5Python(command: string): any {
-  const scriptPath = path.join(__dirname, '../../skills/metatrader/scripts/auto_connect.py');
+  // Find script path - try multiple locations
+  const possiblePaths = [
+    path.join(__dirname, '../../../skills/metatrader/scripts/auto_connect.py'),  // from dist/src/tools
+    path.join(__dirname, '../../skills/metatrader/scripts/auto_connect.py'),     // from src/tools
+    path.join(process.cwd(), 'skills/metatrader/scripts/auto_connect.py'),       // from cwd
+  ];
+  
+  const scriptPath = possiblePaths.find(p => fs.existsSync(p)) || possiblePaths[0];
   
   // Check if script exists
   if (!fs.existsSync(scriptPath)) {
