@@ -1,0 +1,43 @@
+{
+  "id": "price-alerts",
+  "name": "Price Alerts",
+  "version": "1.0.0",
+  "description": "Real-time price alerts for crypto, forex, and stocks with multi-channel notifications",
+  "author": "K.I.T. Team",
+  "license": "MIT",
+  "keywords": ["alerts", "price", "notifications", "trading"],
+  "main": "index.ts",
+  "config": {
+    "schema": {
+      "type": "object",
+      "properties": {
+        "checkIntervalMs": {
+          "type": "number",
+          "default": 30000,
+          "description": "Price check interval in milliseconds"
+        },
+        "maxAlerts": {
+          "type": "number",
+          "default": 100,
+          "description": "Maximum active alerts per user"
+        },
+        "notifications": {
+          "type": "object",
+          "properties": {
+            "telegram": { "type": "boolean", "default": true },
+            "discord": { "type": "boolean", "default": true },
+            "webhook": { "type": "string" }
+          }
+        }
+      }
+    },
+    "defaults": {
+      "checkIntervalMs": 30000,
+      "maxAlerts": 100,
+      "notifications": {
+        "telegram": true,
+        "discord": true
+      }
+    }
+  }
+}

@@ -457,6 +457,182 @@ ${c.cyan}━━━━━━━━━━━━━━━━━━━━━━━�
   });
 
 // ═══════════════════════════════════════════════════════════════
+// PLUGINS
+// ═══════════════════════════════════════════════════════════════
+import { registerPluginCommands } from './commands/plugins';
+registerPluginCommands(program);
+
+// ═══════════════════════════════════════════════════════════════
+// HOOKS
+// ═══════════════════════════════════════════════════════════════
+const hooksCmd = program
+  .command('hooks')
+  .description('Manage K.I.T. hooks');
+
+hooksCmd
+  .command('list')
+  .description('List all registered hooks')
+  .action(async () => {
+    const { getHookRegistry } = await import('../hooks');
+    const registry = getHookRegistry();
+    const hooks = registry.getAll();
+    
+    console.log(`\n${c.cyan}🪝 K.I.T. Hooks (${hooks.length})${c.reset}\n`);
+    
+    for (const hook of hooks) {
+      const status = hook.enabled ? `${c.green}● enabled${c.reset}` : `${c.dim}○ disabled${c.reset}`;
+      console.log(`  ${status} ${c.bright}${hook.name}${c.reset} (${hook.id})`);
+      console.log(`         ${c.dim}${hook.description}${c.reset}`);
+      console.log(`         Events: ${hook.events.join(', ')}`);
+      console.log();
+    }
+  });
+
+hooksCmd
+  .command('enable <id>')
+  .description('Enable a hook')
+  .action(async (id: string) => {
+    const { getHookRegistry } = await import('../hooks');
+    const registry = getHookRegistry();
+    
+    if (registry.setEnabled(id, true)) {
+      console.log(`${c.green}✅ Hook enabled: ${id}${c.reset}`);
+    } else {
+      console.log(`${c.red}❌ Hook not found: ${id}${c.reset}`);
+    }
+  });
+
+hooksCmd
+  .command('disable <id>')
+  .description('Disable a hook')
+  .action(async (id: string) => {
+    const { getHookRegistry } = await import('../hooks');
+    const registry = getHookRegistry();
+    
+    if (registry.setEnabled(id, false)) {
+      console.log(`${c.green}✅ Hook disabled: ${id}${c.reset}`);
+    } else {
+      console.log(`${c.red}❌ Hook not found: ${id}${c.reset}`);
+    }
+  });
+
+// ═══════════════════════════════════════════════════════════════
+// TEST
+// ═══════════════════════════════════════════════════════════════
+program
+  .command('test')
+  .description('Run integration tests to verify K.I.T. setup')
+  .option('-v, --verbose', 'Show detailed output')
+  .action(async (options) => {
+    console.log(`\n${c.cyan}🧪 K.I.T. Integration Tests${c.reset}\n`);
+    
+    const tests: { name: string; test: () => Promise<boolean> }[] = [
+      {
+        name: 'Config file exists',
+        test: async () => fs.existsSync(CONFIG_PATH),
+      },
+      {
+        name: 'Workspace directory exists',
+        test: async () => fs.existsSync(path.join(KIT_HOME, 'workspace')),
+      },
+      {
+        name: 'Can load config',
+        test: async () => {
+          try {
+            if (!fs.existsSync(CONFIG_PATH)) return false;
+            JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+            return true;
+          } catch {
+            return false;
+          }
+        },
+      },
+      {
+        name: 'Can import core modules',
+        test: async () => {
+          try {
+            await import('../core/logger');
+            await import('../hooks');
+            await import('../plugins');
+            return true;
+          } catch {
+            return false;
+          }
+        },
+      },
+      {
+        name: 'Hooks registry initializes',
+        test: async () => {
+          try {
+            const { getHookRegistry } = await import('../hooks');
+            const registry = getHookRegistry();
+            return registry.getAll().length > 0;
+          } catch {
+            return false;
+          }
+        },
+      },
+    ];
+    
+    let passed = 0;
+    let failed = 0;
+    
+    for (const { name, test } of tests) {
+      try {
+        const result = await test();
+        if (result) {
+          console.log(`  ${c.green}✅${c.reset} ${name}`);
+          passed++;
+        } else {
+          console.log(`  ${c.red}❌${c.reset} ${name}`);
+          failed++;
+        }
+      } catch (err) {
+        console.log(`  ${c.red}❌${c.reset} ${name}`);
+        if (options.verbose) console.log(`     ${c.dim}${err}${c.reset}`);
+        failed++;
+      }
+    }
+    
+    console.log(`\n  ${c.bright}Results: ${passed} passed, ${failed} failed${c.reset}\n`);
+    process.exit(failed > 0 ? 1 : 0);
+  });
+
+// ═══════════════════════════════════════════════════════════════
+// RESET
+// ═══════════════════════════════════════════════════════════════
+program
+  .command('reset')
+  .description('Reset K.I.T. configuration and workspace')
+  .option('--config', 'Reset only configuration')
+  .option('--workspace', 'Reset only workspace')
+  .option('-y, --yes', 'Skip confirmation')
+  .action(async (options) => {
+    if (!options.yes) {
+      console.log(`${c.yellow}⚠️  This will reset your K.I.T. configuration.${c.reset}`);
+      console.log(`${c.dim}Run with --yes to confirm.${c.reset}`);
+      return;
+    }
+    
+    if (options.config || (!options.config && !options.workspace)) {
+      if (fs.existsSync(CONFIG_PATH)) {
+        fs.unlinkSync(CONFIG_PATH);
+        console.log(`${c.green}✅ Config reset${c.reset}`);
+      }
+    }
+    
+    if (options.workspace || (!options.config && !options.workspace)) {
+      const workspacePath = path.join(KIT_HOME, 'workspace');
+      if (fs.existsSync(workspacePath)) {
+        fs.rmSync(workspacePath, { recursive: true });
+        console.log(`${c.green}✅ Workspace reset${c.reset}`);
+      }
+    }
+    
+    console.log(`\nRun ${c.cyan}kit onboard${c.reset} to reconfigure.`);
+  });
+
+// ═══════════════════════════════════════════════════════════════
 // DOCTOR
 // ═══════════════════════════════════════════════════════════════
 program
