@@ -4,6 +4,101 @@ Continuous research into professional finance apps to improve K.I.T.
 
 ---
 
+## Research Session: 2026-02-11 (Morning - 09:56)
+
+### Research: TradingView Advanced Alerts & eToro CopyTrader
+
+**TradingView Features Analyzed:**
+- Combine up to 5 settings in alerts (price, drawings, indicators, chart values, custom logic)
+- Multi-timeframe market structure analysis
+- Watchlist alerts that monitor hundreds of symbols simultaneously
+- Pine Script for custom indicators
+- Webhooks for automation
+
+**eToro CopyTrader Features:**
+- Copy up to 100 traders at once
+- Filter by performance, sector, or strategy
+- Popular Investor program with verified performers
+- Social feed integration
+- Mirror trading with proportional allocation
+
+### New Skill Implemented
+
+#### Multi-Condition Alert Builder ✅
+
+**Inspired by:** TradingView Advanced Alerts, 3Commas Condition Groups, eToro Social Alerts
+
+**What It Does:**
+- Build complex alerts with UNLIMITED conditions (TradingView max: 5, 3Commas max: 3)
+- Nested logic: AND, OR, NOT operators with grouping
+- **THEN operator**: Sequential conditions (A happens, then B within X time)
+- Cross-symbol alerts: Compare ratios, spreads, correlations
+- Watchlist scanning: One alert monitors hundreds of symbols
+- AI-powered condition suggestions from natural language
+
+**Key Features:**
+1. **Unlimited Conditions**: No cap on complexity
+2. **Logical Operators**: AND, OR, NOT, THEN (sequential)
+3. **Nested Groups**: `(A AND B) OR (C AND D)`
+4. **Cross-Symbol**: BTC/ETH ratio alerts, spread monitoring
+5. **Multi-Timeframe**: Combine 1D, 4H, 1H signals
+6. **Fluent Builder API**: `new AlertBuilder().when('RSI').below(30).and('MACD').crossesAbove('signal')`
+7. **AI Suggestions**: "Alert when RSI oversold with volume spike" → auto-generates conditions
+8. **Backtest Alerts**: See how often alert would have triggered historically
+9. **Multi-Delivery**: Webhook, Telegram, Discord, Email, SMS
+
+**Example - RSI Divergence with Volume:**
+```typescript
+const alert = new AlertBuilder()
+  .name('RSI Bull Divergence')
+  .symbol('BTCUSDT')
+  .when('RSI', { period: 14 }).below(30)
+  .and('volume').aboveAverage(1.5)
+  .then()
+    .webhook('https://kit.local/trade')
+    .telegram('🟢 Buy Signal: {{symbol}}')
+  .build();
+```
+
+**Files Created:**
+- `skills/multi-condition-alerts/SKILL.md` - Full documentation
+- `skills/multi-condition-alerts/multi-condition-alerts.ts` - Complete implementation
+- `skills/multi-condition-alerts/index.ts` - Exports
+
+**K.I.T. Advantages:**
+
+| Feature | TradingView | 3Commas | K.I.T. |
+|---------|-------------|---------|--------|
+| Max conditions | 5 | 3 | **Unlimited** |
+| Nested logic | ❌ | ❌ | ✅ |
+| Cross-symbol | ❌ | ❌ | ✅ |
+| Sequential (THEN) | ❌ | ❌ | ✅ |
+| AI suggestions | ❌ | ❌ | ✅ |
+| Backtest alerts | ❌ | Limited | ✅ |
+| Self-hosted | ❌ | ❌ | ✅ |
+| Price | $12.95-59.95/mo | $29-99/mo | **Free** |
+
+### K.I.T. Skill Count: 54 Total (+1 today)
+
+| Category | Count | Skills |
+|----------|-------|--------|
+| Trading Bots | 6 | grid-bot, dca-bot, twap-bot, smart-router, trailing-grid, leveraged-grid |
+| Arbitrage | 3 | arbitrage-finder, arbitrage-hunter, spot-futures-arb |
+| Copy Trading | 4 | signal-copier, copy-trader, social-trading, etoro-connector |
+| Analysis | 5 | market-analysis, sentiment-analyzer, ai-predictor, quant-engine, ai-screener |
+| DeFi | 4 | defi-connector, defi-yield, debank-aggregator, wallet-connector |
+| Portfolio | 4 | portfolio-tracker, rebalancer, performance-report, tax-tracker |
+| Risk | 3 | risk-calculator, risk-ai, compliance |
+| Exchange | 4 | exchange-connector, metatrader, stock-trader, options-trader |
+| Tools | 5 | trade-journal, backtester, paper-trading, lot-size-calculator, pip-calculator |
+| Data | 4 | tradingview-realtime, tradingview-webhook, news-tracker, whale-tracker |
+| Automation | 5 | auto-trader, task-scheduler, alert-system, session-timer, **multi-condition-alerts** |
+| Payments | 2 | payment-processor, dividend-manager |
+| Social | 2 | twitter-posting, kitbot-forum |
+| Other | 3 | binary-options, multi-asset, tradingview-script |
+
+---
+
 ## Research Session: 2026-02-11 (Morning - 07:58)
 
 ### New Skill Implemented
