@@ -322,7 +322,61 @@ export class AgentRunner extends EventEmitter {
       }
     }
 
-    console.log(`   Registered ${this.toolHandlers.size} tools`);
+    // Register MT5 Tools (auto-connect, no credentials needed!)
+    try {
+      const { MT5_TOOLS, MT5_TOOL_HANDLERS } = require('../tools/mt5-tools');
+      for (const tool of MT5_TOOLS) {
+        const handler = MT5_TOOL_HANDLERS[tool.name];
+        if (handler) {
+          this.toolHandlers.set(tool.name, handler);
+          this.chatManager.registerTool(
+            { name: tool.name, description: tool.description, parameters: tool.parameters },
+            handler
+          );
+        }
+      }
+      console.log(`   MT5 Tools: ${MT5_TOOLS.length} loaded`);
+    } catch (err) {
+      console.log(`   MT5 Tools: skipped (${err})`);
+    }
+
+    // Register Binary Options Tools
+    try {
+      const { getBinaryOptionsTools, getBinaryOptionsHandlers } = require('../tools/binary-options-tools');
+      const binaryTools = getBinaryOptionsTools();
+      const binaryHandlers = getBinaryOptionsHandlers();
+      for (const tool of binaryTools) {
+        const handler = binaryHandlers[tool.name];
+        if (handler) {
+          this.toolHandlers.set(tool.name, handler);
+          this.chatManager.registerTool(
+            { name: tool.name, description: tool.description, parameters: tool.parameters },
+            handler
+          );
+        }
+      }
+      console.log(`   Binary Tools: ${binaryTools.length} loaded`);
+    } catch (err) {
+      console.log(`   Binary Tools: skipped (${err})`);
+    }
+
+    // Register Forum Tools
+    try {
+      const { forumTools } = require('../tools/forum-tools');
+      for (const [name, tool] of Object.entries(forumTools)) {
+        const t = tool as any;
+        this.toolHandlers.set(t.name, t.execute.bind(t));
+        this.chatManager.registerTool(
+          { name: t.name, description: t.description, parameters: t.parameters },
+          t.execute.bind(t)
+        );
+      }
+      console.log(`   Forum Tools: ${Object.keys(forumTools).length} loaded`);
+    } catch (err) {
+      console.log(`   Forum Tools: skipped (${err})`);
+    }
+
+    console.log(`   Total Tools: ${this.toolHandlers.size} registered`);
   }
 
   private setupEvents(): void {
