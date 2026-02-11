@@ -35,3 +35,26 @@ if (fs.existsSync(templatesDir)) {
 }
 
 console.log('K.I.T. workspace ready at:', workspaceDir);
+
+// Install Python dependencies (MT5, etc.) - Windows only
+if (os.platform() === 'win32') {
+  const { execSync } = require('child_process');
+  
+  console.log('Installing Python dependencies...');
+  
+  try {
+    // Check if Python is available
+    execSync('python --version', { stdio: 'pipe' });
+    
+    // Install MetaTrader5 package
+    try {
+      execSync('pip install MetaTrader5 --quiet', { stdio: 'pipe' });
+      console.log('✅ MetaTrader5 Python module installed');
+    } catch (e) {
+      console.log('⚠️  Could not install MetaTrader5 module (pip install MetaTrader5)');
+    }
+  } catch (e) {
+    console.log('⚠️  Python not found - MT5 features will be unavailable');
+    console.log('   Install Python from https://python.org and run: pip install MetaTrader5');
+  }
+}
