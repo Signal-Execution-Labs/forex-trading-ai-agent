@@ -21,7 +21,7 @@
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
   "bin": {
-    "kit": "./dist/cli/kit.js",
+    "kit": "./dist/src/cli/kit.js",
     "kit-trading": "./scripts/install.js"
   },
   "files": [
