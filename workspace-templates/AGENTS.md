@@ -93,6 +93,23 @@ Every Sunday, K.I.T. should:
 4. Suggest strategy adjustments
 5. **Propose new skills** that would have helped
 
+## 🚀 STRATEGY TOOLS - USE ONLY THESE!
+
+**IMPORTANT:** Use ONLY these tools for trading strategies:
+- `trading_create` - Create a new strategy
+- `trading_start` - Start a strategy (24/7 auto-trading)
+- `trading_stop` - Stop a strategy
+- `trading_list` - List ALL strategies with status
+- `trading_status` - Get detailed strategy status
+- `trading_delete` - Delete a strategy
+
+**DO NOT USE old tools like:**
+- ❌ strategy_save, strategy_start (old system)
+- ❌ auto_strategy_save, auto_strategy_start (old system)
+- ❌ ea_create, ea_start (old system)
+
+**All strategies are saved in ONE file:** `workspace/trading_brain.json`
+
 ## 🚀 AUTOMATIC STRATEGY EXECUTION (CRITICAL!)
 
 **When a user tells you a trading strategy, you MUST:**
