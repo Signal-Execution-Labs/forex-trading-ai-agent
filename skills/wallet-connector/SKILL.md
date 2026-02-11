@@ -13,8 +13,8 @@
 ### 💳 Software Wallets
 | Wallet | Status | Features |
 |--------|--------|----------|
-| **MetaMask** | 🚧 Planned | EVM chains, DeFi, NFTs |
-| **Electrum** | 🚧 Planned | Bitcoin, Lightning |
+| **MetaMask** | ✅ Implemented | EVM chains (ETH, Polygon, Arbitrum, BSC, etc.) - Read-only via public RPC |
+| **Electrum** | ✅ Implemented | Bitcoin wallet via RPC |
 | **Trust Wallet** | 🚧 Planned | Multi-chain mobile |
 | **Phantom** | 🚧 Planned | Solana ecosystem |
 | **Rabby** | 🚧 Planned | Multi-chain DeFi |
@@ -36,83 +36,135 @@
 
 ---
 
-## What K.I.T. Can Do With Wallets
+## ✅ Implemented Tools
 
-### 1. View All Balances
-```
-K.I.T., show me my total wealth.
+### MetaMask / EVM Wallets (Read-Only)
 
-📊 Total Net Worth: $127,450
+```typescript
+// Connect wallet address for monitoring
+wallet_connect_address({ address: "0x..." })
 
-Breakdown:
-├── Binance:      $45,000 (35%)
-├── MetaMask:     $32,000 (25%)
-├── Ledger:       $28,000 (22%)
-├── PayPal:        $8,500 (7%)
-├── Bank (Wise):  $12,000 (9%)
-└── Skrill:        $1,950 (2%)
-```
+// Get balances (ETH + tokens)
+wallet_balance({ address?: string, chain?: string, allChains?: boolean })
 
-### 2. Move Money Automatically
-```
-K.I.T., if my Binance balance exceeds $50k, 
-move excess to my Ledger for safety.
+// Get token holdings
+wallet_tokens({ address?: string, chain?: string })
 
-✅ Rule created. I'll monitor and transfer automatically.
+// Get recent transactions
+wallet_transactions({ address?: string, chain?: string, limit?: number })
+
+// Get gas prices
+wallet_gas({ chain?: string })
 ```
 
-### 3. Optimize Across Platforms
+**Supported Chains:**
+- Ethereum Mainnet
+- Polygon
+- Arbitrum One
+- Optimism
+- BNB Smart Chain
+- Avalanche C-Chain
+- Base
+
+### Electrum / Bitcoin
+
+```typescript
+// Connect to Electrum RPC
+electrum_connect({ host?: string, port?: number })
+
+// Get BTC balance
+electrum_balance()
+
+// Get transaction history
+electrum_history({ limit?: number })
+
+// Get addresses
+electrum_addresses()
+
+// Generate new address
+electrum_new_address({ label?: string })
+
+// Create transaction (requires confirmation in Electrum)
+electrum_send({ destination: string, amount: string, feeRate?: number })
 ```
-K.I.T., find the best yield for my stablecoins.
 
-📊 Analysis:
-├── Binance Earn: 5.2% APY
-├── Aave (MetaMask): 4.8% APY
-├── Compound: 3.9% APY
+**Prerequisites for Electrum:**
+```bash
+# Start Electrum daemon
+electrum daemon -d
 
-Recommendation: Move $20k USDC to Binance Earn
-Execute? [Yes/No]
+# Enable RPC (default port 7777)
+electrum setconfig rpcport 7777
 ```
 
-### 4. Pay Bills & Invoices
-```
-K.I.T., pay my VPS bill ($50) from PayPal.
+---
 
-✅ Payment sent to Contabo
-   Amount: $50.00
-   From: PayPal
-   Status: Completed
+## Example Usage
+
+### Monitor ETH Wallet
+```
+K.I.T., track wallet 0x1234...abcd
+
+📊 Wallet: 0x1234...abcd
+
+🔗 Ethereum:
+   2.5432 ETH
+   1,000.00 USDC
+   500.00 LINK
+
+🔗 Polygon:
+   1,234.56 MATIC
+   5,000.00 USDC
 ```
 
-### 5. Receive Payments
+### Check Gas Prices
 ```
-K.I.T., generate an invoice for $500 consulting.
+K.I.T., what are gas prices on Ethereum?
 
-📄 Invoice #2026-0042 created
-   Amount: $500
-   Accept: PayPal, Binance Pay, ETH, BTC
-   Link: https://pay.kit.ai/inv/2026-0042
+⛽ Gas Prices (Ethereum)
+
+Current: 25.50 gwei
+Base Fee: 24.00 gwei
+Priority Fee: 1.50 gwei
+
+📊 Estimated Costs:
+   Transfer: 0.000535 ETH
+   Swap: 0.003825 ETH
+   NFT Mint: 0.002550 ETH
+```
+
+### Bitcoin Balance
+```
+K.I.T., check my Bitcoin balance
+
+₿ Bitcoin Wallet Balance
+
+Confirmed: 0.15000000 BTC
+Unconfirmed: 0.00500000 BTC
+
+💰 Total: 0.15500000 BTC
+📍 Addresses: 12
 ```
 
 ---
 
 ## Security Model
 
-### Read-Only by Default
+### ✅ Read-Only by Default
 - K.I.T. can VIEW balances without transfer permission
-- Transfers require explicit approval OR rule-based automation
+- Uses public RPCs (no API keys needed for EVM)
+- **No private keys stored or transmitted**
 
-### Approval Modes
-1. **Manual**: Every transfer needs human approval
-2. **Rules-Based**: Pre-approved conditions (e.g., "rebalance if >20% drift")
-3. **Full Auto**: K.I.T. manages everything (advanced users only)
+### ⚠️ Transaction Safety
+- Bitcoin sends require confirmation in Electrum GUI
+- EVM transactions not implemented (use hardware wallet)
+- User retains full control at all times
 
-### Security Features
-- Hardware wallet signing (Ledger/Trezor)
-- 2FA integration
-- Withdrawal whitelists
-- Daily limits
-- Anomaly detection
+### 🔒 Security Features
+- Address validation (checksum)
+- Local RPC only for Electrum
+- No external API key requirements for basic use
+- Cached balances (30s) to reduce RPC calls
 
 ---
 
@@ -121,58 +173,22 @@ K.I.T., generate an invoice for $500 consulting.
 ```
 K.I.T. Wallet Layer
 │
-├── Hardware Wallets
-│   ├── Ledger (USB/Bluetooth)
-│   └── Trezor (USB)
+├── EVM Wallets (Read-Only)
+│   ├── Ethereum (Llama RPC)
+│   ├── Polygon (polygon-rpc.com)
+│   ├── Arbitrum (public RPC)
+│   ├── Optimism (public RPC)
+│   ├── BSC (Binance RPC)
+│   ├── Avalanche (public RPC)
+│   └── Base (public RPC)
 │
-├── Software Wallets
-│   ├── MetaMask (Browser extension / RPC)
-│   ├── Electrum (RPC)
-│   └── Mobile (WalletConnect)
+├── Bitcoin
+│   └── Electrum (Local RPC)
 │
-├── Payment APIs
-│   ├── PayPal (REST API)
-│   ├── Skrill (REST API)
-│   ├── Wise (REST API)
-│   └── Revolut (Open Banking)
-│
-└── Exchange APIs
-    ├── Binance Pay
-    ├── Coinbase Commerce
-    └── Others
-```
-
----
-
-## Implementation Priority
-
-### Phase 1: Read-Only Viewing
-- [ ] MetaMask balance reading
-- [ ] Ledger balance reading
-- [ ] PayPal balance reading
-- [ ] Binance balance (via exchange-connector)
-
-### Phase 2: Transfers
-- [ ] Crypto transfers (with hardware signing)
-- [ ] Fiat transfers (PayPal, Skrill)
-- [ ] Exchange deposits/withdrawals
-
-### Phase 3: Automation
-- [ ] Rule-based rebalancing
-- [ ] Automatic bill payments
-- [ ] Yield optimization
-
----
-
-## Example Commands
-
-```
-"Show all my wallet balances"
-"Transfer 0.5 ETH from MetaMask to Binance"
-"Move $1000 from PayPal to Skrill"
-"Set up auto-rebalance: 50% crypto, 30% stablecoins, 20% fiat"
-"Pay my monthly subscriptions from PayPal"
-"If BTC drops 10%, buy $500 worth from my Wise account"
+└── Future
+    ├── Hardware Wallets (Ledger/Trezor)
+    ├── Payment APIs (PayPal, Wise)
+    └── Exchange APIs (Binance Pay)
 ```
 
 ---
@@ -181,20 +197,35 @@ K.I.T. Wallet Layer
 
 ```
 skills/wallet-connector/
-├── SKILL.md              # This documentation
-├── scripts/
-│   ├── metamask.py       # MetaMask integration
-│   ├── ledger.py         # Ledger integration
-│   ├── electrum.py       # Electrum integration
-│   ├── paypal.py         # PayPal API
-│   ├── skrill.py         # Skrill API
-│   └── binance_pay.py    # Binance Pay API
-└── examples/
-    └── portfolio_view.py
+├── SKILL.md                     # This documentation
+└── scripts/
+    ├── metamask.ts              # MetaMask / EVM integration
+    └── electrum.ts              # Electrum / Bitcoin integration
+
+src/tools/
+└── wallet-tools.ts              # Tool definitions and handlers
 ```
 
 ---
 
-**Version:** 1.0.0  
-**Status:** Planning Phase  
+## Installation
+
+The wallet tools are built into K.I.T. Just run:
+
+```bash
+npm run build
+```
+
+For Electrum integration:
+```bash
+# Install and start Electrum
+electrum daemon -d
+electrum setconfig rpcport 7777
+electrum load_wallet
+```
+
+---
+
+**Version:** 2.0.0  
+**Status:** ✅ Phase 1 Complete (MetaMask + Electrum)  
 **Priority:** HIGH - Core infrastructure for autonomous finance

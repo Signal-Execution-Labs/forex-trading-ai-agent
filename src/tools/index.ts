@@ -104,6 +104,17 @@ export { newsTools } from './news-analyzer';
 // Sentiment Tracker - Social media and market sentiment analysis
 export { sentimentTools } from './sentiment-tracker';
 
+// Wallet Tools - MetaMask (EVM) & Electrum (Bitcoin) integration
+export {
+  WALLET_TOOLS,
+  getWalletTools,
+  getWalletHandlers,
+  WALLET_TOOL_HANDLERS,
+  getMetaMaskConnector,
+  getElectrumConnector,
+} from './wallet-tools';
+export type { WalletToolResult } from './wallet-tools';
+
 // Factory for creating all tools
 export interface ToolInstances {
   autoTrader: InstanceType<typeof import('./auto-trader').AutoTrader>;
