@@ -4,6 +4,99 @@ Continuous research into professional finance apps to improve K.I.T.
 
 ---
 
+## Research Session: 2026-02-11 (Night Session 2 - 02:08)
+
+### New Skills Implemented
+
+#### 1. TWAP Bot (Time-Weighted Average Price) ✅
+
+**Inspired by:** Pionex TWAP Bot
+
+**What It Does:**
+- Executes large orders by splitting into smaller slices over time
+- Minimizes market impact and achieves time-averaged price
+- Disguises whale activity as normal market flow
+
+**Features:**
+- Standard TWAP: Equal slices at equal intervals
+- Adaptive TWAP: Adjusts based on real-time market conditions
+- Random TWAP: Adds jitter to avoid detection algorithms
+- Volume participation limits (don't exceed X% of volume)
+- Price limit protection
+- Multi-exchange execution
+- Configurable urgency (low/medium/high)
+
+**Use Cases:**
+- Accumulate 10 ETH over 4 hours without moving market
+- Exit $100k position smoothly across 8 hours
+- DCA-style buying with time-based precision
+
+**Files Created:**
+- `skills/twap-bot/SKILL.md`
+- `skills/twap-bot/twap-bot.ts`
+- `skills/twap-bot/index.ts`
+
+#### 2. Spot-Futures Arbitrage Bot ✅
+
+**Inspired by:** Pionex Spot-Futures Arbitrage Bot
+
+**What It Does:**
+- Delta-neutral strategy exploiting funding rate differentials
+- Buy spot + short perp futures = market neutral position
+- Collect funding payments (10-50%+ APY in bull markets)
+
+**Features:**
+- Multi-exchange funding rate monitoring (Binance, Bybit, OKX, dYdX, Hyperliquid)
+- Auto-entry when funding exceeds threshold
+- Auto-exit when funding turns negative
+- Real-time P&L tracking
+- Margin ratio monitoring with auto-reduce
+- Opportunity scanner with break-even calculations
+
+**Example:**
+- BTC funding rate: 0.03% per 8h (32.85% APY)
+- $30k position = ~$27/day in funding
+- Break-even in ~4 days from trading fees
+
+**Files Created:**
+- `skills/spot-futures-arb/SKILL.md`
+- `skills/spot-futures-arb/spot-futures-arb.ts`
+- `skills/spot-futures-arb/index.ts`
+
+### Research Notes
+
+**TradingView API Findings:**
+- Free Charting Library for embedding
+- Broker REST API for integration
+- Unofficial WebSocket API for real-time data (github.com/Mathieu2301/TradingView-API)
+
+**DeBank Findings:**
+- 1,300+ DeFi protocols tracked
+- All EVM chains supported
+- Web3 social features (follow wallets, track whales)
+- Tokens, LP positions, lending, borrowing, staking, farming, vesting, NFTs
+
+### K.I.T. Skill Count: 50 Total
+
+| Category | Skills |
+|----------|--------|
+| Trading Bots | grid-bot, dca-bot, twap-bot, smart-router |
+| Arbitrage | arbitrage-finder, arbitrage-hunter, spot-futures-arb |
+| Copy Trading | signal-copier, copy-trader, social-trading, etoro-connector |
+| Analysis | market-analysis, sentiment-analyzer, ai-predictor, quant-engine |
+| DeFi | defi-connector, defi-yield, debank-aggregator, wallet-connector |
+| Portfolio | portfolio-tracker, rebalancer, performance-report, tax-tracker |
+| Risk | risk-calculator, risk-ai, compliance |
+| Exchange | exchange-connector, metatrader, stock-trader, options-trader |
+| Tools | trade-journal, backtester, paper-trading, lot-size-calculator, pip-calculator |
+| Data | tradingview-realtime, tradingview-webhook, news-tracker, whale-tracker |
+| Automation | auto-trader, task-scheduler, alert-system, session-timer |
+| Payments | payment-processor, dividend-manager |
+| Social | twitter-posting, kitbot-forum |
+| Other | binary-options, multi-asset, tradingview-script |
+
+---
+
 ## Research Session: 2026-02-11 (Night Session - 00:12)
 
 ### Pionex Deep Dive
