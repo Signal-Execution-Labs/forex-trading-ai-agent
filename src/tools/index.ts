@@ -127,6 +127,9 @@ export {
 } from './wallet-tools';
 export type { WalletToolResult } from './wallet-tools';
 
+// Signal Copier Tools - Copy signals from Telegram/Discord channels
+export { signalCopierTools } from './signal-copier-tools';
+
 // Factory for creating all tools
 export interface ToolInstances {
   autoTrader: InstanceType<typeof import('./auto-trader').AutoTrader>;
