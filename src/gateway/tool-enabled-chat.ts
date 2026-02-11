@@ -406,7 +406,7 @@ export class ToolEnabledChatHandler {
   constructor(config?: ChatConfig) {
     this.toolRegistry = getToolRegistry();
     this.config = {
-      model: config?.model || 'claude-sonnet-4-20250514',
+      model: config?.model || 'gpt-4o-mini',
       systemPrompt: config?.systemPrompt || DEFAULT_SYSTEM_PROMPT,
       maxTokens: config?.maxTokens || 4096,
       temperature: config?.temperature || 0.7,

@@ -37,6 +37,7 @@ export interface MemoryConfig {
 export interface AIConfig {
   defaultProvider?: string;
   defaultModel?: string;
+  apiKey?: string;  // Top-level API key (convenience)
   providers?: Record<string, { apiKey?: string; enabled?: boolean; model?: string }>;
 }
 

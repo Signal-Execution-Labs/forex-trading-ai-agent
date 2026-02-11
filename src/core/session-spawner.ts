@@ -100,7 +100,7 @@ export class SessionSpawner extends EventEmitter {
     this.config = {
       maxConcurrent: config.maxConcurrent ?? 5,
       defaultTimeoutMs: config.defaultTimeoutMs ?? 5 * 60 * 1000, // 5 minutes
-      defaultModel: config.defaultModel ?? 'anthropic/claude-sonnet-4-20250514',
+      defaultModel: config.defaultModel ?? 'openai/gpt-4o-mini',
     };
   }
 

@@ -92,7 +92,7 @@ export class LLMClient extends EventEmitter {
     super();
     this.config = {
       defaultProvider: config.defaultProvider || 'anthropic',
-      defaultModel: config.defaultModel || 'claude-sonnet-4-20250514',
+      defaultModel: config.defaultModel || 'gpt-4o-mini',
       timeout: config.timeout || 60000,
       ...config,
     };

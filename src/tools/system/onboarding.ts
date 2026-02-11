@@ -489,46 +489,80 @@ Enter model name (e.g., llama3.3):
 - Mistral: https://console.mistral.ai/
 - OpenRouter: https://openrouter.ai/keys
 
-Paste your API key:
+Paste your API key (or type "skip"):
     `.trim(),
     process: (input, state, config) => {
       const key = input.trim();
-      const provider = state.data.aiProvider || 'anthropic';
-      const model = state.data.aiModel;
       
-      // Enhanced API key validation with provider-specific patterns
-      const keyPatterns: Record<string, { pattern: RegExp; example: string }> = {
-        anthropic: { pattern: /^sk-ant-[a-zA-Z0-9\-_]{40,}$/, example: 'sk-ant-...' },
-        openai: { pattern: /^sk-[a-zA-Z0-9\-_]{32,}$/, example: 'sk-...' },
-        google: { pattern: /^AI[a-zA-Z0-9\-_]{35,}$/, example: 'AIza...' },
-        xai: { pattern: /^xai-[a-zA-Z0-9]{32,}$/, example: 'xai-...' },
-        groq: { pattern: /^gsk_[a-zA-Z0-9]{50,}$/, example: 'gsk_...' },
-        mistral: { pattern: /^[a-zA-Z0-9]{32,}$/, example: '32+ character key' },
-        openrouter: { pattern: /^sk-or-[a-zA-Z0-9\-_]{40,}$/, example: 'sk-or-...' },
+      // Allow "skip" to bypass
+      if (key.toLowerCase() === 'skip') {
+        // Still save provider/model selection even without key
+        const provider = state.data.aiProvider || 'openai';
+        const model = state.data.aiModel || 'gpt-4o-mini';
+        config.ai = { defaultProvider: provider, defaultModel: model, providers: {} };
+        return { nextStep: 'channel_select', message: '⏩ AI key skipped. Configure later with `kit config set ai.apiKey YOUR_KEY`' };
+      }
+      
+      if (key.length < 20) {
+        return { nextStep: 'ai_key', message: '⚠️ Key too short. Please paste your full API key, or type "skip" to continue.' };
+      }
+      
+      // Auto-detect provider from key format
+      let detectedProvider: string | null = null;
+      const keyDetection: Record<string, RegExp> = {
+        'anthropic': /^sk-ant-/,
+        'openai': /^sk-(proj-)?[a-zA-Z0-9]/,
+        'google': /^AIza/,
+        'xai': /^xai-/,
+        'groq': /^gsk_/,
+        'openrouter': /^sk-or-/,
       };
       
-      const validation = keyPatterns[provider];
-      if (key.length < 10) {
-        return { nextStep: 'channel_select', message: '⚠️ Invalid key (too short). Skipping - configure later with `kit config`' };
+      for (const [prov, pattern] of Object.entries(keyDetection)) {
+        if (pattern.test(key)) {
+          detectedProvider = prov;
+          break;
+        }
       }
       
-      // Validate format if we have a pattern for this provider
-      if (validation && !validation.pattern.test(key)) {
-        return { 
-          nextStep: 'ai_key', 
-          message: `⚠️ Key doesn't match expected ${provider} format (${validation.example}). Please check and try again, or type "skip" to continue.`
+      // Use detected provider or fall back to selected
+      let provider = state.data.aiProvider || 'openai';
+      let model = state.data.aiModel;
+      
+      // If detected provider differs from selected, auto-correct with warning
+      if (detectedProvider && detectedProvider !== provider) {
+        provider = detectedProvider;
+        // Set appropriate default model for detected provider
+        const defaultModels: Record<string, string> = {
+          'anthropic': 'claude-sonnet-4-20250514',
+          'openai': 'gpt-4o-mini',
+          'google': 'gemini-2.0-flash',
+          'xai': 'grok-2',
+          'groq': 'llama-3.3-70b-versatile',
+          'openrouter': 'openai/gpt-4o-mini',
         };
+        model = defaultModels[provider] || model;
+        state.data.aiProvider = provider;
+        state.data.aiModel = model;
       }
       
-      // Allow "skip" to bypass validation
-      if (key.toLowerCase() === 'skip') {
-        return { nextStep: 'channel_select', message: '⏩ AI key skipped. Configure later with `kit config`' };
+      // Default model if none set
+      if (!model) {
+        model = provider === 'openai' ? 'gpt-4o-mini' : 'claude-sonnet-4-20250514';
+        state.data.aiModel = model;
       }
       
-      config.ai = config.ai || { providers: {} };
-      config.ai.providers[provider] = { apiKey: key, enabled: true, model };
+      // Save to config
+      config.ai = config.ai || {};
       config.ai.defaultProvider = provider;
       config.ai.defaultModel = model;
+      config.ai.apiKey = key;  // Store key at top level for easy access
+      config.ai.providers = config.ai.providers || {};
+      config.ai.providers[provider] = { 
+        apiKey: key, 
+        enabled: true, 
+        model: model 
+      };
       
       // Set environment variable
       const envKeys: Record<string, string> = {
@@ -544,7 +578,8 @@ Paste your API key:
         process.env[envKeys[provider]] = key;
       }
       
-      return { nextStep: 'channel_select', message: `✅ ${provider} configured with ${model}` };
+      const detected = detectedProvider ? ` (auto-detected from key format)` : '';
+      return { nextStep: 'channel_select', message: `✅ **${provider.toUpperCase()}** configured${detected}\n   Model: ${model}\n   Key: ${key.substring(0, 10)}...${key.substring(key.length - 4)}` };
     },
   },
   

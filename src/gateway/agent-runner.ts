@@ -79,13 +79,41 @@ export class AgentRunner extends EventEmitter {
     this.config = config;
     this.toolHandlers = new Map();
 
-    // Initialize LLM Client
+    // Initialize LLM Client - use config.json AI settings if no model specified
     const kitConfig = loadConfig();
+    
+    // Determine model: CLI arg > config.ai > hardcoded default
+    let effectiveModel = config.model;
+    if (!effectiveModel && kitConfig.ai?.defaultProvider && kitConfig.ai?.defaultModel) {
+      effectiveModel = `${kitConfig.ai.defaultProvider}/${kitConfig.ai.defaultModel}`;
+    }
+    if (!effectiveModel) {
+      effectiveModel = 'openai/gpt-4o-mini'; // New default: OpenAI instead of Anthropic
+    }
+    
+    // Update config with effective model
+    this.config.model = effectiveModel;
+    
+    // Get API keys from config and env
+    const configApiKeys: Record<string, string> = {};
+    if (kitConfig.ai?.providers) {
+      for (const [provider, provConfig] of Object.entries(kitConfig.ai.providers)) {
+        if (provConfig?.apiKey) {
+          configApiKeys[provider] = provConfig.apiKey;
+        }
+      }
+    }
+    // Also check top-level ai.apiKey
+    if (kitConfig.ai?.apiKey && kitConfig.ai?.defaultProvider) {
+      configApiKeys[kitConfig.ai.defaultProvider] = kitConfig.ai.apiKey;
+    }
+    
     this.llmClient = createLLMClient({
-      defaultProvider: this.extractProvider(config.model),
-      defaultModel: this.extractModel(config.model),
+      defaultProvider: this.extractProvider(effectiveModel),
+      defaultModel: this.extractModel(effectiveModel),
       apiKeys: {
         ...this.loadApiKeysFromEnv(),
+        ...configApiKeys,
         ...config.apiKeys,
       },
     });
@@ -111,7 +139,7 @@ export class AgentRunner extends EventEmitter {
     if (this.running) return;
 
     console.log(`🤖 Starting K.I.T. Agent: ${this.config.agentName}`);
-    console.log(`   Model: ${this.config.model || 'anthropic/claude-sonnet-4-20250514'}`);
+    console.log(`   Model: ${this.config.model}`);
     console.log(`   Tools: ${this.toolHandlers.size} enabled`);
 
     this.running = true;
@@ -164,7 +192,7 @@ export class AgentRunner extends EventEmitter {
   getStatus(): AgentStatus {
     return {
       running: this.running,
-      model: this.config.model || 'anthropic/claude-sonnet-4-20250514',
+      model: this.config.model || 'openai/gpt-4o-mini',
       toolsEnabled: Array.from(this.toolHandlers.keys()),
       activeSessions: this.chatManager.listSessions().filter(s => s.status === 'processing').length,
       totalMessages: this.messageCount,
@@ -231,13 +259,13 @@ export class AgentRunner extends EventEmitter {
   }
 
   private extractProvider(modelRef?: string): string {
-    if (!modelRef) return 'anthropic';
+    if (!modelRef) return 'openai';
     const parts = modelRef.split('/');
     return parts.length > 1 ? parts[0] : 'anthropic';
   }
 
   private extractModel(modelRef?: string): string {
-    if (!modelRef) return 'claude-sonnet-4-20250514';
+    if (!modelRef) return 'gpt-4o-mini';
     const parts = modelRef.split('/');
     return parts.length > 1 ? parts.slice(1).join('/') : modelRef;
   }
@@ -273,7 +301,7 @@ export function createAgentRunner(config: Partial<AgentRunnerConfig> = {}): Agen
   return new AgentRunner({
     agentId: config.agentId || 'main',
     agentName: config.agentName || 'K.I.T.',
-    model: config.model || 'anthropic/claude-sonnet-4-20250514',
+    model: config.model || 'openai/gpt-4o-mini',
     systemPrompt: config.systemPrompt,
     tools: config.tools || 'trading',
     apiKeys: config.apiKeys,
@@ -289,7 +317,7 @@ if (require.main === module) {
 
   const agent = createAgentRunner({
     agentName: 'K.I.T. (CLI)',
-    model: process.env.KIT_MODEL || 'anthropic/claude-sonnet-4-20250514',
+    model: process.env.KIT_MODEL || 'openai/gpt-4o-mini',
   });
 
   // Collect streamed response
