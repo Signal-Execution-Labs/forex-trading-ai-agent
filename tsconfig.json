@@ -17,9 +17,7 @@
   },
   "include": [
     "src/**/*.ts",
-    "src/types/**/*.d.ts",
-    "cli/**/*.ts",
-    "gateway/**/*.ts"
+    "src/types/**/*.d.ts"
   ],
   "exclude": [
     "node_modules",
