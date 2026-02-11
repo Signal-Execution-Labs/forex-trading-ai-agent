@@ -103,11 +103,16 @@ function parseSkillDirectory(folderName: string, skillDir: string): SkillInfo | 
   const mainScript = findMainScript(pythonFiles, folderName);
   
   // Check for TypeScript implementation
-  const tsFiles = fs.readdirSync(skillDir).filter(f => f.endsWith('.ts'));
+  const tsFiles = fs.readdirSync(skillDir).filter(f => f.endsWith('.ts') && f !== 'index.ts');
+  const mainTsScript = tsFiles.length > 0 ? tsFiles[0] : undefined;
   
+  // Has implementation if Python OR TypeScript files exist
   const hasImplementation = pythonFiles.length > 0 || tsFiles.length > 0;
   const implementationType = pythonFiles.length > 0 ? 'python' : 
                             tsFiles.length > 0 ? 'typescript' : 'planned';
+  
+  // Prefer Python script, fall back to TypeScript
+  const finalMainScript = mainScript || mainTsScript;
   
   const slug = folderName;
   const toolName = `skill_${folderName.replace(/-/g, '_')}`;
@@ -123,7 +128,7 @@ function parseSkillDirectory(folderName: string, skillDir: string): SkillInfo | 
     hasImplementation,
     implementationType,
     scriptPath: mainScript ? path.join(skillDir, mainScript) : undefined,
-    mainScript,
+    mainScript: finalMainScript,
     skillMdPath,
   };
 }
