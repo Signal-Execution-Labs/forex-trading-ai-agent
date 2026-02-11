@@ -4,6 +4,77 @@ Continuous research into professional finance apps to improve K.I.T.
 
 ---
 
+## Research Session: 2026-02-11 (Morning - 07:58)
+
+### New Skill Implemented
+
+#### Leveraged Grid Bot ✅
+
+**Inspired by:** Pionex Futures Grid, Bybit Grid Bot, 3Commas Futures Grid
+
+**Research Source:** TradingView features review (100+ indicators, pattern recognition, advanced charting)
+
+**What It Does:**
+- Grid trading on futures/perpetuals with leverage (2x-20x)
+- Long Grid: Buy dips, sell pumps on leverage
+- Short Grid: Sell rallies, cover dips
+- Neutral Grid: Bi-directional for sideways markets
+- Pionex reports 2x higher profits vs spot with same parameters!
+
+**Key Features:**
+1. **Leverage Support:** 2x to 20x configurable
+2. **Liquidation Protection:** Auto-reduce before liq price
+3. **Margin Monitoring:** Real-time margin health tracking
+4. **Funding Rate Alerts:** Warn when funding eats profits
+5. **AI Optimization:** Dynamic leverage based on volatility
+6. **Trailing Grid:** Grid follows price movement
+7. **Emergency Stop:** Auto-close on max drawdown
+
+**Risk Management:**
+- Max drawdown limit with auto-stop
+- Liquidation buffer (stops before getting liquidated)
+- Funding rate threshold warnings
+- Cross/Isolated margin modes
+
+**Example:**
+- BTC Neutral Grid: $90k - $110k
+- 50 grid lines, 5x leverage
+- Each fill = ~2% profit (0.4% × 5x leverage)
+- 10 oscillations = ~100% return potential
+
+**Files Created:**
+- `skills/leveraged-grid/SKILL.md` - Full documentation
+- `skills/leveraged-grid/leveraged-grid.ts` - Complete implementation with GridAIOptimizer
+- `skills/leveraged-grid/index.ts` - Skill exports
+
+**K.I.T. Advantages:**
+- Self-hosted (no monthly fees vs 3Commas $49-99/mo)
+- AI-optimized leverage and grid spacing
+- Multi-exchange support
+- Integrated with K.I.T. risk management
+- Tax tracking integration
+
+### K.I.T. Skill Count: 53 Total (+1 today)
+
+| Category | Count | Skills |
+|----------|-------|--------|
+| Trading Bots | 6 | grid-bot, dca-bot, twap-bot, smart-router, trailing-grid, **leveraged-grid** |
+| Arbitrage | 3 | arbitrage-finder, arbitrage-hunter, spot-futures-arb |
+| Copy Trading | 4 | signal-copier, copy-trader, social-trading, etoro-connector |
+| Analysis | 5 | market-analysis, sentiment-analyzer, ai-predictor, quant-engine, ai-screener |
+| DeFi | 4 | defi-connector, defi-yield, debank-aggregator, wallet-connector |
+| Portfolio | 4 | portfolio-tracker, rebalancer, performance-report, tax-tracker |
+| Risk | 3 | risk-calculator, risk-ai, compliance |
+| Exchange | 4 | exchange-connector, metatrader, stock-trader, options-trader |
+| Tools | 5 | trade-journal, backtester, paper-trading, lot-size-calculator, pip-calculator |
+| Data | 4 | tradingview-realtime, tradingview-webhook, news-tracker, whale-tracker |
+| Automation | 4 | auto-trader, task-scheduler, alert-system, session-timer |
+| Payments | 2 | payment-processor, dividend-manager |
+| Social | 2 | twitter-posting, kitbot-forum |
+| Other | 3 | binary-options, multi-asset, tradingview-script |
+
+---
+
 ## Research Session: 2026-02-11 (Morning - 06:02)
 
 ### New Skill Implemented
