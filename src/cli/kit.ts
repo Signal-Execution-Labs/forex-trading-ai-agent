@@ -683,6 +683,185 @@ program
   });
 
 // ═══════════════════════════════════════════════════════════════
+// SKILL (Install/Remove from KitHub)
+// ═══════════════════════════════════════════════════════════════
+const skill = program
+  .command('skill')
+  .description('Install and manage skills from KitHub.finance');
+
+skill
+  .command('install <name>')
+  .description('Install a skill from KitHub.finance')
+  .action(async (name: string) => {
+    const KITHUB_API = 'https://api.kithub.finance';
+    const skillsDir = path.join(KIT_HOME, 'skills');
+    
+    console.log(`\n🔍 Searching for skill "${name}" on KitHub...`);
+    
+    try {
+      // Fetch skill from KitHub API
+      const response = await fetch(`${KITHUB_API}/api/skills/${name}`);
+      if (!response.ok) {
+        console.log(`\n❌ Skill "${name}" not found on KitHub.finance`);
+        console.log(`   Browse available skills: https://kithub.finance\n`);
+        return;
+      }
+      
+      const skill = await response.json();
+      console.log(`✅ Found: ${skill.name} (v${skill.versions?.[0]?.version || '1.0.0'})`);
+      console.log(`   ${skill.description}\n`);
+      
+      // Create skills directory if not exists
+      if (!fs.existsSync(skillsDir)) {
+        fs.mkdirSync(skillsDir, { recursive: true });
+      }
+      
+      const skillDir = path.join(skillsDir, name);
+      if (fs.existsSync(skillDir)) {
+        console.log(`⚠️  Skill "${name}" already installed at ${skillDir}`);
+        console.log(`   Use 'kit skill remove ${name}' first to reinstall.\n`);
+        return;
+      }
+      
+      // Create skill directory and SKILL.md
+      fs.mkdirSync(skillDir, { recursive: true });
+      
+      const skillMd = skill.versions?.[0]?.skill_md || `# ${skill.name}\n\n${skill.description}\n\n## Usage\n\nThis skill is installed and ready to use.`;
+      fs.writeFileSync(path.join(skillDir, 'SKILL.md'), skillMd, 'utf8');
+      
+      // Enable skill in config
+      const configPath = path.join(KIT_HOME, 'config.json');
+      let config: any = {};
+      if (fs.existsSync(configPath)) {
+        try { config = JSON.parse(fs.readFileSync(configPath, 'utf8')); } catch {}
+      }
+      config.skills = config.skills || {};
+      config.skills[name] = { enabled: true, installed_at: new Date().toISOString() };
+      fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+      
+      console.log(`✅ Installed "${name}" to ${skillDir}`);
+      console.log(`   Skill is now enabled and ready to use.\n`);
+      
+    } catch (error: any) {
+      console.log(`\n❌ Failed to install skill: ${error.message}`);
+      console.log(`   Check your internet connection and try again.\n`);
+    }
+  });
+
+skill
+  .command('remove <name>')
+  .description('Remove an installed skill')
+  .action(async (name: string) => {
+    const skillDir = path.join(KIT_HOME, 'skills', name);
+    
+    if (!fs.existsSync(skillDir)) {
+      console.log(`\n❌ Skill "${name}" is not installed.\n`);
+      return;
+    }
+    
+    // Remove skill directory
+    fs.rmSync(skillDir, { recursive: true, force: true });
+    
+    // Disable in config
+    const configPath = path.join(KIT_HOME, 'config.json');
+    let config: any = {};
+    if (fs.existsSync(configPath)) {
+      try { config = JSON.parse(fs.readFileSync(configPath, 'utf8')); } catch {}
+    }
+    if (config.skills?.[name]) {
+      delete config.skills[name];
+      fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+    }
+    
+    console.log(`\n✅ Removed skill "${name}"\n`);
+  });
+
+skill
+  .command('list')
+  .alias('search')
+  .description('List available skills from KitHub.finance')
+  .option('-c, --category <category>', 'Filter by category')
+  .action(async (options) => {
+    const KITHUB_API = 'https://api.kithub.finance';
+    
+    console.log(`\n🔍 Fetching skills from KitHub.finance...\n`);
+    
+    try {
+      let url = `${KITHUB_API}/api/skills?limit=50`;
+      if (options.category) url += `&category=${options.category}`;
+      
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      console.log(`╔═══════════════════════════════════════════════════════════════╗`);
+      console.log(`║          KitHub.finance - ${data.total} Skills Available              ║`);
+      console.log(`╚═══════════════════════════════════════════════════════════════╝\n`);
+      
+      const byCategory: Record<string, any[]> = {};
+      for (const skill of data.skills) {
+        const cat = skill.category || 'other';
+        if (!byCategory[cat]) byCategory[cat] = [];
+        byCategory[cat].push(skill);
+      }
+      
+      for (const [category, skills] of Object.entries(byCategory)) {
+        console.log(`📁 ${category.toUpperCase()}`);
+        console.log('─'.repeat(50));
+        for (const s of skills.slice(0, 10)) {
+          console.log(`  • ${s.name} (⭐${s.stars} 📥${s.downloads})`);
+        }
+        if (skills.length > 10) console.log(`  ... and ${skills.length - 10} more`);
+        console.log('');
+      }
+      
+      console.log(`Install with: kit skill install <name>`);
+      console.log(`Browse all: https://kithub.finance\n`);
+      
+    } catch (error: any) {
+      console.log(`\n❌ Failed to fetch skills: ${error.message}\n`);
+    }
+  });
+
+skill
+  .command('info <name>')
+  .description('Show detailed information about a skill')
+  .action(async (name: string) => {
+    const KITHUB_API = 'https://api.kithub.finance';
+    
+    try {
+      const response = await fetch(`${KITHUB_API}/api/skills/${name}`);
+      if (!response.ok) {
+        console.log(`\n❌ Skill "${name}" not found.\n`);
+        return;
+      }
+      
+      const skill = await response.json();
+      const version = skill.versions?.[0]?.version || '1.0.0';
+      
+      console.log(`
+╔═══════════════════════════════════════════════════════════════╗
+║  ${skill.name.padEnd(55)} ║
+╚═══════════════════════════════════════════════════════════════╝
+
+📦 Version:    ${version}
+📁 Category:   ${skill.category}
+⭐ Stars:      ${skill.stars}
+📥 Downloads:  ${skill.downloads}
+👤 Author:     ${skill.author_username || 'K.I.T. Team'}
+
+📝 Description:
+${skill.description}
+
+🔗 More info: https://kithub.finance/skill/${name}
+
+Install: kit skill install ${name}
+`);
+    } catch (error: any) {
+      console.log(`\n❌ Failed to fetch skill info: ${error.message}\n`);
+    }
+  });
+
+// ═══════════════════════════════════════════════════════════════
 // MODELS
 // ═══════════════════════════════════════════════════════════════
 program
