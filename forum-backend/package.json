@@ -6,8 +6,8 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc",
-    "start": "node dist/index.js",
+    "build": "echo 'Build skipped - using tsx runtime'",
+    "start": "tsx src/index.ts",
     "db:seed": "tsx src/db/seed.ts"
   },
   "keywords": [
@@ -28,7 +28,9 @@
     "bcryptjs": "^2.4.3",
     "fastify": "^4.25.2",
     "lowdb": "^7.0.1",
+    "tsx": "^4.7.0",
     "twitter-api-v2": "^1.29.0",
+    "typescript": "^5.3.3",
     "uuid": "^9.0.1",
     "ws": "^8.16.0",
     "zod": "^3.22.4"
@@ -37,8 +39,6 @@
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20.11.5",
     "@types/uuid": "^9.0.7",
-    "@types/ws": "^8.5.10",
-    "tsx": "^4.7.0",
-    "typescript": "^5.3.3"
+    "@types/ws": "^8.5.10"
   }
 }
