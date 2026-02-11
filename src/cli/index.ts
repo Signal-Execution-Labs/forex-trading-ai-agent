@@ -599,6 +599,154 @@ program
   });
 
 // ═══════════════════════════════════════════════════════════════
+// HOOKS
+// ═══════════════════════════════════════════════════════════════
+const hooksCommand = program
+  .command('hooks')
+  .description('Manage K.I.T. event hooks');
+
+hooksCommand
+  .command('list')
+  .description('List all registered hooks')
+  .option('--enabled', 'Show only enabled hooks')
+  .option('--json', 'Output as JSON')
+  .action(async (options) => {
+    const { getHookRegistry } = await import('../hooks');
+    const registry = getHookRegistry();
+    const hooks = registry.getAll();
+    
+    if (options.json) {
+      const output = hooks.map(h => ({
+        id: h.id,
+        name: h.name,
+        description: h.description,
+        version: h.version,
+        enabled: h.enabled,
+        events: h.events,
+        priority: h.priority || 0,
+      }));
+      console.log(JSON.stringify(output, null, 2));
+      return;
+    }
+    
+    console.log(`
+${c.cyan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  🪝 K.I.T. Hooks (${hooks.length} registered)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${c.reset}
+`);
+    
+    for (const hook of hooks) {
+      if (options.enabled && !hook.enabled) continue;
+      
+      const status = hook.enabled ? `${c.green}✓${c.reset}` : `${c.dim}○${c.reset}`;
+      const events = hook.events.map(e => `${c.dim}${e}${c.reset}`).join(', ');
+      console.log(`  ${status} ${c.bright}${hook.id}${c.reset} - ${hook.name}`);
+      console.log(`    ${c.dim}${hook.description}${c.reset}`);
+      console.log(`    Events: ${events}`);
+      console.log('');
+    }
+  });
+
+hooksCommand
+  .command('enable <hookId>')
+  .description('Enable a hook')
+  .action(async (hookId) => {
+    const { getHookRegistry } = await import('../hooks');
+    const registry = getHookRegistry();
+    
+    if (registry.setEnabled(hookId, true)) {
+      console.log(`${c.green}✅ Hook '${hookId}' enabled${c.reset}`);
+    } else {
+      console.log(`${c.red}❌ Hook '${hookId}' not found${c.reset}`);
+    }
+  });
+
+hooksCommand
+  .command('disable <hookId>')
+  .description('Disable a hook')
+  .action(async (hookId) => {
+    const { getHookRegistry } = await import('../hooks');
+    const registry = getHookRegistry();
+    
+    if (registry.setEnabled(hookId, false)) {
+      console.log(`${c.yellow}⚠️ Hook '${hookId}' disabled${c.reset}`);
+    } else {
+      console.log(`${c.red}❌ Hook '${hookId}' not found${c.reset}`);
+    }
+  });
+
+hooksCommand
+  .command('info <hookId>')
+  .description('Show detailed information about a hook')
+  .action(async (hookId) => {
+    const { getHookRegistry } = await import('../hooks');
+    const registry = getHookRegistry();
+    const hook = registry.get(hookId);
+    
+    if (!hook) {
+      console.log(`${c.red}❌ Hook '${hookId}' not found${c.reset}`);
+      return;
+    }
+    
+    console.log(`
+${c.cyan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  🪝 ${hook.name}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${c.reset}
+
+  ${c.bright}ID:${c.reset}          ${hook.id}
+  ${c.bright}Version:${c.reset}     ${hook.version}
+  ${c.bright}Status:${c.reset}      ${hook.enabled ? `${c.green}Enabled${c.reset}` : `${c.dim}Disabled${c.reset}`}
+  ${c.bright}Priority:${c.reset}    ${hook.priority || 0}
+  ${c.bright}Author:${c.reset}      ${hook.author || 'K.I.T. Team'}
+  
+  ${c.bright}Description:${c.reset}
+    ${hook.description}
+  
+  ${c.bright}Events:${c.reset}
+${hook.events.map(e => `    • ${e}`).join('\n')}
+`);
+  });
+
+hooksCommand
+  .command('test <event>')
+  .description('Emit a test event to all hooks')
+  .option('--data <json>', 'JSON data to include', '{}')
+  .action(async (event, options) => {
+    const { getHookRegistry } = await import('../hooks');
+    const registry = getHookRegistry();
+    
+    const validEvents = [
+      'trade:executed', 'trade:closed', 'portfolio:changed',
+      'alert:triggered', 'session:start', 'session:end',
+      'signal:received', 'risk:warning', 'market:open', 'market:close',
+      'onboarding:complete', 'config:changed',
+    ] as const;
+    
+    if (!validEvents.includes(event as typeof validEvents[number])) {
+      console.log(`${c.red}❌ Unknown event: ${event}${c.reset}`);
+      console.log(`${c.dim}Valid events: ${validEvents.join(', ')}${c.reset}`);
+      return;
+    }
+    
+    let data = {};
+    try {
+      data = JSON.parse(options.data);
+    } catch (e) {
+      console.log(`${c.red}❌ Invalid JSON data${c.reset}`);
+      return;
+    }
+    
+    console.log(`${c.cyan}🧪 Emitting test event: ${event}${c.reset}`);
+    const results = await registry.emit(event as any, data, 'test-agent');
+    
+    console.log(`\n${c.bright}Results:${c.reset}`);
+    for (const result of results) {
+      const status = result.success ? `${c.green}✓${c.reset}` : `${c.red}✗${c.reset}`;
+      console.log(`  ${status} ${result.hookId} (${result.durationMs}ms)${result.error ? ` - ${c.red}${result.error}${c.reset}` : ''}`);
+    }
+  });
+
+// ═══════════════════════════════════════════════════════════════
 // RESET
 // ═══════════════════════════════════════════════════════════════
 program

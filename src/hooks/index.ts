@@ -481,6 +481,110 @@ ${ctx.data.market ? `- ${ctx.data.market}` : '- All markets'}
       fs.writeFileSync(onboardingLog, JSON.stringify(record, null, 2));
     },
   });
+
+  // Alert Tracker - logs triggered alerts with analytics
+  registry.register({
+    id: 'alert-tracker',
+    name: 'Alert Tracker',
+    description: 'Tracks all triggered alerts with timestamps and conditions for analysis',
+    version: '1.0.0',
+    events: ['alert:triggered'],
+    enabled: true,
+    priority: 95,
+    handler: async (ctx) => {
+      const alertsDir = path.join(process.env.HOME || process.env.USERPROFILE || '', '.kit', 'alerts');
+      if (!fs.existsSync(alertsDir)) {
+        fs.mkdirSync(alertsDir, { recursive: true });
+      }
+      
+      // Log to daily file
+      const date = ctx.timestamp.toISOString().split('T')[0];
+      const logPath = path.join(alertsDir, `alerts_${date}.jsonl`);
+      
+      const entry = JSON.stringify({
+        id: ctx.data.alertId || `alert_${Date.now()}`,
+        timestamp: ctx.timestamp.toISOString(),
+        type: ctx.data.type || 'price', // price, indicator, pattern, custom
+        symbol: ctx.data.symbol,
+        condition: ctx.data.condition,
+        currentValue: ctx.data.currentValue,
+        triggerValue: ctx.data.triggerValue,
+        message: ctx.data.message,
+        action: ctx.data.action, // notify, trade, webhook
+        priority: ctx.data.priority || 'normal', // low, normal, high, critical
+      }) + '\n';
+      
+      fs.appendFileSync(logPath, entry);
+      
+      // Also update summary stats
+      const statsPath = path.join(alertsDir, 'alert_stats.json');
+      let stats: Record<string, any> = { 
+        total: 0, 
+        byType: {}, 
+        bySymbol: {}, 
+        byPriority: {},
+        lastUpdated: null 
+      };
+      
+      if (fs.existsSync(statsPath)) {
+        try {
+          stats = JSON.parse(fs.readFileSync(statsPath, 'utf-8'));
+        } catch (e) { /* use defaults */ }
+      }
+      
+      stats.total = (stats.total || 0) + 1;
+      const type = ctx.data.type || 'price';
+      const symbol = ctx.data.symbol || 'unknown';
+      const priority = ctx.data.priority || 'normal';
+      
+      stats.byType[type] = (stats.byType[type] || 0) + 1;
+      stats.bySymbol[symbol] = (stats.bySymbol[symbol] || 0) + 1;
+      stats.byPriority[priority] = (stats.byPriority[priority] || 0) + 1;
+      stats.lastUpdated = ctx.timestamp.toISOString();
+      
+      fs.writeFileSync(statsPath, JSON.stringify(stats, null, 2));
+      
+      logger.info(`🔔 Alert triggered: ${ctx.data.symbol || 'unknown'} - ${ctx.data.message || 'Alert condition met'}`);
+    },
+  });
+
+  // Config Change Watcher - tracks configuration changes
+  registry.register({
+    id: 'config-watcher',
+    name: 'Config Change Watcher',
+    description: 'Logs configuration changes for audit trail and backup',
+    version: '1.0.0',
+    events: ['config:changed'],
+    enabled: true,
+    priority: 100,
+    handler: async (ctx) => {
+      const auditDir = path.join(process.env.HOME || process.env.USERPROFILE || '', '.kit', 'audit');
+      if (!fs.existsSync(auditDir)) {
+        fs.mkdirSync(auditDir, { recursive: true });
+      }
+      
+      // Save config snapshot
+      const timestamp = ctx.timestamp.toISOString().replace(/[:.]/g, '-');
+      const backupPath = path.join(auditDir, `config_${timestamp}.json`);
+      
+      if (ctx.data.newConfig) {
+        fs.writeFileSync(backupPath, JSON.stringify(ctx.data.newConfig, null, 2));
+      }
+      
+      // Log the change
+      const auditLog = path.join(auditDir, 'config_changes.jsonl');
+      const entry = JSON.stringify({
+        timestamp: ctx.timestamp.toISOString(),
+        changedBy: ctx.data.changedBy || 'system',
+        changedFields: ctx.data.changedFields || [],
+        reason: ctx.data.reason,
+        backupFile: path.basename(backupPath),
+      }) + '\n';
+      
+      fs.appendFileSync(auditLog, entry);
+      logger.info(`⚙️ Config changed by ${ctx.data.changedBy || 'system'}: ${ctx.data.reason || 'No reason provided'}`);
+    },
+  });
 }
 
 // ============================================================================
