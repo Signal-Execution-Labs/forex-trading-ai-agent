@@ -145,6 +145,58 @@
     .message .sender { font-weight: 600; }
     .message .time { font-size: 0.7rem; color: #666; margin-left: 0.5rem; }
     
+    /* Onboarding Buttons */
+    .onboard-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+    .onboard-btn {
+      padding: 0.5rem 1rem;
+      background: rgba(0, 212, 255, 0.1);
+      border: 1px solid rgba(0, 212, 255, 0.3);
+      border-radius: 0.5rem;
+      color: #00d4ff;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 0.9rem;
+    }
+    .onboard-btn:hover {
+      background: rgba(0, 212, 255, 0.2);
+      border-color: #00d4ff;
+      transform: translateY(-1px);
+    }
+    .onboard-btn.selected {
+      background: rgba(0, 255, 136, 0.2);
+      border-color: #00ff88;
+      color: #00ff88;
+    }
+    .onboard-btn.multi {
+      position: relative;
+    }
+    .onboard-btn.multi::before {
+      content: '☐';
+      margin-right: 0.5rem;
+    }
+    .onboard-btn.multi.selected::before {
+      content: '☑';
+    }
+    .onboard-confirm {
+      margin-top: 0.75rem;
+      padding: 0.6rem 1.5rem;
+      background: linear-gradient(90deg, #00d4ff, #7b2fff);
+      border: none;
+      border-radius: 0.5rem;
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      display: none;
+    }
+    .onboard-confirm.visible {
+      display: inline-block;
+    }
+    
     .chat-input-container { display: flex; gap: 0.5rem; }
     .chat-input {
       flex: 1;
@@ -528,8 +580,11 @@
       return new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
     }
     
-    // Add message to chat
-    function addMessage(type, content, showTime = true) {
+    // Current multi-select state
+    let multiSelectValues = [];
+    
+    // Add message to chat (with optional buttons)
+    function addMessage(type, content, showTime = true, buttons = null) {
       const div = document.createElement('div');
       div.className = `message ${type}`;
       
@@ -542,10 +597,81 @@
         div.innerHTML = content;
       }
       
+      // Add buttons if provided
+      if (buttons && buttons.length > 0) {
+        const btnContainer = document.createElement('div');
+        btnContainer.className = 'onboard-buttons';
+        
+        const isMulti = buttons.some(b => b.multi);
+        multiSelectValues = [];
+        
+        buttons.forEach(btn => {
+          const button = document.createElement('button');
+          button.className = 'onboard-btn' + (btn.multi ? ' multi' : '');
+          button.textContent = btn.label;
+          button.dataset.value = btn.value;
+          
+          button.onclick = () => {
+            if (btn.multi) {
+              // Multi-select toggle
+              button.classList.toggle('selected');
+              const val = btn.value;
+              if (button.classList.contains('selected')) {
+                multiSelectValues.push(val);
+              } else {
+                multiSelectValues = multiSelectValues.filter(v => v !== val);
+              }
+              // Show/hide confirm button
+              const confirmBtn = btnContainer.querySelector('.onboard-confirm');
+              if (confirmBtn) {
+                confirmBtn.classList.toggle('visible', multiSelectValues.length > 0);
+              }
+            } else {
+              // Single select - send immediately
+              sendButtonValue(btn.value, btn.label);
+              // Disable all buttons after selection
+              btnContainer.querySelectorAll('.onboard-btn').forEach(b => b.disabled = true);
+            }
+          };
+          
+          btnContainer.appendChild(button);
+        });
+        
+        // Add confirm button for multi-select
+        if (isMulti) {
+          const confirmBtn = document.createElement('button');
+          confirmBtn.className = 'onboard-confirm';
+          confirmBtn.textContent = '✓ Confirm Selection';
+          confirmBtn.onclick = () => {
+            if (multiSelectValues.length > 0) {
+              sendButtonValue(multiSelectValues.join(','), multiSelectValues.join(', '));
+              btnContainer.querySelectorAll('button').forEach(b => b.disabled = true);
+            }
+          };
+          btnContainer.appendChild(confirmBtn);
+        }
+        
+        div.appendChild(btnContainer);
+      }
+      
       messages.appendChild(div);
       messages.scrollTop = messages.scrollHeight;
       
       return div;
+    }
+    
+    // Send button value as chat message
+    function sendButtonValue(value, label) {
+      if (!connected) return;
+      addMessage('user', label);
+      ws.send(JSON.stringify({ type: 'chat', content: value }));
+      
+      thinking = true;
+      chatInput.disabled = true;
+      sendBtn.disabled = true;
+      
+      const thinkingDiv = addMessage('kit', '<span class="loading"></span>Processing...', false);
+      thinkingDiv.id = 'thinking';
     }
     
     // Connect to WebSocket
@@ -1049,7 +1175,7 @@
       }
     }
     
-    // Enhanced message handler with canvas support
+    // Enhanced message handler with canvas and button support
     function handleWebSocketMessage(e) {
       const data = JSON.parse(e.data);
       
@@ -1062,7 +1188,16 @@
       if (data.type === 'message') {
         const thinkingEl = document.getElementById('thinking');
         if (thinkingEl) thinkingEl.remove();
-        addMessage('kit', data.content);
+        
+        // Check for buttons in message or metadata
+        let buttons = data.buttons || data.metadata?.buttons || null;
+        
+        // Also try to parse onboarding button patterns from text
+        if (!buttons) {
+          buttons = parseOnboardingButtons(data.content);
+        }
+        
+        addMessage('kit', data.content, true, buttons);
         thinking = false;
         chatInput.disabled = false;
         sendBtn.disabled = false;
@@ -1071,6 +1206,47 @@
       } else if (data.type === 'status') {
         updateDashboard(data);
       }
+    }
+    
+    // Parse onboarding button patterns from K.I.T.'s text responses
+    function parseOnboardingButtons(content) {
+      // Check for numbered list patterns like "[1] OpenAI" or "1. OpenAI"
+      const patterns = [
+        /\[(\d+)\]\s*([^\n\[]+)/g,  // [1] Label
+        /^(\d+)\.\s+\*?\*?([^*\n]+)/gm,  // 1. Label or 1. **Label**
+        /^(\d+)\)\s+([^\n]+)/gm,  // 1) Label
+      ];
+      
+      let buttons = [];
+      
+      for (const pattern of patterns) {
+        let match;
+        const regex = new RegExp(pattern);
+        while ((match = regex.exec(content)) !== null) {
+          const value = match[1];
+          let label = match[2].trim().replace(/\*+/g, '').replace(/<[^>]+>/g, '');
+          // Clean up label
+          if (label.length > 0 && label.length < 50) {
+            buttons.push({ value, label: `${value}. ${label}`, multi: false });
+          }
+        }
+      }
+      
+      // Check for multi-select hints
+      const isMulti = content.toLowerCase().includes('select multiple') || 
+                      content.toLowerCase().includes('mehrfach') ||
+                      content.toLowerCase().includes('space to select');
+      
+      if (isMulti) {
+        buttons = buttons.map(b => ({ ...b, multi: true }));
+      }
+      
+      // Only return buttons if we found a reasonable number (2-10)
+      if (buttons.length >= 2 && buttons.length <= 10) {
+        return buttons;
+      }
+      
+      return null;
     }
     
     // Add keyboard shortcuts
