@@ -24,10 +24,46 @@ const KIT_HOME = path.join(os.homedir(), '.kit');
 const VERSION = '2.0.0';
 const GITHUB_REPO = 'kayzaa/k.i.t.-bot';
 
+// Taglines - rotate randomly
+const TAGLINES = [
+  "Your wealth is my mission.",
+  "Knight Industries Trading at your service.",
+  "One AI. All your finances. Fully autonomous.",
+  "The supernatural financial agent.",
+  "Trading while you sleep.",
+  "Powered by TraderLifestyle.",
+];
+
+function getTagline(): string {
+  return TAGLINES[Math.floor(Math.random() * TAGLINES.length)];
+}
+
+function showBanner(): void {
+  console.log(`
+🚗 K.I.T. ${VERSION} — ${getTagline()}
+`);
+}
+
 program
   .name('kit')
   .description('K.I.T. - Knight Industries Trading: Your AI Financial Agent')
-  .version(VERSION);
+  .version(VERSION)
+  .addHelpText('beforeAll', `
+🚗 K.I.T. ${VERSION} — ${getTagline()}
+`)
+  .addHelpText('afterAll', `
+Examples:
+  kit start                    Start the gateway with dashboard
+  kit start --port 19000       Start on custom port
+  kit onboard                  Interactive setup wizard
+  kit status                   Check system status
+  kit whatsapp login           Connect WhatsApp
+  kit config set ai.model gpt-4o  Change AI model
+  kit doctor                   Diagnose issues
+  kit update                   Update to latest version
+
+Docs: https://github.com/${GITHUB_REPO}
+`);
 
 // ═══════════════════════════════════════════════════════════════
 // ONBOARD

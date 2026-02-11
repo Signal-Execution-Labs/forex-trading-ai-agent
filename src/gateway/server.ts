@@ -283,16 +283,30 @@ export class GatewayServer extends EventEmitter {
     }
     
     this.state.status = 'starting';
-    console.log(`🤖 K.I.T. Gateway starting on ${this.config.host}:${this.config.port}...`);
+    
+    // Show professional banner like OpenClaw
+    const taglines = [
+      "Your wealth is my mission.",
+      "Knight Industries Trading at your service.",
+      "One AI. All your finances. Fully autonomous.",
+      "The supernatural financial agent.",
+      "Trading while you sleep.",
+    ];
+    const tagline = taglines[Math.floor(Math.random() * taglines.length)];
+    
+    console.log(`\n🚗 K.I.T. 2.0.0 — ${tagline}\n`);
+    console.log(`   Starting gateway on ${this.config.host}:${this.config.port}...`);
     
     return new Promise((resolve, reject) => {
       this.httpServer.listen(this.config.port, this.config.host, () => {
         this.state.status = 'running';
         this.state.startedAt = new Date();
         
-        console.log(`✅ K.I.T. Gateway running on ws://${this.config.host}:${this.config.port}`);
-        console.log(`   Agent: ${this.config.agent.name} (${this.config.agent.id})`);
-        console.log(`   Workspace: ${this.config.workspaceDir}`);
+        console.log(`\n✅ Gateway ready!`);
+        console.log(`   Dashboard:  http://${this.config.host}:${this.config.port}`);
+        console.log(`   WebSocket:  ws://${this.config.host}:${this.config.port}`);
+        console.log(`   Agent:      ${this.config.agent.name}`);
+        console.log(`   Workspace:  ${this.config.workspaceDir}`);
         
         // Start subsystems
         this.startSubsystems();
