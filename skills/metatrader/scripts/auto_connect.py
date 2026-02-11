@@ -279,24 +279,25 @@ if __name__ == "__main__":
                     # Pullback detection
                     pullback_to_ema21 = abs(current_price - ema21[-1]) < atr14[-1] * 0.5
                     
+                    # Convert numpy bools to Python native bools for JSON
                     print(json.dumps({
                         "success": True,
                         "symbol": symbol,
                         "timeframe": sys.argv[3] if len(sys.argv) > 3 else "M5",
-                        "current_price": round(current_price, 2),
-                        "ema21": round(ema21[-1], 2),
-                        "ema50": round(ema50[-1], 2),
+                        "current_price": float(round(current_price, 2)),
+                        "ema21": float(round(ema21[-1], 2)),
+                        "ema50": float(round(ema50[-1], 2)),
                         "ema_trend": ema_trend,
-                        "ema_cross_up": ema_cross_up,
-                        "ema_cross_down": ema_cross_down,
-                        "rsi": round(rsi14[-1], 1),
-                        "atr": round(atr14[-1], 2),
-                        "pullback_to_ema21": pullback_to_ema21,
+                        "ema_cross_up": bool(ema_cross_up),
+                        "ema_cross_down": bool(ema_cross_down),
+                        "rsi": float(round(rsi14[-1], 1)),
+                        "atr": float(round(atr14[-1], 2)),
+                        "pullback_to_ema21": bool(pullback_to_ema21),
                         "signal": {
-                            "buy": ema_trend == "BULLISH" and pullback_to_ema21 and rsi14[-1] > 55,
-                            "sell": ema_trend == "BEARISH" and pullback_to_ema21 and rsi14[-1] < 45,
-                            "sl_distance": round(atr14[-1] * 1.5, 2),
-                            "tp_distance": round(atr14[-1] * 3.0, 2)
+                            "buy": bool(ema_trend == "BULLISH" and pullback_to_ema21 and rsi14[-1] > 55),
+                            "sell": bool(ema_trend == "BEARISH" and pullback_to_ema21 and rsi14[-1] < 45),
+                            "sl_distance": float(round(atr14[-1] * 1.5, 2)),
+                            "tp_distance": float(round(atr14[-1] * 3.0, 2))
                         }
                     }))
                 mt5.shutdown()
