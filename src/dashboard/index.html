@@ -772,7 +772,7 @@
       changeEl.className = 'stat-sub ' + (change >= 0 ? 'positive' : 'negative');
       
       // Skills
-      document.getElementById('skillsCount').textContent = `${data.skillsActive || 0}/${data.skillsTotal || 37}`;
+      document.getElementById('skillsCount').textContent = `${data.skillsActive || 0}/${data.skillsTotal || 58}`;
       
       if (data.skills?.length) {
         const skillsList = document.getElementById('skillsList');
@@ -928,7 +928,7 @@
           }
           
           // Skills
-          document.getElementById('skillsCount').textContent = `${data.skillsActive || 0}/${data.skillsTotal || 37}`;
+          document.getElementById('skillsCount').textContent = `${data.skillsActive || 0}/${data.skillsTotal || 58}`;
           if (data.skills && data.skills.length) {
             const skillsList = document.getElementById('skillsList');
             skillsList.innerHTML = data.skills.slice(0, 8).map(s => `
