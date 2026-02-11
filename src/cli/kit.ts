@@ -623,6 +623,83 @@ program
   });
 
 // ═══════════════════════════════════════════════════════════════
+// SKILLS
+// ═══════════════════════════════════════════════════════════════
+program
+  .command('skills')
+  .description('List all available trading skills and their status')
+  .option('-c, --category <category>', 'Filter by category (trading, analysis, channel, defi, automation)')
+  .option('-e, --enabled', 'Show only enabled skills')
+  .option('-a, --all', 'Show all details')
+  .action(async (options) => {
+    const skillsDir = path.join(__dirname, '../../skills');
+    const configPath = path.join(KIT_HOME, 'config.json');
+    
+    let config: any = {};
+    if (fs.existsSync(configPath)) {
+      try { config = JSON.parse(fs.readFileSync(configPath, 'utf8')); } catch {}
+    }
+    
+    const enabledSkills = config.skills || {};
+    
+    // Categorize skills
+    const categories: Record<string, string[]> = {
+      trading: ['auto-trader', 'binary-options', 'copy-trader', 'grid-bot', 'signal-copier', 'metatrader', 'options-trader', 'stock-trader', 'dca-bot', 'twap-bot', 'trailing-grid', 'leveraged-grid', 'spot-futures-arb', 'prop-firm-manager'],
+      analysis: ['market-analysis', 'sentiment-analyzer', 'ai-predictor', 'ai-screener', 'backtester', 'whale-tracker', 'news-tracker', 'tradingview-realtime', 'tradingview-script', 'tradingview-webhook', 'quant-engine', 'risk-ai'],
+      portfolio: ['portfolio-tracker', 'rebalancer', 'multi-asset', 'tax-tracker', 'dividend-manager', 'performance-report', 'trade-journal'],
+      defi: ['defi-connector', 'defi-yield', 'arbitrage-finder', 'arbitrage-hunter', 'wallet-connector', 'smart-router', 'debank-aggregator'],
+      channel: ['telegram', 'discord', 'whatsapp', 'twitter-posting', 'kitbot-forum'],
+      exchange: ['exchange-connector', 'etoro-connector', 'payment-processor'],
+      utility: ['alert-system', 'multi-condition-alerts', 'risk-calculator', 'lot-size-calculator', 'pip-calculator', 'session-timer', 'task-scheduler', 'paper-trading', 'compliance', 'social-trading'],
+    };
+    
+    console.log(`
+╔═══════════════════════════════════════════════════════════════╗
+║          K.I.T. Trading Skills (54+)                          ║
+╚═══════════════════════════════════════════════════════════════╝
+`);
+    
+    const filterCat = options.category?.toLowerCase();
+    
+    for (const [category, skills] of Object.entries(categories)) {
+      if (filterCat && category !== filterCat) continue;
+      
+      const categoryEmoji: Record<string, string> = {
+        trading: '📈', analysis: '📊', portfolio: '💼', defi: '🔗', 
+        channel: '📱', exchange: '🏦', utility: '🔧'
+      };
+      
+      console.log(`${categoryEmoji[category] || '•'} ${category.toUpperCase()}`);
+      console.log('─'.repeat(50));
+      
+      for (const skillId of skills) {
+        const enabled = enabledSkills[skillId]?.enabled !== false;
+        const status = enabled ? '✅' : '○';
+        
+        if (options.enabled && !enabled) continue;
+        
+        // Check if skill folder exists
+        const skillPath = path.join(skillsDir, skillId);
+        const exists = fs.existsSync(skillPath);
+        
+        if (exists || !options.all) {
+          console.log(`  ${status} ${skillId}`);
+        }
+      }
+      console.log('');
+    }
+    
+    // Summary
+    const totalSkills = Object.values(categories).flat().length;
+    const enabledCount = Object.values(enabledSkills).filter((s: any) => s?.enabled !== false).length;
+    
+    console.log(`─`.repeat(50));
+    console.log(`Total: ${totalSkills} skills | Enabled: ${enabledCount}`);
+    console.log(`\nUse in chat: "skills" or "show skills"`);
+    console.log(`Enable skill: kit config set skills.<skill-id>.enabled true`);
+  });
+
+// ═══════════════════════════════════════════════════════════════
 // MODELS
 // ═══════════════════════════════════════════════════════════════
 program
