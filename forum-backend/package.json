@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "echo 'Build skipped - using tsx runtime'",
+    "build": "echo 'No build needed'",
     "start": "tsx src/index.ts",
     "db:seed": "tsx src/db/seed.ts"
   },
