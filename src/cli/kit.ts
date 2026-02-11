@@ -37,10 +37,18 @@ program
   .alias('init')
   .alias('setup')
   .description('Interactive setup wizard - configure K.I.T. step by step')
-  .action(async () => {
-    const { OnboardWizard } = await import('./onboard');
-    const wizard = new OnboardWizard();
-    await wizard.run();
+  .option('--classic', 'Use classic text-based onboarding')
+  .action(async (options) => {
+    if (options.classic) {
+      // Legacy text-based onboarding
+      const { OnboardWizard } = await import('./onboard');
+      const wizard = new OnboardWizard();
+      await wizard.run();
+    } else {
+      // New interactive terminal UI with multi-select
+      const { runInteractiveOnboarding } = await import('./onboard-interactive');
+      await runInteractiveOnboarding();
+    }
   });
 
 // ═══════════════════════════════════════════════════════════════

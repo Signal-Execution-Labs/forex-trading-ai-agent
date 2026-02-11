@@ -45,6 +45,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.24.0",
+    "@clack/prompts": "^1.0.0",
     "@google/generative-ai": "^0.8.0",
     "@slack/bolt": "^3.17.0",
     "@whiskeysockets/baileys": "^7.0.0-rc.9",
