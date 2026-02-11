@@ -69,6 +69,33 @@ program
     // Load config and merge with CLI options
     const config = loadConfig();
     
+    // Check if onboarding is needed
+    if (!config.onboarded) {
+      const onboardingPath = path.join(KIT_HOME, 'onboarding.json');
+      let needsOnboarding = true;
+      
+      if (fs.existsSync(onboardingPath)) {
+        try {
+          const state = JSON.parse(fs.readFileSync(onboardingPath, 'utf8'));
+          needsOnboarding = !state.completed;
+        } catch {}
+      }
+      
+      if (needsOnboarding) {
+        console.log('\n🚗 K.I.T. needs to be configured first!\n');
+        const { runInteractiveOnboarding } = await import('./onboard-interactive');
+        await runInteractiveOnboarding();
+        
+        // Reload config after onboarding
+        const newConfig = loadConfig();
+        if (!newConfig.onboarded) {
+          console.log('\n⚠️ Onboarding not completed. Run "kit onboard" to configure.\n');
+          process.exit(1);
+        }
+        Object.assign(config, newConfig);
+      }
+    }
+    
     const gatewayConfig = {
       port: parseInt(options.port, 10) || config.gateway?.port || 18799,
       host: options.host || config.gateway?.host || '127.0.0.1',
