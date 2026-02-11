@@ -81,7 +81,8 @@ export const TOOL_GROUPS: Record<string, string[]> = {
                     'mt5_close_position', 'mt5_price',
                     'strategy_save', 'strategy_start', 'strategy_stop', 'strategy_list', 'strategy_evaluate',
                     'auto_strategy_save', 'auto_strategy_start', 'auto_strategy_stop', 'auto_strategy_list', 'auto_strategy_evaluate',
-                    'ea_create', 'ea_start', 'ea_stop', 'ea_list', 'ea_status', 'ea_delete'],
+                    'ea_create', 'ea_start', 'ea_stop', 'ea_list', 'ea_status', 'ea_delete',
+                    'trading_create', 'trading_start', 'trading_stop', 'trading_list', 'trading_status', 'trading_delete'],
   'group:analysis': ['image_analyze', 'chart_analyze', 'screenshot_analyze', 'web_search', 'web_fetch'],
   'group:tts': ['tts_speak', 'tts_voices', 'tts_play'],
   'group:onboarding': ['onboarding_start', 'onboarding_continue', 'onboarding_status'],
@@ -507,6 +508,7 @@ import { MT5_TOOLS, MT5_TOOL_HANDLERS } from '../mt5-tools';
 import { STRATEGY_TOOLS, STRATEGY_TOOL_HANDLERS, initializeStrategies } from '../strategy-tools';
 import { UNIVERSAL_STRATEGY_TOOLS, UNIVERSAL_STRATEGY_HANDLERS, initializeUniversalStrategies } from '../universal-strategy';
 import { INTERNAL_EA_TOOLS, INTERNAL_EA_HANDLERS, initializeInternalEAs } from '../internal-ea';
+import { TRADING_BRAIN_TOOLS, TRADING_BRAIN_HANDLERS, initTradingBrain } from '../trading-brain';
 
 export function createDefaultToolRegistry(workspaceDir?: string): ToolRegistry {
   const registry = new ToolRegistry(workspaceDir);
@@ -717,6 +719,25 @@ export function createDefaultToolRegistry(workspaceDir?: string): ToolRegistry {
 
   // Initialize internal EAs on startup
   initializeInternalEAs();
+
+  // Trading Brain - UNIFIED SYSTEM (use this for all strategies!)
+  for (const tool of TRADING_BRAIN_TOOLS) {
+    const handler = TRADING_BRAIN_HANDLERS[tool.name];
+    if (handler) {
+      registry.register(
+        {
+          name: tool.name,
+          description: tool.description,
+          parameters: tool.parameters as ToolDefinition['parameters'],
+        },
+        async (args, _context) => handler(args),
+        'trading'
+      );
+    }
+  }
+
+  // Initialize Trading Brain on startup
+  initTradingBrain();
 
   return registry;
 }
