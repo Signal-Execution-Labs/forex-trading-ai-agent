@@ -181,33 +181,8 @@ export const MT5_TOOL_HANDLERS: Record<string, (args: any) => Promise<any>> = {
   },
   
   mt5_price: async (args: { symbol: string }) => {
-    // Get price via connect (includes tick info)
-    const scriptPath = path.join(__dirname, '../../skills/metatrader/scripts/auto_connect.py');
-    
-    const priceScript = `
-import MetaTrader5 as mt5
-import json
-if mt5.initialize():
-    tick = mt5.symbol_info_tick("${args.symbol}")
-    if tick:
-        print(json.dumps({"success": True, "symbol": "${args.symbol}", "bid": tick.bid, "ask": tick.ask, "spread": round((tick.ask - tick.bid) * 10000, 1)}))
-    else:
-        print(json.dumps({"success": False, "error": "Symbol not found"}))
-    mt5.shutdown()
-else:
-    print(json.dumps({"success": False, "error": "MT5 not connected"}))
-`;
-    
-    try {
-      const result = execSync(`python -c "${priceScript.replace(/"/g, '\\"').replace(/\n/g, ';')}"`, {
-        encoding: 'utf-8',
-        timeout: 10000,
-        windowsHide: true,
-      });
-      return JSON.parse(result.trim());
-    } catch (error: any) {
-      return { success: false, error: error.message };
-    }
+    // Use the existing price command in auto_connect.py
+    return execMT5Python(`price ${args.symbol}`);
   },
 };
 
