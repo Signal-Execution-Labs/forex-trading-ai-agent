@@ -4,6 +4,104 @@ Continuous research into professional finance apps to improve K.I.T.
 
 ---
 
+## Research Session: 2026-02-11 (Evening - 19:38)
+
+### Research: TradingView Professional Features
+
+**TradingView Features Analyzed:**
+- Up to 50 indicators per chart
+- 1000+ price and technical alerts
+- Paper trading feature
+- Wyckoff Schematic indicators for smart money detection
+- 16 charts per tab for institutional traders
+- 40K historical bars
+- Multi-asset: stocks, forex, crypto, indices
+- 100+ million users worldwide
+- 2 million instruments from 150+ exchanges
+
+**Gap Identified:** TradingView doesn't have built-in Wyckoff analysis automation!
+
+### New Skills Implemented
+
+#### Skill #64: Wyckoff Analysis ✅
+
+**Category:** Analysis | **Inspired by:** TradingView Wyckoff Schematic indicator, Wyckoff Method
+
+**What It Does:**
+- Automatically detects Wyckoff Method accumulation and distribution patterns
+- Identifies smart money movements and institutional behavior
+- Phase detection with confidence scoring
+- Volume spread analysis (effort vs result)
+- Composite Man activity tracking
+
+**Key Features:**
+1. **Phase Detection**: Accumulation, Distribution, Markup, Markdown
+2. **Sub-Phase Identification**: Phase A/B/C/D/E with specific events
+3. **Wyckoff Events**: PS, SC, AR, ST, Spring, UT, SOS, SOW, LPS, LPSY
+4. **Volume Analysis**: Effort/Result, No Supply, No Demand, Stopping Volume
+5. **Composite Man**: Institutional position tracking
+6. **Projections**: Target prices and invalidation levels
+
+**Event Detection:**
+- **Selling Climax (SC)**: High volume capitulation with reversal
+- **Buying Climax (BC)**: High volume euphoria with reversal
+- **Spring**: False breakdown below support - bullish reversal
+- **Upthrust (UT)**: False breakout above resistance - bearish reversal
+- **Sign of Strength (SOS)**: Strong advance on increased volume
+- **Sign of Weakness (SOW)**: Strong decline on increased volume
+
+**Files Created:**
+- `skills/wyckoff-analysis/SKILL.md`
+- `skills/wyckoff-analysis/wyckoff.ts`
+
+---
+
+#### Skill #65: Market Profile ✅
+
+**Category:** Analysis | **Inspired by:** TradingView TPO Profile, Sierra Chart, NinjaTrader
+
+**What It Does:**
+- TPO (Time Price Opportunity) profile analysis
+- Volume Profile with POC, VAH, VAL identification
+- Market structure understanding for institutional trading
+- Session-based profiles (Asia, London, NY)
+- VWAP with standard deviation bands
+
+**Key Features:**
+1. **TPO Profile**: Time-based activity mapping with letter series
+2. **Volume Profile**: Fixed range volume distribution
+3. **Value Area**: 70% of trading activity zone
+4. **Point of Control (POC)**: Highest volume price level
+5. **High/Low Volume Nodes**: Support/resistance identification
+6. **Profile Shapes**: Normal, P-Shape, b-Shape, D-Shape detection
+7. **Session Analysis**: Asia/London/NY separate profiles
+8. **VWAP**: Volume-weighted average with ±1/2/3σ bands
+
+**Profile Shape Signals:**
+- **Normal/Bell**: Balanced market, rotational
+- **P-Shape**: Shorts trapped, potential breakout up
+- **b-Shape**: Longs trapped, potential breakout down
+- **D-Shape**: Trend day, strong directional conviction
+
+**Files Created:**
+- `skills/market-profile/SKILL.md`
+- `skills/market-profile/profile.ts`
+
+---
+
+### K.I.T. Skill Count: 67 Total (+2 this session)
+
+| Category | Count | New |
+|----------|-------|-----|
+| Analysis | 7 | +2 (wyckoff-analysis, market-profile) |
+| DeFi | 5 | |
+| Trading Bots | 8 | |
+| Social | 3 | |
+| Portfolio | 4 | |
+| All Others | 40 | |
+
+---
+
 ## Research Session: 2026-02-11 (Late Afternoon - 17:42)
 
 ### Research: DeFi Dashboards (Zapper, DeBank, Zerion)
