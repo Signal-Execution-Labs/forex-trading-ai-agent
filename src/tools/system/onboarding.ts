@@ -197,15 +197,15 @@ const STEPS: Step[] = [
 
 Welcome. I am K.I.T., your autonomous financial agent.
 
-**66 Professional Skills:**
-🤖 AI & Analysis (8) - Predictions, sentiment, screening
-📈 Trading (12) - Auto-trader, smart routing, options
-🔄 Automation (10) - Grid bots, DCA, alerts
-⚡ Arbitrage (5) - Cross-exchange, funding rate
-🌐 DeFi (5) - Yield hunting, LP management
-📡 Social (6) - Copy trading, whale tracking
+**74 Professional Skills:**
+🤖 AI & Analysis (9) - Predictions, sentiment, screening
+📈 Trading (14) - Auto-trader, smart routing, options
+🔄 Automation (12) - Grid bots, DCA, alerts, scheduling
+⚡ Arbitrage (6) - Cross-exchange, funding rate, spot-futures
+🌐 DeFi (6) - Yield hunting, LP management, aggregators
+📡 Social (7) - Copy trading, whale tracking, signals
 🛡️ Risk & Tax (6) - Risk AI, tax calculator
-💰 Portfolio (8) - Tracking, backtesting
+💰 Portfolio (8) - Tracking, backtesting, rebalancing
 🔗 Connectors (6) - Exchanges, MT5, TradingView
 
 **What should I call you?**
@@ -775,15 +775,15 @@ Select (1-3):
 **Autonomy:** ${state.data.autonomyLevel}
 **Style:** ${state.data.tradingStyle}
 
-**🛠️ 66 Skills Ready:**
-• 🤖 AI & Analysis (8): predictions, sentiment, screening
-• 📈 Trading (12): auto-trader, smart router, options
-• 🔄 Automation (10): grid bots, DCA, alerts
-• ⚡ Arbitrage (5): cross-exchange, funding rate
-• 🌐 DeFi (5): yield hunting, LP management
-• 📡 Social (6): copy trading, whale tracker
+**🛠️ 74 Skills Ready:**
+• 🤖 AI & Analysis (9): predictions, sentiment, screening
+• 📈 Trading (14): auto-trader, smart router, options
+• 🔄 Automation (12): grid bots, DCA, alerts, scheduling
+• ⚡ Arbitrage (6): cross-exchange, funding rate, spot-futures
+• 🌐 DeFi (6): yield hunting, LP management, aggregators
+• 📡 Social (7): copy trading, whale tracker, signals
 • 🛡️ Risk & Tax (6): risk AI, tax calculator
-• 💰 Portfolio (8): tracking, backtesting
+• 💰 Portfolio (8): tracking, backtesting, rebalancing
 • 🔗 Connectors (6): exchanges, MT5, TradingView
 
 **Files Created:**
