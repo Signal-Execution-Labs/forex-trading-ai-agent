@@ -137,6 +137,34 @@ def close_position(ticket: int):
     
     return {"success": True, "profit": pos.profit}
 
+def modify_sl(ticket: int, new_sl: float):
+    """Modifiziert den Stop Loss einer Position (für Trailing Stop)"""
+    if not mt5.initialize():
+        return {"success": False, "error": "MT5 nicht verbunden"}
+    
+    position = mt5.positions_get(ticket=ticket)
+    if not position:
+        return {"success": False, "error": f"Position {ticket} nicht gefunden"}
+    
+    pos = position[0]
+    
+    request = {
+        "action": mt5.TRADE_ACTION_SLTP,
+        "symbol": pos.symbol,
+        "position": ticket,
+        "sl": new_sl,
+        "tp": pos.tp,
+        "magic": 123456,
+        "comment": "K.I.T. Trailing SL",
+    }
+    
+    result = mt5.order_send(request)
+    
+    if result.retcode != mt5.TRADE_RETCODE_DONE:
+        return {"success": False, "error": f"Modify failed: {result.comment}"}
+    
+    return {"success": True, "new_sl": new_sl}
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print(json.dumps(connect()))
@@ -158,6 +186,9 @@ if __name__ == "__main__":
             print(json.dumps(market_order(sys.argv[2], "sell", float(sys.argv[3]), sl, tp)))
         elif cmd == "close" and len(sys.argv) >= 3:
             print(json.dumps(close_position(int(sys.argv[2]))))
+        elif cmd == "modify_sl" and len(sys.argv) >= 4:
+            # modify_sl TICKET NEW_SL
+            print(json.dumps(modify_sl(int(sys.argv[2]), float(sys.argv[3]))))
         elif cmd == "price" and len(sys.argv) >= 3:
             # Get current price
             if not mt5.initialize():

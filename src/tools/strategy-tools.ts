@@ -378,6 +378,39 @@ async function executeStrategyCheck(strategyName: string): Promise<void> {
   
   strategy.last_signal = signal || 'none';
   
+  // ============ TRAILING STOP MANAGEMENT ============
+  // Check existing positions and apply trailing stop if in profit
+  if (strategy.trailing_stop_atr && assetPositions.length > 0) {
+    const atr = indicators.atr;
+    const trailingActivation = atr * strategy.trailing_stop_atr;
+    
+    for (const pos of assetPositions) {
+      const profitDistance = pos.type === 'buy' 
+        ? (indicators.current_price - pos.price_open)
+        : (pos.price_open - indicators.current_price);
+      
+      if (profitDistance >= trailingActivation) {
+        // Calculate new trailing SL
+        let newSL: number;
+        if (pos.type === 'buy') {
+          newSL = Math.round((indicators.current_price - atr * strategy.sl_atr_multiplier) * 100) / 100;
+          // Only move SL up, never down
+          if (newSL > pos.sl) {
+            log(`📈 Trailing SL for BUY #${pos.ticket}: ${pos.sl} → ${newSL}`);
+            execMT5(`modify_sl ${pos.ticket} ${newSL}`);
+          }
+        } else {
+          newSL = Math.round((indicators.current_price + atr * strategy.sl_atr_multiplier) * 100) / 100;
+          // Only move SL down, never up
+          if (newSL < pos.sl) {
+            log(`📉 Trailing SL for SELL #${pos.ticket}: ${pos.sl} → ${newSL}`);
+            execMT5(`modify_sl ${pos.ticket} ${newSL}`);
+          }
+        }
+      }
+    }
+  }
+  
   if (!signal) {
     log(`⏸️ No signal - waiting...`);
     saveStrategies(strategies);

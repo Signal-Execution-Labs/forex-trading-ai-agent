@@ -121,6 +121,24 @@ export const MT5_TOOLS: ChatToolDef[] = [
       required: ['symbol'],
     },
   },
+  {
+    name: 'mt5_modify_sl',
+    description: 'Modify the stop loss of an open position (for trailing stop)',
+    parameters: {
+      type: 'object',
+      properties: {
+        ticket: {
+          type: 'number',
+          description: 'Position ticket number',
+        },
+        new_sl: {
+          type: 'number',
+          description: 'New stop loss price',
+        },
+      },
+      required: ['ticket', 'new_sl'],
+    },
+  },
 ];
 
 // ============================================================================
@@ -211,6 +229,10 @@ export const MT5_TOOL_HANDLERS: Record<string, (args: any) => Promise<any>> = {
   mt5_indicators: async (args: { symbol: string; timeframe?: string; bars?: number }) => {
     const { symbol, timeframe = 'M5', bars = 100 } = args;
     return execMT5Python(`indicators ${symbol} ${timeframe} ${bars}`);
+  },
+  
+  mt5_modify_sl: async (args: { ticket: number; new_sl: number }) => {
+    return execMT5Python(`modify_sl ${args.ticket} ${args.new_sl}`);
   },
 };
 
