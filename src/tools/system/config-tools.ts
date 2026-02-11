@@ -307,9 +307,10 @@ export const statusToolHandler: ToolHandler = async (args, context: ToolContext)
     } : null,
     
     ai: config?.ai ? {
-      provider: config.ai.defaultProvider || config.ai.provider,
+      provider: config.ai.defaultProvider || config.ai.provider || 'openai',
+      model: config.ai.model || config.ai.defaultModel || 'gpt-4o-mini',
       hasApiKey: !!(config.ai.apiKey || config.ai.providers?.[config.ai.defaultProvider]?.apiKey),
-    } : null,
+    } : { provider: 'openai', model: 'gpt-4o-mini', hasApiKey: false },
     
     trading: config?.trading ? {
       mode: config.trading.mode,
