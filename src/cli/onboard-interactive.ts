@@ -25,6 +25,7 @@ interface OnboardingData {
   riskTolerance: string;
   maxPositionSize: string;
   markets: string[];
+  enabledTools: string[];
   autonomyLevel: string;
   timezone: string;
   aiProvider: string;
@@ -134,7 +135,70 @@ ${color.cyan('╚═════════════════════
   if (p.isCancel(markets)) return handleCancel();
   data.markets = markets as string[];
 
-  // Step 6: Autonomy Level
+  // Step 6: Tools/Skills Selection (Multi-select)
+  console.log(`\n${color.cyan('━━━ Available K.I.T. Tools ━━━')}\n`);
+  
+  // Build tool options based on selected markets
+  const toolOptions: Array<{ value: string; label: string; hint?: string }> = [];
+  
+  // Trading Tools (always available)
+  toolOptions.push(
+    { value: 'auto_trader', label: '🤖 Auto-Trader', hint: 'Automated trading strategies' },
+    { value: 'grid_bot', label: '📊 Grid Bot', hint: 'Grid trading automation' },
+    { value: 'dca_bot', label: '💰 DCA Bot', hint: 'Dollar cost averaging' },
+    { value: 'copy_trader', label: '👥 Copy Trading', hint: 'Copy successful traders' },
+    { value: 'signal_copier', label: '📡 Signal Copier', hint: 'Copy signals from Telegram channels' },
+  );
+  
+  // Market-specific tools
+  if ((markets as string[]).includes('crypto')) {
+    toolOptions.push(
+      { value: 'whale_tracker', label: '🐋 Whale Tracker', hint: 'Track large crypto movements' },
+      { value: 'defi_dashboard', label: '🔗 DeFi Dashboard', hint: 'Staking, lending, farming' },
+      { value: 'airdrop_tracker', label: '🎁 Airdrop Tracker', hint: 'Find airdrop opportunities' },
+    );
+  }
+  
+  if ((markets as string[]).includes('forex') || (markets as string[]).includes('options')) {
+    toolOptions.push(
+      { value: 'binary_trader', label: '📈 Binary Options', hint: 'Binary options trading' },
+      { value: 'mt5_connector', label: '💹 MT5 Connector', hint: 'MetaTrader 5 integration' },
+    );
+  }
+  
+  // Analysis Tools
+  toolOptions.push(
+    { value: 'market_analysis', label: '📊 Market Analysis', hint: 'Technical analysis' },
+    { value: 'sentiment_analyzer', label: '🧠 Sentiment Analyzer', hint: 'Social media sentiment' },
+    { value: 'news_tracker', label: '📰 News Tracker', hint: 'Financial news alerts' },
+    { value: 'ai_predictor', label: '🔮 AI Predictor', hint: 'Price predictions' },
+  );
+  
+  // Portfolio Tools
+  toolOptions.push(
+    { value: 'portfolio_tracker', label: '💼 Portfolio Tracker', hint: 'Track all your positions' },
+    { value: 'risk_calculator', label: '⚖️ Risk Calculator', hint: 'Position sizing' },
+    { value: 'trade_journal', label: '📝 Trade Journal', hint: 'Log and analyze trades' },
+    { value: 'tax_calculator', label: '📋 Tax Calculator', hint: 'Calculate crypto taxes' },
+  );
+  
+  // Utility Tools
+  toolOptions.push(
+    { value: 'alerts', label: '🔔 Price Alerts', hint: 'Custom price notifications' },
+    { value: 'backtester', label: '🧪 Backtester', hint: 'Test strategies on history' },
+    { value: 'arbitrage_finder', label: '🔄 Arbitrage Finder', hint: 'Find price differences' },
+  );
+
+  const enabledTools = await p.multiselect({
+    message: 'Which tools do you want to enable? (Space to select)',
+    options: toolOptions,
+    required: true,
+    initialValues: ['auto_trader', 'portfolio_tracker', 'market_analysis', 'alerts'],
+  });
+  if (p.isCancel(enabledTools)) return handleCancel();
+  data.enabledTools = enabledTools as string[];
+
+  // Step 7: Autonomy Level (was Step 6)
   const autonomy = await p.select({
     message: 'How much control should K.I.T. have?',
     options: [
@@ -270,6 +334,7 @@ ${color.green('╚════════════════════�
 ${color.bold('Profile:')} ${data.userName}
 ${color.bold('AI:')} ${data.aiProvider}/${data.aiModel}
 ${color.bold('Markets:')} ${data.markets?.join(', ')}
+${color.bold('Tools:')} ${data.enabledTools?.length || 0} enabled
 ${color.bold('Risk:')} ${data.riskTolerance} (${data.maxPositionSize}% max)
 ${color.bold('Autonomy:')} ${data.autonomyLevel}
 ${color.bold('Channels:')} ${data.channels?.join(', ')}
@@ -373,6 +438,9 @@ async function saveOnboardingData(data: OnboardingData): Promise<void> {
     trading: {
       style: data.tradingStyle,
       maxPositionSize: parseFloat(data.maxPositionSize),
+    },
+    tools: {
+      enabled: data.enabledTools || [],
     },
     channels: {},
   };
@@ -500,7 +568,10 @@ function generateAGENTS(data: OnboardingData): string {
 3. Log all trades to memory
 4. Report significant events to ${data.userName}
 
-## Available Skills (50+)
+## Enabled Tools
+${data.enabledTools?.map((t: string) => `- ✅ ${t}`).join('\n') || '- No tools selected'}
+
+## All Available Skills (60+)
 Run \`skills_list\` to see all available trading skills.
 
 ## Channels
