@@ -141,7 +141,7 @@ export const tradingSkillTools: Tool[] = [
       const state = loadState('grid-bot.json') as any;
       const botId = `grid_${Date.now()}`;
       const gridCount = params.gridCount || 10;
-      const gridSize = ((params.upperPrice as number) - (params.lowerPrice as number)) / gridCount;
+      const gridSize = (Number(params.upperPrice) - Number(params.lowerPrice)) / gridCount;
       
       state.grids = state.grids || [];
       state.grids.push({
@@ -347,7 +347,7 @@ export const tradingSkillTools: Tool[] = [
         trade: {
           id: tradeId,
           symbol: params.symbol,
-          direction: params.direction?.toUpperCase(),
+          direction: String(params.direction || '').toUpperCase(),
           expiry: params.expiry,
           amount: params.amount || 10,
         },
@@ -594,10 +594,10 @@ export const portfolioSkillTools: Tool[] = [
       required: ['symbol', 'riskPercent', 'stopLoss'],
     },
     handler: async (params) => {
-      const accountSize = params.accountSize || 10000;
-      const riskAmount = (accountSize * ((params.riskPercent as number) || 2)) / 100;
-      const entryPrice = params.entryPrice || 67500;
-      const stopDistance = Math.abs(entryPrice - (params.stopLoss as number));
+      const accountSize = Number(params.accountSize) || 10000;
+      const riskAmount = (accountSize * (Number(params.riskPercent) || 2)) / 100;
+      const entryPrice = Number(params.entryPrice) || 67500;
+      const stopDistance = Math.abs(entryPrice - Number(params.stopLoss));
       const positionSize = riskAmount / stopDistance;
       
       return {
@@ -639,7 +639,7 @@ export const portfolioSkillTools: Tool[] = [
       const tradeId = `trade_${Date.now()}`;
       
       const pnl = params.exitPrice 
-        ? ((params.exitPrice as number) - (params.entryPrice as number)) * (params.amount || 1)
+        ? (Number(params.exitPrice) - Number(params.entryPrice)) * (Number(params.amount) || 1)
         : null;
       
       state.trades = state.trades || [];

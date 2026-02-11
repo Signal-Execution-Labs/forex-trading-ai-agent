@@ -252,5 +252,5 @@ export interface Tool {
     }>;
     required?: string[];
   };
-  handler: (params: Record<string, unknown>) => Promise<unknown>;
+  handler: (params: any) => Promise<any>;
 }
