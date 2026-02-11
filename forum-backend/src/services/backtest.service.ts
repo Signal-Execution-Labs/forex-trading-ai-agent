@@ -1,71 +1,9 @@
-import { db } from '../db/database.js';
+import { db, Backtest } from '../db/database.js';
 import { v4 as uuidv4 } from 'uuid';
 
-export interface Backtest {
-  id: string;
-  agent_id: string;
-  strategy_id: string;
-  symbol: string;
-  timeframe: string;
-  start_date: string;
-  end_date: string;
-  initial_capital: number;
-  parameters?: string;
-  status: 'pending' | 'running' | 'completed' | 'failed';
-  // Results
-  total_trades?: number;
-  winning_trades?: number;
-  losing_trades?: number;
-  net_profit?: number;
-  net_profit_pct?: number;
-  max_drawdown?: number;
-  sharpe_ratio?: number;
-  profit_factor?: number;
-  win_rate?: number;
-  equity_curve?: string;
-  trades?: string;
-  error_message?: string;
-  created_at: string;
-  started_at?: string;
-  completed_at?: string;
-}
+export type { Backtest };
 
 export class BacktestService {
-  static init() {
-    // Create backtests table if not exists
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS backtests (
-        id TEXT PRIMARY KEY,
-        agent_id TEXT NOT NULL,
-        strategy_id TEXT NOT NULL,
-        symbol TEXT NOT NULL,
-        timeframe TEXT NOT NULL,
-        start_date TEXT NOT NULL,
-        end_date TEXT NOT NULL,
-        initial_capital REAL DEFAULT 10000,
-        parameters TEXT,
-        status TEXT DEFAULT 'pending',
-        total_trades INTEGER,
-        winning_trades INTEGER,
-        losing_trades INTEGER,
-        net_profit REAL,
-        net_profit_pct REAL,
-        max_drawdown REAL,
-        sharpe_ratio REAL,
-        profit_factor REAL,
-        win_rate REAL,
-        equity_curve TEXT,
-        trades TEXT,
-        error_message TEXT,
-        created_at TEXT DEFAULT (datetime('now')),
-        started_at TEXT,
-        completed_at TEXT,
-        FOREIGN KEY (agent_id) REFERENCES agents(id),
-        FOREIGN KEY (strategy_id) REFERENCES strategies(id)
-      )
-    `);
-  }
-
   static create(agentId: string, data: {
     strategy_id: string;
     symbol: string;
@@ -75,31 +13,28 @@ export class BacktestService {
     initial_capital?: number;
     parameters?: Record<string, any>;
   }): Backtest {
-    const id = uuidv4();
-    
-    const stmt = db.prepare(`
-      INSERT INTO backtests (id, agent_id, strategy_id, symbol, timeframe, start_date, end_date, initial_capital, parameters)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
+    const backtest: Backtest = {
+      id: uuidv4(),
+      agent_id: agentId,
+      strategy_id: data.strategy_id,
+      symbol: data.symbol,
+      timeframe: data.timeframe,
+      start_date: data.start_date,
+      end_date: data.end_date,
+      initial_capital: data.initial_capital || 10000,
+      parameters: data.parameters ? JSON.stringify(data.parameters) : undefined,
+      status: 'pending',
+      created_at: new Date().toISOString(),
+    };
 
-    stmt.run(
-      id,
-      agentId,
-      data.strategy_id,
-      data.symbol,
-      data.timeframe,
-      data.start_date,
-      data.end_date,
-      data.initial_capital || 10000,
-      data.parameters ? JSON.stringify(data.parameters) : null
-    );
+    db.data!.backtests.push(backtest);
+    db.write();
 
-    return this.getById(id)!;
+    return backtest;
   }
 
-  static getById(id: string): Backtest | null {
-    const stmt = db.prepare('SELECT * FROM backtests WHERE id = ?');
-    return stmt.get(id) as Backtest | null;
+  static getById(id: string): Backtest | undefined {
+    return db.data!.backtests.find(b => b.id === id);
   }
 
   static list(options: {
@@ -113,44 +48,34 @@ export class BacktestService {
     const limit = Math.min(options.limit || 20, 50);
     const offset = (page - 1) * limit;
 
-    const conditions: string[] = [];
-    const params: any[] = [];
+    let backtests = [...db.data!.backtests];
 
     if (options.agentId) {
-      conditions.push('agent_id = ?');
-      params.push(options.agentId);
+      backtests = backtests.filter(b => b.agent_id === options.agentId);
     }
     if (options.strategyId) {
-      conditions.push('strategy_id = ?');
-      params.push(options.strategyId);
+      backtests = backtests.filter(b => b.strategy_id === options.strategyId);
     }
     if (options.status) {
-      conditions.push('status = ?');
-      params.push(options.status);
+      backtests = backtests.filter(b => b.status === options.status);
     }
 
-    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    // Sort by created_at desc
+    backtests.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-    const countStmt = db.prepare(`SELECT COUNT(*) as count FROM backtests ${whereClause}`);
-    const { count: total } = countStmt.get(...params) as { count: number };
+    const total = backtests.length;
+    const paged = backtests.slice(offset, offset + limit);
 
-    const stmt = db.prepare(`
-      SELECT * FROM backtests ${whereClause}
-      ORDER BY created_at DESC
-      LIMIT ? OFFSET ?
-    `);
-
-    const backtests = stmt.all(...params, limit, offset) as Backtest[];
-    return { backtests, total };
+    return { backtests: paged, total };
   }
 
   static startBacktest(id: string): void {
-    const stmt = db.prepare(`
-      UPDATE backtests 
-      SET status = 'running', started_at = datetime('now')
-      WHERE id = ?
-    `);
-    stmt.run(id);
+    const idx = db.data!.backtests.findIndex(b => b.id === id);
+    if (idx !== -1) {
+      db.data!.backtests[idx].status = 'running';
+      db.data!.backtests[idx].started_at = new Date().toISOString();
+      db.write();
+    }
   }
 
   static completeBacktest(id: string, results: {
@@ -165,54 +90,41 @@ export class BacktestService {
     win_rate: number;
     equity_curve?: number[];
     trades?: any[];
-  }): Backtest | null {
-    const stmt = db.prepare(`
-      UPDATE backtests SET
-        status = 'completed',
-        total_trades = ?,
-        winning_trades = ?,
-        losing_trades = ?,
-        net_profit = ?,
-        net_profit_pct = ?,
-        max_drawdown = ?,
-        sharpe_ratio = ?,
-        profit_factor = ?,
-        win_rate = ?,
-        equity_curve = ?,
-        trades = ?,
-        completed_at = datetime('now')
-      WHERE id = ?
-    `);
+  }): Backtest | undefined {
+    const idx = db.data!.backtests.findIndex(b => b.id === id);
+    if (idx === -1) return undefined;
 
-    stmt.run(
-      results.total_trades,
-      results.winning_trades,
-      results.losing_trades,
-      results.net_profit,
-      results.net_profit_pct,
-      results.max_drawdown,
-      results.sharpe_ratio,
-      results.profit_factor,
-      results.win_rate,
-      results.equity_curve ? JSON.stringify(results.equity_curve) : null,
-      results.trades ? JSON.stringify(results.trades) : null,
-      id
-    );
+    db.data!.backtests[idx] = {
+      ...db.data!.backtests[idx],
+      status: 'completed',
+      total_trades: results.total_trades,
+      winning_trades: results.winning_trades,
+      losing_trades: results.losing_trades,
+      net_profit: results.net_profit,
+      net_profit_pct: results.net_profit_pct,
+      max_drawdown: results.max_drawdown,
+      sharpe_ratio: results.sharpe_ratio,
+      profit_factor: results.profit_factor,
+      win_rate: results.win_rate,
+      equity_curve: results.equity_curve ? JSON.stringify(results.equity_curve) : undefined,
+      trades: results.trades ? JSON.stringify(results.trades) : undefined,
+      completed_at: new Date().toISOString(),
+    };
 
-    return this.getById(id);
+    db.write();
+    return db.data!.backtests[idx];
   }
 
-  static failBacktest(id: string, errorMessage: string): Backtest | null {
-    const stmt = db.prepare(`
-      UPDATE backtests SET
-        status = 'failed',
-        error_message = ?,
-        completed_at = datetime('now')
-      WHERE id = ?
-    `);
-    stmt.run(errorMessage, id);
+  static failBacktest(id: string, errorMessage: string): Backtest | undefined {
+    const idx = db.data!.backtests.findIndex(b => b.id === id);
+    if (idx === -1) return undefined;
 
-    return this.getById(id);
+    db.data!.backtests[idx].status = 'failed';
+    db.data!.backtests[idx].error_message = errorMessage;
+    db.data!.backtests[idx].completed_at = new Date().toISOString();
+
+    db.write();
+    return db.data!.backtests[idx];
   }
 
   static getStrategyStats(strategyId: string): {
@@ -222,23 +134,36 @@ export class BacktestService {
     best_return: number | null;
     worst_drawdown: number | null;
   } {
-    const stmt = db.prepare(`
-      SELECT 
-        COUNT(*) as total_backtests,
-        AVG(net_profit_pct) as avg_return,
-        AVG(sharpe_ratio) as avg_sharpe,
-        MAX(net_profit_pct) as best_return,
-        MAX(max_drawdown) as worst_drawdown
-      FROM backtests 
-      WHERE strategy_id = ? AND status = 'completed'
-    `);
-    
-    return stmt.get(strategyId) as any;
+    const completed = db.data!.backtests.filter(
+      b => b.strategy_id === strategyId && b.status === 'completed'
+    );
+
+    if (completed.length === 0) {
+      return {
+        total_backtests: 0,
+        avg_return: null,
+        avg_sharpe: null,
+        best_return: null,
+        worst_drawdown: null,
+      };
+    }
+
+    const returns = completed.map(b => b.net_profit_pct || 0);
+    const sharpes = completed.map(b => b.sharpe_ratio || 0);
+    const drawdowns = completed.map(b => b.max_drawdown || 0);
+
+    return {
+      total_backtests: completed.length,
+      avg_return: returns.reduce((a, b) => a + b, 0) / returns.length,
+      avg_sharpe: sharpes.reduce((a, b) => a + b, 0) / sharpes.length,
+      best_return: Math.max(...returns),
+      worst_drawdown: Math.max(...drawdowns),
+    };
   }
 
   // Simple backtest simulation (placeholder - replace with real engine)
   static async runBacktest(backtest: Backtest): Promise<void> {
-    this.startBacktest(backtest.id);
+    BacktestService.startBacktest(backtest.id);
 
     try {
       // Simulate backtest execution
@@ -257,7 +182,7 @@ export class BacktestService {
       const netProfitPct = ((winningTrades * avgWin) - (losingTrades * avgLoss)) / 100 * 100;
       const netProfit = backtest.initial_capital * (netProfitPct / 100);
 
-      this.completeBacktest(backtest.id, {
+      BacktestService.completeBacktest(backtest.id, {
         total_trades: totalTrades,
         winning_trades: winningTrades,
         losing_trades: losingTrades,
@@ -272,10 +197,7 @@ export class BacktestService {
         ),
       });
     } catch (error: any) {
-      this.failBacktest(backtest.id, error.message);
+      BacktestService.failBacktest(backtest.id, error.message);
     }
   }
 }
-
-// Initialize table
-BacktestService.init();

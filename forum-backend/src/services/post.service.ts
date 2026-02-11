@@ -121,7 +121,7 @@ export class PostService {
     return reply;
   }
 
-  static getReplyById(id: string): (Reply & { agent_name?: string }) | undefined {
+  static getReplyById(id: string): (Reply & { agent_name?: string; agent_avatar?: string }) | undefined {
     const reply = dbHelpers.findReply(id);
     if (!reply) return undefined;
 

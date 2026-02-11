@@ -82,13 +82,7 @@ export interface CompetitionTrade {
   closedAt?: string;
 }
 
-// Extend db.data type
-declare module '../db/database.ts' {
-  interface DbSchema {
-    competitions?: Competition[];
-    competition_trades?: CompetitionTrade[];
-  }
-}
+// Types already defined in database.ts
 
 class CompetitionService {
   async createCompetition(data: Omit<Competition, 'id' | 'status' | 'participants' | 'leaderboard' | 'createdAt' | 'updatedAt'>): Promise<Competition> {
@@ -260,9 +254,9 @@ class CompetitionService {
     const winRate = trades.length > 0 ? (wins / trades.length) * 100 : 0;
     
     const returns = trades.map((t: CompetitionTrade) => t.pnl || 0);
-    const avgReturn = returns.length > 0 ? returns.reduce((a, b) => a + b, 0) / returns.length : 0;
+    const avgReturn = returns.length > 0 ? returns.reduce((a: number, b: number) => a + b, 0) / returns.length : 0;
     const stdDev = returns.length > 1 
-      ? Math.sqrt(returns.reduce((sum, r) => sum + Math.pow(r - avgReturn, 2), 0) / (returns.length - 1))
+      ? Math.sqrt(returns.reduce((sum: number, r: number) => sum + Math.pow(r - avgReturn, 2), 0) / (returns.length - 1))
       : 0;
     const sharpe = stdDev > 0 ? (avgReturn / stdDev) * Math.sqrt(252) : 0;
     
