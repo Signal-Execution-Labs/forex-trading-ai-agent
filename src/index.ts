@@ -86,6 +86,20 @@ export {
 // Model Providers
 export * from './providers';
 
+// Hooks System (OpenClaw-inspired event automation)
+export {
+  getHookRegistry,
+  emitTradingEvent,
+  createHook,
+  HookRegistry,
+  HookEvent,
+  HookContext,
+  HookMetadata,
+  Hook,
+  HookHandler,
+  HookResult,
+} from './hooks';
+
 // Version
 export const VERSION = '2.0.0';
 

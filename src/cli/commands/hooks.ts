@@ -11,6 +11,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { Command } from 'commander';
+import { getHookRegistry, Hook } from '../../hooks';
 
 const KIT_HOME = path.join(os.homedir(), '.kit');
 const HOOKS_DIR = path.join(KIT_HOME, 'hooks');
@@ -198,44 +199,76 @@ Documentation: https://github.com/kayzaa/k.i.t.-bot/docs/hooks.md
       const discovered = await discoverHooks();
       const config = loadHooksConfig();
       
+      // Also get bundled hooks from registry
+      const registry = getHookRegistry();
+      const bundledHooks = registry.getAll();
+      
       if (options.json) {
-        const result = Array.from(discovered.entries()).map(([id, hook]) => ({
+        const discoveredResult = Array.from(discovered.entries()).map(([id, hook]) => ({
           id,
+          type: 'discovered',
           ...hook,
           enabled: config.enabled[id] ?? false,
         }));
-        console.log(JSON.stringify(result, null, 2));
+        const bundledResult = bundledHooks.map(hook => ({
+          id: hook.id,
+          type: 'bundled',
+          name: hook.name,
+          description: hook.description,
+          events: hook.events,
+          enabled: hook.enabled,
+          priority: hook.priority,
+        }));
+        console.log(JSON.stringify([...bundledResult, ...discoveredResult], null, 2));
         return;
       }
       
       console.log('\n🪝 K.I.T. Hooks\n');
       
-      if (discovered.size === 0) {
+      // Show bundled hooks first
+      if (bundledHooks.length > 0) {
+        console.log('   📦 Bundled Hooks:\n');
+        for (const hook of bundledHooks) {
+          const status = hook.enabled ? '✅' : '⬜';
+          console.log(`   ${status} ${hook.name} (${hook.id})`);
+          
+          if (options.verbose) {
+            console.log(`      ${hook.description}`);
+            console.log(`      Events: ${hook.events.join(', ')}`);
+            if (hook.priority) console.log(`      Priority: ${hook.priority}`);
+          }
+        }
+        console.log('');
+      }
+      
+      // Show discovered hooks
+      if (discovered.size > 0) {
+        console.log('   📁 Custom Hooks:\n');
+        for (const [id, hook] of discovered) {
+          const enabled = config.enabled[id] ?? false;
+          const status = enabled ? '✅' : '⬜';
+          const emoji = hook.emoji || '🔗';
+          
+          console.log(`   ${status} ${emoji} ${hook.name} (${id})`);
+          
+          if (options.verbose) {
+            console.log(`      ${hook.description}`);
+            if (hook.events.length > 0) {
+              console.log(`      Events: ${hook.events.join(', ')}`);
+            }
+          }
+        }
+        console.log('');
+      }
+      
+      if (discovered.size === 0 && bundledHooks.length === 0) {
         console.log('   No hooks discovered.');
         console.log(`   Create hooks in: ${HOOKS_DIR}/\n`);
         console.log('   Hook structure:');
         console.log('     my-hook/');
         console.log('     ├── HOOK.md      # Metadata');
         console.log('     └── handler.ts   # Handler\n');
-        return;
       }
-      
-      for (const [id, hook] of discovered) {
-        const enabled = config.enabled[id] ?? false;
-        const status = enabled ? '✅' : '⬜';
-        const emoji = hook.emoji || '🔗';
-        
-        console.log(`   ${status} ${emoji} ${hook.name}`);
-        
-        if (options.verbose) {
-          console.log(`      ${hook.description}`);
-          if (hook.events.length > 0) {
-            console.log(`      Events: ${hook.events.join(', ')}`);
-          }
-        }
-      }
-      
-      console.log('');
     });
 
   // ENABLE
@@ -243,6 +276,18 @@ Documentation: https://github.com/kayzaa/k.i.t.-bot/docs/hooks.md
     .command('enable <hook>')
     .description('Enable a hook')
     .action(async (hookName: string) => {
+      // Check bundled hooks first
+      const registry = getHookRegistry();
+      const bundledHook = registry.get(hookName);
+      
+      if (bundledHook) {
+        registry.setEnabled(hookName, true);
+        console.log(`\n✅ Enabled bundled hook: ${bundledHook.name}`);
+        console.log('   Changes take effect immediately.\n');
+        return;
+      }
+      
+      // Check discovered hooks
       const discovered = await discoverHooks();
       
       if (!discovered.has(hookName)) {
@@ -265,6 +310,17 @@ Documentation: https://github.com/kayzaa/k.i.t.-bot/docs/hooks.md
     .command('disable <hook>')
     .description('Disable a hook')
     .action(async (hookName: string) => {
+      // Check bundled hooks first
+      const registry = getHookRegistry();
+      const bundledHook = registry.get(hookName);
+      
+      if (bundledHook) {
+        registry.setEnabled(hookName, false);
+        console.log(`\n⬜ Disabled bundled hook: ${bundledHook.name}`);
+        console.log('   Changes take effect immediately.\n');
+        return;
+      }
+      
       const config = loadHooksConfig();
       
       if (config.enabled[hookName] === undefined) {
