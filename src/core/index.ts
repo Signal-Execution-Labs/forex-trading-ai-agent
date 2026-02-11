@@ -9,3 +9,4 @@ export * from './skill-router';
 export * from './canvas-manager';
 export * from './session-spawner';
 export * from './retry';
+export * from './diagnostics';

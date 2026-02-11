@@ -533,62 +533,21 @@ print(f"Closed {closed} positions")
   });
 
 // ═══════════════════════════════════════════════════════════════
-// DOCTOR
+// DOCTOR (Comprehensive diagnostics)
 // ═══════════════════════════════════════════════════════════════
-program
-  .command('doctor')
-  .description('Diagnose and fix common issues')
-  .action(async () => {
-    const { execSync } = await import('child_process');
-    const isWindows = os.platform() === 'win32';
-    
-    console.log('\n🔍 K.I.T. Doctor\n');
-    
-    // Check Node.js
-    try {
-      const nodeVersion = execSync('node --version', { encoding: 'utf8' }).trim();
-      console.log(`   ✅ Node.js: ${nodeVersion}`);
-    } catch {
-      console.log('   ❌ Node.js: Not found');
-    }
-    
-    // Check Python
-    const pythonCmd = isWindows ? 'python' : 'python3';
-    try {
-      const pyVersion = execSync(`${pythonCmd} --version`, { encoding: 'utf8' }).trim();
-      console.log(`   ✅ Python: ${pyVersion}`);
-    } catch {
-      console.log('   ❌ Python: Not found (needed for MT5)');
-    }
-    
-    // Check MT5 (Windows only)
-    if (isWindows) {
-      try {
-        execSync(`${pythonCmd} -c "import MetaTrader5"`, { stdio: 'pipe' });
-        console.log('   ✅ MetaTrader5 Python package: Installed');
-      } catch {
-        console.log('   ⚠️  MetaTrader5 Python package: Not installed');
-        console.log('      Run: pip install MetaTrader5');
-      }
-    }
-    
-    // Check config
-    if (fs.existsSync(path.join(KIT_HOME, 'config.json'))) {
-      console.log(`   ✅ Config: Found`);
-    } else {
-      console.log('   ⚠️  Config: Not found');
-      console.log('      Run: kit onboard');
-    }
-    
-    // Check workspace
-    if (fs.existsSync(path.join(KIT_HOME, 'workspace'))) {
-      console.log(`   ✅ Workspace: Found`);
-    } else {
-      console.log('   ⚠️  Workspace: Not found');
-    }
-    
-    console.log('\n');
-  });
+import('./commands/doctor').then(({ createDoctorCommand }) => {
+  program.addCommand(createDoctorCommand());
+}).catch(() => {
+  // Doctor module not available - add basic fallback
+  program
+    .command('doctor')
+    .description('Diagnose and fix common issues')
+    .action(async () => {
+      console.log('\n🔍 K.I.T. Doctor\n');
+      console.log('   Advanced diagnostics module not loaded.');
+      console.log('   Run: npm run build\n');
+    });
+});
 
 // ═══════════════════════════════════════════════════════════════
 // CHAT
@@ -811,6 +770,15 @@ import('./commands/hooks').then(({ createHooksCommand }) => {
   program.addCommand(createHooksCommand());
 }).catch(() => {
   // Hooks module not available
+});
+
+// ═══════════════════════════════════════════════════════════════
+// DIAGNOSTICS (OpenClaw-inspired)
+// ═══════════════════════════════════════════════════════════════
+import('./commands/diagnostics').then(({ createDiagnosticsCommand }) => {
+  program.addCommand(createDiagnosticsCommand());
+}).catch(() => {
+  // Diagnostics module not available
 });
 
 // ═══════════════════════════════════════════════════════════════
