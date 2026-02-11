@@ -1,6 +1,6 @@
 # K.I.T. Project Status Report
-**Generated:** 2026-02-11 13:45 CET  
-**Agent:** K.I.T. Continuous Improvement Agent
+**Generated:** 2026-02-11 14:15 CET  
+**Agent:** K.I.T. Sandbox Tester
 
 ---
 
@@ -9,6 +9,7 @@
 ```
 npm run build → ✅ tsc (clean compile, no errors)
 kit version → ✅ v2.0.0
+kit test → ✅ 5/5 passed
 ```
 
 ---
@@ -17,7 +18,7 @@ kit version → ✅ v2.0.0
 
 | Metric | Count |
 |--------|-------|
-| **Trading Skills** | 60 |
+| **Trading Skills** | 62 |
 | **Bundled Hooks** | 9 |
 | **System Tools** | 86+ |
 | **OpenClaw Parity** | ~93% |
@@ -25,30 +26,31 @@ kit version → ✅ v2.0.0
 
 ---
 
-## 🎯 Latest Improvements (13:45 CET)
+## 🎯 Latest Improvements (14:15 CET)
+
+### Bug Fixed:
+- **Duplicate 'reset' command** - CLI was crashing due to two `kit reset` commands. Removed duplicate at line 859, kept the more comprehensive version.
 
 ### New Skills Added:
 
-1. **#59: Correlation Matrix Analyzer**
-   - Rolling correlation (20/50/100 day windows)
-   - Cross-asset analysis (Stocks/Crypto/Forex/Commodities)
-   - Regime detection (risk-on/risk-off)
-   - Diversification scoring
-   - Beta calculation to benchmarks
-   - K-means clustering of correlated assets
-   - Stress testing for correlation breakdown
+1. **#61: Funding Rate Arbitrage**
+   - Real-time funding rates from 10+ exchanges
+   - Cash-and-carry strategy (long spot + short perp)
+   - Cross-exchange funding arb
+   - ML-based rate prediction (LSTM)
+   - Automated entry/exit based on APY thresholds
+   - Supports Binance, Bybit, OKX, dYdX, GMX, Hyperliquid, etc.
 
-2. **#60: Liquidity Monitor**
-   - Order book depth analysis (multi-level)
-   - Liquidity grading (A+ to F)
-   - Bid-ask spread monitoring with alerts
-   - Slippage estimation for order sizes
-   - Whale order detection
-   - Order book imbalance alerts
-   - VWAP tracking
-   - Execution quality analysis
+2. **#62: Order Flow Analysis**
+   - Professional tape reading
+   - Cumulative Volume Delta (CVD)
+   - Footprint charts (bid/ask, delta, imbalance)
+   - Market Profile (VA, POC, single prints)
+   - Volume Profile (HVN, LVN, naked POCs)
+   - Whale detection and absorption analysis
+   - Imbalance scanning and divergence detection
 
-**Total K.I.T. Skills: 60** ✨
+**Total K.I.T. Skills: 62** ✨
 
 ---
 
@@ -86,33 +88,57 @@ kit version → ✅ v2.0.0
 
 ---
 
-## 🎯 60 Trading Skills
+## 🎯 62 Trading Skills by Category
 
-### Analysis & Signals
-- technical-analysis, market-scanner, volume-analysis
-- sentiment-analysis, news-analyzer, whale-tracker
-- correlation-matrix (NEW), liquidity-monitor (NEW)
+### Trading (14)
+- auto-trader, binary-options, copy-trader, grid-bot
+- signal-copier, metatrader, options-trader, stock-trader
+- dca-bot, twap-bot, trailing-grid, leveraged-grid
+- spot-futures-arb, prop-firm-manager
 
-### Trading Strategies
-- grid-bot, dca-bot, scalping, swing-trading
-- mean-reversion, momentum, arbitrage, pairs-trading
-- trailing-grid, leveraged-grid, twap-bot
+### Analysis (12)
+- market-analysis, sentiment-analyzer, ai-predictor, ai-screener
+- backtester, whale-tracker, news-tracker, quant-engine, risk-ai
+- tradingview-realtime, tradingview-script, tradingview-webhook
 
-### Portfolio & Risk
-- portfolio-tracker, risk-manager, position-sizing
-- tax-tracker, trade-journal, backtester
+### Portfolio (7)
+- portfolio-tracker, rebalancer, multi-asset
+- tax-tracker, dividend-manager, performance-report, trade-journal
 
-### DeFi
-- defi-connector, yield-optimizer, liquidity-mining
-- bridge-aggregator, token-swapper, staking-manager
+### DeFi (7)
+- defi-connector, defi-yield, arbitrage-finder, arbitrage-hunter
+- wallet-connector, smart-router, debank-aggregator
 
-### Automation
-- alert-builder, scheduler, copy-trading
-- signal-provider, api-connector, webhook-handler
+### Channel (5)
+- telegram, discord, whatsapp, twitter-posting, kitbot-forum
 
-### AI & Advanced
-- ai-screener, pattern-recognition, ml-predictor
-- economic-calendar, smart-order-router
+### Exchange (3)
+- exchange-connector, etoro-connector, payment-processor
+
+### Utility (10)
+- alert-system, multi-condition-alerts, risk-calculator
+- lot-size-calculator, pip-calculator, session-timer
+- task-scheduler, paper-trading, compliance, social-trading
+
+### NEW - Advanced (4)
+- funding-rate-arb, order-flow, correlation-matrix, liquidity-monitor
+
+---
+
+## 🧪 Test Results
+
+```
+🧪 K.I.T. Integration Tests
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Config file exists
+✅ Workspace directory exists
+✅ SOUL.md exists
+✅ USER.md exists
+✅ AGENTS.md exists
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📊 Results: 5 passed, 0 failed
+🎉 All tests passed!
+```
 
 ---
 
@@ -121,8 +147,8 @@ kit version → ✅ v2.0.0
 1. **Plugin System** - Full plugin architecture like OpenClaw
 2. **Sub-Agents** - Spawn isolated agent runs for parallel tasks
 3. **More Exchanges** - Add support for more CEX/DEX
-4. **Mobile App** - React Native companion app
-5. **Backtesting Engine** - Full historical simulation
+4. **Backtesting Engine** - Full historical simulation with order flow
+5. **Mobile App** - React Native companion app
 
 ---
 
@@ -134,4 +160,4 @@ kit version → ✅ v2.0.0
 
 ---
 
-*Last updated by K.I.T. Continuous Improvement Agent*
+*Last updated by K.I.T. Sandbox Tester - 14:15 CET*

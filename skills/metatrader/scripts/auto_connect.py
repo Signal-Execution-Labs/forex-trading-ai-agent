@@ -147,10 +147,27 @@ if __name__ == "__main__":
         elif cmd == "positions":
             print(json.dumps(get_positions()))
         elif cmd == "buy" and len(sys.argv) >= 4:
-            print(json.dumps(market_order(sys.argv[2], "buy", float(sys.argv[3]))))
+            # buy SYMBOL VOL [SL] [TP]
+            sl = float(sys.argv[4]) if len(sys.argv) > 4 and sys.argv[4] != "0" else None
+            tp = float(sys.argv[5]) if len(sys.argv) > 5 and sys.argv[5] != "0" else None
+            print(json.dumps(market_order(sys.argv[2], "buy", float(sys.argv[3]), sl, tp)))
         elif cmd == "sell" and len(sys.argv) >= 4:
-            print(json.dumps(market_order(sys.argv[2], "sell", float(sys.argv[3]))))
+            # sell SYMBOL VOL [SL] [TP]
+            sl = float(sys.argv[4]) if len(sys.argv) > 4 and sys.argv[4] != "0" else None
+            tp = float(sys.argv[5]) if len(sys.argv) > 5 and sys.argv[5] != "0" else None
+            print(json.dumps(market_order(sys.argv[2], "sell", float(sys.argv[3]), sl, tp)))
         elif cmd == "close" and len(sys.argv) >= 3:
             print(json.dumps(close_position(int(sys.argv[2]))))
+        elif cmd == "price" and len(sys.argv) >= 3:
+            # Get current price
+            if not mt5.initialize():
+                print(json.dumps({"success": False, "error": "MT5 nicht verbunden"}))
+            else:
+                symbol = sys.argv[2]
+                tick = mt5.symbol_info_tick(symbol)
+                if tick:
+                    print(json.dumps({"success": True, "symbol": symbol, "bid": tick.bid, "ask": tick.ask, "spread": round((tick.ask - tick.bid) * 100000, 1)}))
+                else:
+                    print(json.dumps({"success": False, "error": f"Symbol {symbol} nicht gefunden"}))
         else:
-            print(json.dumps({"error": "Unknown command", "usage": "python auto_connect.py [connect|positions|buy SYMBOL VOL|sell SYMBOL VOL|close TICKET]"}))
+            print(json.dumps({"error": "Unknown command", "usage": "python auto_connect.py [connect|positions|buy SYMBOL VOL SL TP|sell SYMBOL VOL SL TP|close TICKET|price SYMBOL]"}))

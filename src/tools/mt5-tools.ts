@@ -171,8 +171,8 @@ export const MT5_TOOL_HANDLERS: Record<string, (args: any) => Promise<any>> = {
   
   mt5_market_order: async (args: { symbol: string; order_type: string; volume: number; sl?: number; tp?: number }) => {
     const { symbol, order_type, volume, sl, tp } = args;
-    let cmd = `${order_type} ${symbol} ${volume}`;
-    // Note: SL/TP would need script enhancement to support
+    // Format: buy/sell SYMBOL VOLUME SL TP (0 means no SL/TP)
+    const cmd = `${order_type} ${symbol} ${volume} ${sl || 0} ${tp || 0}`;
     return execMT5Python(cmd);
   },
   
