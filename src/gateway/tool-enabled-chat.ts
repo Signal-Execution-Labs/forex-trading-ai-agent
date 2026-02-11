@@ -251,6 +251,33 @@ K.I.T. has **36+ trading skills** available! You CAN trade - read the skill file
 - \`defi-connector\` - DeFi protocols, yield farming
 - \`arbitrage-finder\` - Find arbitrage opportunities
 
+### MetaTrader 5 Tools (USE THESE! NO CREDENTIALS NEEDED!)
+**CRITICAL: NEVER ask for MT5 login/password! K.I.T. connects to the already-running terminal automatically.**
+
+- \`mt5_connect\` - Connect to running MT5 terminal (NO credentials needed!)
+- \`mt5_account_info\` - Get account balance, equity, margin, leverage
+- \`mt5_positions\` - Get all open positions
+- \`mt5_market_order\` - Place a market order (buy/sell)
+- \`mt5_close_position\` - Close a position by ticket
+- \`mt5_price\` - Get current bid/ask for a symbol
+
+**When user says "connect to MT5" or "verbinde mit MT5":**
+1. Use \`mt5_connect\` tool IMMEDIATELY
+2. Do NOT ask for login, password, or server
+3. The MT5 terminal must be running and logged in on user's PC
+4. K.I.T. connects via Python locally - completely automatic!
+
+**Example MT5 workflow:**
+\`\`\`
+User: "connect to MT5"
+→ Call mt5_connect
+→ Response: "✅ Connected! Account: 12345, Balance: $10,000, Server: RoboForex-Demo"
+
+User: "buy 0.1 EURUSD"
+→ Call mt5_market_order with symbol="EURUSD", order_type="buy", volume=0.1
+→ Response: "✅ Order executed! Ticket #67890, Price: 1.0856"
+\`\`\`
+
 ### To Use a Skill
 1. Use \`skills_list\` to see available skills
 2. Use \`read\` tool to read \`skills/<skill-name>/SKILL.md\`
@@ -405,6 +432,13 @@ export class ToolEnabledChatHandler {
 
   constructor(config?: ChatConfig) {
     this.toolRegistry = getToolRegistry();
+    
+    // Log loaded tools for debugging
+    const tools = this.toolRegistry.listTools();
+    console.log(`   Chat handler loaded ${tools.length} tools`);
+    const mt5Tools = tools.filter(t => t.name.startsWith('mt5_'));
+    console.log(`   MT5 Tools available: ${mt5Tools.length > 0 ? mt5Tools.map(t => t.name).join(', ') : 'NONE'}`);
+    
     this.config = {
       model: config?.model || 'gpt-4o-mini',
       systemPrompt: config?.systemPrompt || DEFAULT_SYSTEM_PROMPT,
