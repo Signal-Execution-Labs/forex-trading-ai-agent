@@ -53,24 +53,42 @@ pip install ta-lib scikit-learn tensorflow  # ML/Technical Analysis
 
 ## Quick Start
 
+**K.I.T. verbindet sich LOKAL zum bereits laufenden MT5 Terminal - KEINE Credentials nötig!**
+
 ```python
-from skills.metatrader import MT5Connector, MT5Orders, MT5Data
+import MetaTrader5 as mt5
 
-# Connect
-mt5 = MT5Connector()
-mt5.connect(account=123456, password="pass", server="Broker-Demo")
-
-# Execute trade
-orders = MT5Orders()
-orders.market_order("EURUSD", "buy", 0.1, sl=1.0850, tp=1.1000)
-
-# Get data
-data = MT5Data()
-candles = data.get_candles("EURUSD", "H1", 100)
-
-# Disconnect
-mt5.disconnect()
+# Auto-Connect zum laufenden Terminal (KEINE LOGIN-DATEN!)
+if mt5.initialize():
+    print("✅ Verbunden mit MT5!")
+    
+    # Account Info holen
+    account = mt5.account_info()
+    print(f"Account: {account.login}")
+    print(f"Balance: {account.balance} {account.currency}")
+    
+    # Trade ausführen
+    request = {
+        "action": mt5.TRADE_ACTION_DEAL,
+        "symbol": "EURUSD",
+        "volume": 0.1,
+        "type": mt5.ORDER_TYPE_BUY,
+        "price": mt5.symbol_info_tick("EURUSD").ask,
+    }
+    result = mt5.order_send(request)
+    print(f"Order: {result}")
+    
+    mt5.shutdown()
+else:
+    print("❌ MT5 Terminal nicht gestartet!")
 ```
+
+### Voraussetzungen
+1. **MT5 Terminal läuft** und ist eingeloggt (manuell einmalig)
+2. **Auto-Trading aktiviert** (Button oben in MT5)
+3. **Python auf gleichem PC** wie MT5
+
+K.I.T. braucht **NIEMALS** deine Login-Daten - das Terminal ist bereits authentifiziert!
 
 ---
 
@@ -81,22 +99,25 @@ mt5.disconnect()
 Connection management with error handling.
 
 ```python
-from scripts.mt5_connector import MT5Connector, MT5Error
+import MetaTrader5 as mt5
 
-mt5 = MT5Connector()
+# AUTO-CONNECT (empfohlen) - verbindet zum laufenden Terminal
+if mt5.initialize():
+    info = mt5.account_info()
+    print(f"Balance: {info.balance} {info.currency}")
+    print(f"Leverage: 1:{info.leverage}")
+    
+    # Trading allowed?
+    if info.trade_allowed:
+        print("Ready to trade!")
+    
+    mt5.shutdown()
 
-# Connect with credentials
-mt5.connect(account=123456, password="pass", server="ICMarkets-Demo")
-
-# Account info
-info = mt5.get_account_info()
-print(f"Balance: {info['balance']} {info['currency']}")
-print(f"Leverage: 1:{info['leverage']}")
-
-# Trading allowed?
-if mt5.is_trading_allowed():
-    print("Ready to trade!")
+# ALTERNATIVE: Spezifischen Account wählen (falls mehrere Terminals)
+# mt5.initialize(login=123456, password="pass", server="Broker-Demo")
 ```
+
+> ⚠️ **K.I.T. fragt NIEMALS nach Passwörtern!** Das MT5 Terminal ist bereits eingeloggt.
 
 ### 2. MT5 Orders (`mt5_orders.py`)
 
@@ -318,11 +339,14 @@ print(f"Uptime: {status['uptime_hours']:.1f} hours")
 
 ## Security Best Practices
 
-1. **Credentials**: Never store in code - use environment variables
-2. **Demo First**: ALWAYS test in demo mode first
-3. **Risk Management**: Max 2% per trade, ALWAYS set Stop Loss
-4. **VPS**: Use dedicated VPS for 24/7 trading
-5. **Monitoring**: Enable alerts for critical events
+1. **NO CREDENTIALS NEEDED**: K.I.T. connects to your already-logged-in MT5 Terminal - never give K.I.T. your password!
+2. **Local Only**: Python MT5 module only works on the same PC as the terminal
+3. **Demo First**: ALWAYS test in demo mode first
+4. **Risk Management**: Max 2% per trade, ALWAYS set Stop Loss
+5. **VPS**: Use dedicated VPS for 24/7 trading
+6. **Monitoring**: Enable alerts for critical events
+
+> 🔒 **K.I.T. NEVER asks for your MT5 login/password!** If something asks for credentials, it's not the real K.I.T.
 
 ---
 
