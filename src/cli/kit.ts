@@ -535,19 +535,7 @@ print(f"Closed {closed} positions")
 // ═══════════════════════════════════════════════════════════════
 // DOCTOR (Comprehensive diagnostics)
 // ═══════════════════════════════════════════════════════════════
-import('./commands/doctor').then(({ createDoctorCommand }) => {
-  program.addCommand(createDoctorCommand());
-}).catch(() => {
-  // Doctor module not available - add basic fallback
-  program
-    .command('doctor')
-    .description('Diagnose and fix common issues')
-    .action(async () => {
-      console.log('\n🔍 K.I.T. Doctor\n');
-      console.log('   Advanced diagnostics module not loaded.');
-      console.log('   Run: npm run build\n');
-    });
-});
+// Registered via async main() below
 
 // ═══════════════════════════════════════════════════════════════
 // CHAT
@@ -766,20 +754,12 @@ Set with: kit models --set anthropic/claude-opus-4-5-20251101
 // ═══════════════════════════════════════════════════════════════
 // HOOKS (OpenClaw-inspired)
 // ═══════════════════════════════════════════════════════════════
-import('./commands/hooks').then(({ createHooksCommand }) => {
-  program.addCommand(createHooksCommand());
-}).catch(() => {
-  // Hooks module not available
-});
+// Registered via async main() below
 
 // ═══════════════════════════════════════════════════════════════
 // DIAGNOSTICS (OpenClaw-inspired)
 // ═══════════════════════════════════════════════════════════════
-import('./commands/diagnostics').then(({ createDiagnosticsCommand }) => {
-  program.addCommand(createDiagnosticsCommand());
-}).catch(() => {
-  // Diagnostics module not available
-});
+// Registered via async main() below
 
 // ═══════════════════════════════════════════════════════════════
 // VERSION (with update check)
@@ -1159,5 +1139,45 @@ program
     console.log('\n✅ Reset complete! Run "kit start" to reconfigure.\n');
   });
 
-// Parse and execute
-program.parse();
+// ═══════════════════════════════════════════════════════════════
+// MAIN - Load async commands then parse
+// ═══════════════════════════════════════════════════════════════
+async function main() {
+  // Load dynamic commands before parsing
+  try {
+    const { createDoctorCommand } = await import('./commands/doctor');
+    program.addCommand(createDoctorCommand());
+  } catch (err) {
+    // Doctor module not available - add basic fallback
+    program
+      .command('doctor')
+      .description('Diagnose and fix common issues')
+      .action(async () => {
+        console.log('\n🔍 K.I.T. Doctor\n');
+        console.log('   Advanced diagnostics module not loaded.');
+        console.log('   Run: npm run build\n');
+      });
+  }
+  
+  try {
+    const { createHooksCommand } = await import('./commands/hooks');
+    program.addCommand(createHooksCommand());
+  } catch {
+    // Hooks module not available
+  }
+  
+  try {
+    const { createDiagnosticsCommand } = await import('./commands/diagnostics');
+    program.addCommand(createDiagnosticsCommand());
+  } catch {
+    // Diagnostics module not available
+  }
+  
+  // Parse and execute
+  program.parse();
+}
+
+main().catch((err) => {
+  console.error('Fatal error:', err.message);
+  process.exit(1);
+});

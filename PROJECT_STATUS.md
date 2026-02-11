@@ -1,7 +1,7 @@
 # K.I.T. Project Status Report
 
-**Generated:** 2026-02-11 17:45 CET  
-**Tested by:** K.I.T. Improvement Agent (Max)
+**Generated:** 2026-02-11 18:10 CET  
+**Tested by:** K.I.T. Sandbox Tester (Max)
 
 ---
 
@@ -14,79 +14,105 @@ No TypeScript errors!
 
 ---
 
-## 🚀 Latest Improvements (Session 17:37 - 17:45)
+## 🐛 Bug Fixed (18:05-18:10 CET)
 
-### New: Comprehensive Diagnostics System (OpenClaw-inspired)
+### CLI Command Registration Race Condition
 
-**`kit doctor` - Full System Diagnostics**
-```bash
-kit doctor                    # Run all checks
-kit doctor --verbose          # Show detailed output
-kit doctor --fix              # Auto-fix issues where possible
-kit doctor --json             # Output as JSON
-kit doctor --category ai      # Check specific category
+**Problem:** `kit doctor`, `kit hooks`, and `kit diagnostics` commands were not available despite being documented. They showed "unknown command" error.
+
+**Root Cause:** Dynamic imports using `.then()` raced with `program.parse()`:
+```typescript
+// BAD - async import races with parse
+import('./commands/doctor').then(({ createDoctorCommand }) => {
+  program.addCommand(createDoctorCommand());
+});
+program.parse(); // Runs before import completes!
 ```
 
-Categories:
-- **System:** Node.js, Python, MT5, disk space, memory
-- **Configuration:** config.json validation, workspace files, onboarding status
-- **AI Providers:** API key verification, key format validation
-- **Trading:** Exchange configuration, credentials, skills
-- **Network:** Gateway status, internet connectivity
-
-**`kit diagnostics` - Targeted Debug Logging**
-```bash
-kit diagnostics --list        # Show all available flags
-kit diagnostics --status      # Current status
-kit diagnostics --enable trading.mt5,ai.anthropic
-kit diagnostics --disable *   # Disable all
-kit diagnostics --tail 50     # View last 50 log entries
-```
-
-8 Flag Categories (24 flags total):
-- `ai.*` - AI provider requests/responses
-- `trading.*` - MT5, orders, positions, signals
-- `exchange.*` - Binance, Bybit, Kraken, Coinbase
-- `gateway.*` - WebSocket, HTTP, sessions
-- `channel.*` - Telegram, Discord, WhatsApp
-- `brain.*` - Decision making, goals, autonomy
-- `skills.*` - Skill loading and execution
-- `tools.*` - Tool invocations and results
-
-Config:
-```json
-{
-  "diagnostics": {
-    "flags": ["trading.*", "ai.anthropic"]
-  }
+**Solution:** Wrapped everything in an async `main()` function:
+```typescript
+async function main() {
+  // Load dynamic commands first
+  const { createDoctorCommand } = await import('./commands/doctor');
+  program.addCommand(createDoctorCommand());
+  
+  // ... other commands ...
+  
+  // Parse only after all commands registered
+  program.parse();
 }
+main();
 ```
 
-Env override:
-```bash
-KIT_DIAGNOSTICS=trading.*,ai.anthropic
-KIT_DIAGNOSTICS=0  # Disable all
-KIT_DIAGNOSTICS=*  # Enable all
-```
+**Result:** All 18 CLI commands now work correctly:
+- `kit doctor` ✅ - Full system diagnostics
+- `kit hooks` ✅ - Event hook management  
+- `kit diagnostics` ✅ - Debug flag management
 
 ---
 
-## 📊 Code Analysis
+## 🚀 Full CLI Commands (18 total)
 
-### Source Files: 113 TypeScript files (+3 new)
-- **Core:** 12 files (gateway, server, logger, diagnostics, etc.)
-- **Brain:** 6 files (autonomy-manager, decision-engine, goal-parser)
-- **Tools:** 36 files (trading, system, analysis)
-- **Channels:** 5 files (telegram, whatsapp, discord, slack)
-- **CLI:** 13 files (kit.ts, onboard, commands/doctor, commands/diagnostics)
-- **Portfolio:** 5 files (unified-portfolio, cex/defi/mt5 sources)
-- **Other:** 36 files (hooks, signals, exchanges, providers)
+| Command | Status | Description |
+|---------|--------|-------------|
+| `kit onboard` | ✅ | Interactive setup wizard |
+| `kit start` | ✅ | Start gateway |
+| `kit status` | ✅ | System status |
+| `kit dashboard` | ✅ | Open web UI |
+| `kit config` | ✅ | View/edit config |
+| `kit exchanges` | ✅ | Manage exchanges |
+| `kit balance` | ✅ | Portfolio balance |
+| `kit trade` | ✅ | Execute trades |
+| `kit chat` | ✅ | Interactive AI chat |
+| `kit skills` | ✅ | List trading skills |
+| `kit models` | ✅ | AI provider management |
+| `kit version` | ✅ | Version + update check |
+| `kit test` | ✅ | Integration tests |
+| `kit tools` | ✅ | Tool profiles |
+| `kit reset` | ✅ | Reset config/workspace |
+| `kit doctor` | ✅ **FIXED** | System diagnostics |
+| `kit hooks` | ✅ **FIXED** | Event hooks |
+| `kit diagnostics` | ✅ **FIXED** | Debug flags |
 
-### New Files Added
+---
+
+## 🔍 `kit doctor` Output
+
 ```
-src/cli/commands/doctor.ts       # 540 lines - Full system diagnostics
-src/cli/commands/diagnostics.ts  # 280 lines - Diagnostics flag management
-src/core/diagnostics.ts          # 220 lines - Diagnostics flags system
+╔═══════════════════════════════════════════════════════════════╗
+║                    🔍 K.I.T. Doctor                            ║
+║              Comprehensive System Diagnostics                  ║
+╚═══════════════════════════════════════════════════════════════╝
+
+📦 SYSTEM
+   ✅ Node.js: v24.13.0
+   ✅ Python: Python 3.14.0
+   ✅ MetaTrader5: Python package installed
+   ✅ Disk Space: 32.5 GB free
+   ✅ Memory: 17.2 GB free (46% used)
+
+⚙️  CONFIGURATION
+   ✅ Config: Found
+   ⚠️  Config Structure: Missing keys: ai, gateway
+   ✅ Workspace: Found
+   ✅ Workspace Files: All 4 files present
+   ⚠️  Onboarding: Incomplete
+
+🧠 AI PROVIDERS
+   ❌ No AI configuration found
+
+📈 TRADING
+   ⚠️  Exchanges: None configured
+   ✅ Skills: 1 installed
+
+🌐 NETWORK
+   ⚠️  Gateway: Offline
+   ✅ Internet: Connected
+
+📊 SUMMARY
+   ✅ Passed:  10
+   ⚠️  Warnings: 4
+   ❌ Failed:  1
 ```
 
 ---
@@ -96,17 +122,18 @@ src/core/diagnostics.ts          # 220 lines - Diagnostics flags system
 | Feature | OpenClaw | K.I.T. | Status |
 |---------|----------|--------|--------|
 | Onboarding flow | 10+ steps | 13 steps | ✅ K.I.T. has more |
-| Workspace files | SOUL.md, USER.md, AGENTS.md, MEMORY.md | Same | ✅ Parity |
+| Workspace files | SOUL.md, USER.md, etc. | Same | ✅ Parity |
 | Channel plugins | 20+ | 5 built-in | ⚠️ Core ones covered |
 | Tool profiles | 5 profiles (86 tools) | 5 profiles (86+ tools) | ✅ Parity |
 | Hooks system | Built-in | 9 hooks | ✅ Good |
 | Reset confirmation | Yes | Yes | ✅ Implemented |
 | Health endpoints | /health, /ready, /live | Present | ✅ K8s-ready |
 | Config management | YAML-based | JSON-based | ✅ Both work |
-| **Diagnostics flags** | ✅ | ✅ | ✅ **NEW** |
-| **kit doctor** | `openclaw doctor` | `kit doctor` | ✅ **NEW** |
+| Diagnostics flags | ✅ | ✅ | ✅ Implemented |
+| Doctor command | `openclaw doctor` | `kit doctor` | ✅ **FIXED** |
+| CLI async loading | ✅ | ✅ | ✅ **FIXED** |
 
-### OpenClaw Parity: ~95% (up from 93%)
+### OpenClaw Parity: ~95%
 
 ---
 
@@ -114,18 +141,18 @@ src/core/diagnostics.ts          # 220 lines - Diagnostics flags system
 
 ### Morning Session (08:00-12:00 CET)
 - Agent Following System
-- Strategy Stars System
+- Strategy Stars System  
 - Strategy Optimization Service
 - Optimization UI Page
 - 4 new hooks (9 total)
 - Skills #51-58 added
 - Forum Platform wired
 
-### Afternoon Session (16:00-17:45 CET)
+### Afternoon Session (16:00-18:10 CET)
 - Portfolio & Paper Trading System (100+ API endpoints)
-- **Comprehensive kit doctor** (5 diagnostic categories)
-- **Diagnostics flags system** (24 flags, 8 categories)
-- JSONL log output with timestamps
+- Comprehensive `kit doctor` (5 diagnostic categories)
+- Diagnostics flags system (24 flags, 8 categories)
+- **BUG FIX:** CLI command registration race condition
 
 ---
 
@@ -149,12 +176,12 @@ src/core/diagnostics.ts          # 220 lines - Diagnostics flags system
 
 ## 🔜 Next Priorities
 
-1. ~~Add more channel plugins (Signal, iMessage)~~ (lower priority)
+1. Complete onboarding (AI configuration needed)
 2. Add YAML config option alongside JSON
-3. Improve AI connectivity test in `kit doctor` (actual API ping)
-4. Add `kit logs --follow` for live log tailing
-5. Consider `kit profile` for user profile management
+3. Add `kit logs --follow` for live log tailing
+4. Consider `kit profile` for user profile management
+5. Test gateway startup with AI providers
 
 ---
 
-*Report generated by K.I.T. Improvement Agent*
+*Report generated by K.I.T. Sandbox Tester*

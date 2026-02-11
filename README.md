@@ -254,6 +254,116 @@ kit twitter post "Market update..." --image chart.png
 
 ---
 
+## 🛠️ 66 Professional Skills
+
+K.I.T. comes packed with **66 trading skills** - your complete trading arsenal!
+
+### 🤖 AI & Analysis (8)
+| Skill | Description |
+|-------|-------------|
+| `ai-predictor` | ML price predictions (LSTM, XGBoost) |
+| `ai-screener` | AI market screening |
+| `sentiment-analyzer` | Social/news sentiment |
+| `market-analysis` | 50+ technical indicators |
+| `news-tracker` | Breaking news alerts |
+| `quant-engine` | Factor models & alpha |
+| `order-flow` | Market microstructure |
+| `correlation-matrix` | Asset correlations |
+
+### 📈 Trading (12)
+| Skill | Description |
+|-------|-------------|
+| `auto-trader` | Autonomous trading |
+| `smart-router` | TWAP/VWAP execution |
+| `smart-order-router` | Best execution routing |
+| `signal-copier` | Copy trading signals |
+| `options-trader` | Options with Greeks |
+| `binary-options` | Binary options analysis |
+| `stock-trader` | Stock trading |
+| `paper-trading` | Risk-free practice |
+| `twap-bot` | Time-weighted execution |
+| `session-timer` | Market sessions |
+| `lot-size-calculator` | Position sizing |
+| `pip-calculator` | Forex pip values |
+
+### 🔄 Automation (10)
+| Skill | Description |
+|-------|-------------|
+| `grid-bot` | Grid trading |
+| `leveraged-grid` | Margin grid trading |
+| `trailing-grid` | Dynamic trailing grids |
+| `dca-bot` | Dollar cost averaging |
+| `task-scheduler` | Schedule any task |
+| `alert-system` | Price/indicator alerts |
+| `multi-condition-alerts` | Complex alert logic |
+| `signal-bot` | Generate & broadcast |
+| `rebalancer` | Portfolio rebalancing |
+| `portfolio-rebalancer` | Advanced rebalancing |
+
+### ⚡ Arbitrage (5)
+| Skill | Description |
+|-------|-------------|
+| `arbitrage-finder` | Cross-exchange arb |
+| `arbitrage-hunter` | Aggressive hunting |
+| `spot-futures-arb` | Cash & carry |
+| `funding-rate-arb` | Perp funding capture |
+| `liquidity-monitor` | Depth tracking |
+
+### 🌐 DeFi (5)
+| Skill | Description |
+|-------|-------------|
+| `defi-connector` | Protocol integration |
+| `defi-dashboard` | DeFi portfolio |
+| `defi-yield` | Yield farming optimizer |
+| `debank-aggregator` | DeBank data |
+| `wallet-connector` | Multi-wallet |
+
+### 📡 Social (6)
+| Skill | Description |
+|-------|-------------|
+| `social-trading` | Social copy trading |
+| `copy-trader` | Copy specific traders |
+| `whale-tracker` | Large wallet tracking |
+| `twitter-posting` | Auto-post signals |
+| `social-feed` | Trading feed |
+| `kitbot-forum` | Community integration |
+
+### 🛡️ Risk & Tax (6)
+| Skill | Description |
+|-------|-------------|
+| `tax-calculator` | FIFO/LIFO tax calc |
+| `tax-tracker` | Trade tax tracking |
+| `risk-calculator` | Position risk |
+| `risk-ai` | AI risk analysis |
+| `compliance` | Regulatory checks |
+| `prop-firm-manager` | Funded accounts |
+
+### 💰 Portfolio (8)
+| Skill | Description |
+|-------|-------------|
+| `portfolio-tracker` | Multi-exchange view |
+| `performance-report` | Trading metrics |
+| `trade-journal` | Trading diary |
+| `backtester` | Strategy testing |
+| `dividend-manager` | Dividend tracking |
+| `multi-asset` | Multi-asset portfolio |
+| `economic-calendar` | Economic events |
+| `payment-processor` | Crypto payments |
+
+### 🔗 Connectors (6)
+| Skill | Description |
+|-------|-------------|
+| `exchange-connector` | Universal exchange API |
+| `metatrader` | MT4/MT5 integration |
+| `etoro-connector` | eToro integration |
+| `tradingview-script` | Pine Script generator |
+| `tradingview-webhook` | Alert receiver |
+| `tradingview-realtime` | Real-time data |
+
+👉 **[Full Skills Documentation](docs/SKILLS.md)**
+
+---
+
 ## 🏗️ Architecture
 
 ```

@@ -197,11 +197,16 @@ const STEPS: Step[] = [
 
 Welcome. I am K.I.T., your autonomous financial agent.
 
-My capabilities:
-• 37+ trading skills across all markets
-• Automated execution with risk management
-• Multi-exchange portfolio tracking
-• Real-time market analysis & alerts
+**66 Professional Skills:**
+🤖 AI & Analysis (8) - Predictions, sentiment, screening
+📈 Trading (12) - Auto-trader, smart routing, options
+🔄 Automation (10) - Grid bots, DCA, alerts
+⚡ Arbitrage (5) - Cross-exchange, funding rate
+🌐 DeFi (5) - Yield hunting, LP management
+📡 Social (6) - Copy trading, whale tracking
+🛡️ Risk & Tax (6) - Risk AI, tax calculator
+💰 Portfolio (8) - Tracking, backtesting
+🔗 Connectors (6) - Exchanges, MT5, TradingView
 
 **What should I call you?**
     `.trim(),
@@ -770,6 +775,17 @@ Select (1-3):
 **Autonomy:** ${state.data.autonomyLevel}
 **Style:** ${state.data.tradingStyle}
 
+**🛠️ 66 Skills Ready:**
+• 🤖 AI & Analysis (8): predictions, sentiment, screening
+• 📈 Trading (12): auto-trader, smart router, options
+• 🔄 Automation (10): grid bots, DCA, alerts
+• ⚡ Arbitrage (5): cross-exchange, funding rate
+• 🌐 DeFi (5): yield hunting, LP management
+• 📡 Social (6): copy trading, whale tracker
+• 🛡️ Risk & Tax (6): risk AI, tax calculator
+• 💰 Portfolio (8): tracking, backtesting
+• 🔗 Connectors (6): exchanges, MT5, TradingView
+
 **Files Created:**
 • SOUL.md - Agent directives
 • USER.md - Your profile
@@ -784,8 +800,8 @@ ${state.data.selectedChannel === 'telegram' ? '3. Message your Telegram bot to s
 
 **Commands:**
 • \`kit status\` - Check system status
-• \`kit onboard\` - Re-run setup to change settings
-• \`kit doctor\` - Diagnose issues
+• \`kit skills\` - List all 66 skills
+• \`kit onboard\` - Re-run setup
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 *"Your wealth is my mission."* 🚀
