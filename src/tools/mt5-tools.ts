@@ -98,6 +98,29 @@ export const MT5_TOOLS: ChatToolDef[] = [
       required: ['symbol'],
     },
   },
+  {
+    name: 'mt5_indicators',
+    description: 'Get technical indicators for a symbol: EMA21, EMA50, RSI14, ATR14, trend direction, and trading signals. Use this to evaluate strategies with technical analysis.',
+    parameters: {
+      type: 'object',
+      properties: {
+        symbol: {
+          type: 'string',
+          description: 'Trading symbol (e.g., XAUUSD, EURUSD)',
+        },
+        timeframe: {
+          type: 'string',
+          enum: ['M1', 'M5', 'M15', 'M30', 'H1', 'H4', 'D1', 'W1'],
+          description: 'Timeframe (default: M5)',
+        },
+        bars: {
+          type: 'number',
+          description: 'Number of bars to analyze (default: 100)',
+        },
+      },
+      required: ['symbol'],
+    },
+  },
 ];
 
 // ============================================================================
@@ -183,6 +206,11 @@ export const MT5_TOOL_HANDLERS: Record<string, (args: any) => Promise<any>> = {
   mt5_price: async (args: { symbol: string }) => {
     // Use the existing price command in auto_connect.py
     return execMT5Python(`price ${args.symbol}`);
+  },
+  
+  mt5_indicators: async (args: { symbol: string; timeframe?: string; bars?: number }) => {
+    const { symbol, timeframe = 'M5', bars = 100 } = args;
+    return execMT5Python(`indicators ${symbol} ${timeframe} ${bars}`);
   },
 };
 

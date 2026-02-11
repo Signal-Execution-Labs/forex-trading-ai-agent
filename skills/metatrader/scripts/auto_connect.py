@@ -169,5 +169,105 @@ if __name__ == "__main__":
                     print(json.dumps({"success": True, "symbol": symbol, "bid": tick.bid, "ask": tick.ask, "spread": round((tick.ask - tick.bid) * 100000, 1)}))
                 else:
                     print(json.dumps({"success": False, "error": f"Symbol {symbol} nicht gefunden"}))
+        elif cmd == "indicators" and len(sys.argv) >= 3:
+            # Get technical indicators for a symbol
+            # Usage: indicators SYMBOL [TIMEFRAME] [BARS]
+            if not mt5.initialize():
+                print(json.dumps({"success": False, "error": "MT5 nicht verbunden"}))
+            else:
+                symbol = sys.argv[2]
+                timeframe = mt5.TIMEFRAME_M5  # Default M5
+                if len(sys.argv) > 3:
+                    tf_map = {
+                        "M1": mt5.TIMEFRAME_M1, "M5": mt5.TIMEFRAME_M5, "M15": mt5.TIMEFRAME_M15,
+                        "M30": mt5.TIMEFRAME_M30, "H1": mt5.TIMEFRAME_H1, "H4": mt5.TIMEFRAME_H4,
+                        "D1": mt5.TIMEFRAME_D1, "W1": mt5.TIMEFRAME_W1, "MN1": mt5.TIMEFRAME_MN1
+                    }
+                    timeframe = tf_map.get(sys.argv[3].upper(), mt5.TIMEFRAME_M5)
+                
+                bars = int(sys.argv[4]) if len(sys.argv) > 4 else 100
+                
+                # Get price data
+                rates = mt5.copy_rates_from_pos(symbol, timeframe, 0, bars)
+                if rates is None or len(rates) == 0:
+                    print(json.dumps({"success": False, "error": f"Keine Daten für {symbol}"}))
+                else:
+                    import numpy as np
+                    closes = np.array([r[4] for r in rates])  # Close prices
+                    highs = np.array([r[2] for r in rates])
+                    lows = np.array([r[3] for r in rates])
+                    
+                    # EMA calculation
+                    def ema(data, period):
+                        alpha = 2 / (period + 1)
+                        result = np.zeros_like(data)
+                        result[0] = data[0]
+                        for i in range(1, len(data)):
+                            result[i] = alpha * data[i] + (1 - alpha) * result[i-1]
+                        return result
+                    
+                    # RSI calculation
+                    def rsi(data, period=14):
+                        deltas = np.diff(data)
+                        gains = np.where(deltas > 0, deltas, 0)
+                        losses = np.where(deltas < 0, -deltas, 0)
+                        avg_gain = np.zeros_like(data)
+                        avg_loss = np.zeros_like(data)
+                        avg_gain[period] = np.mean(gains[:period])
+                        avg_loss[period] = np.mean(losses[:period])
+                        for i in range(period + 1, len(data)):
+                            avg_gain[i] = (avg_gain[i-1] * (period-1) + gains[i-1]) / period
+                            avg_loss[i] = (avg_loss[i-1] * (period-1) + losses[i-1]) / period
+                        rs = np.where(avg_loss != 0, avg_gain / avg_loss, 100)
+                        return 100 - (100 / (1 + rs))
+                    
+                    # ATR calculation
+                    def atr(high, low, close, period=14):
+                        tr = np.zeros(len(close))
+                        tr[0] = high[0] - low[0]
+                        for i in range(1, len(close)):
+                            tr[i] = max(high[i] - low[i], abs(high[i] - close[i-1]), abs(low[i] - close[i-1]))
+                        atr_values = np.zeros_like(tr)
+                        atr_values[period-1] = np.mean(tr[:period])
+                        for i in range(period, len(tr)):
+                            atr_values[i] = (atr_values[i-1] * (period-1) + tr[i]) / period
+                        return atr_values
+                    
+                    ema21 = ema(closes, 21)
+                    ema50 = ema(closes, 50)
+                    rsi14 = rsi(closes, 14)
+                    atr14 = atr(highs, lows, closes, 14)
+                    
+                    current_price = closes[-1]
+                    
+                    # Determine trend
+                    ema_trend = "BULLISH" if ema21[-1] > ema50[-1] else "BEARISH"
+                    ema_cross_up = ema21[-2] <= ema50[-2] and ema21[-1] > ema50[-1]
+                    ema_cross_down = ema21[-2] >= ema50[-2] and ema21[-1] < ema50[-1]
+                    
+                    # Pullback detection
+                    pullback_to_ema21 = abs(current_price - ema21[-1]) < atr14[-1] * 0.5
+                    
+                    print(json.dumps({
+                        "success": True,
+                        "symbol": symbol,
+                        "timeframe": sys.argv[3] if len(sys.argv) > 3 else "M5",
+                        "current_price": round(current_price, 2),
+                        "ema21": round(ema21[-1], 2),
+                        "ema50": round(ema50[-1], 2),
+                        "ema_trend": ema_trend,
+                        "ema_cross_up": ema_cross_up,
+                        "ema_cross_down": ema_cross_down,
+                        "rsi": round(rsi14[-1], 1),
+                        "atr": round(atr14[-1], 2),
+                        "pullback_to_ema21": pullback_to_ema21,
+                        "signal": {
+                            "buy": ema_trend == "BULLISH" and pullback_to_ema21 and rsi14[-1] > 55,
+                            "sell": ema_trend == "BEARISH" and pullback_to_ema21 and rsi14[-1] < 45,
+                            "sl_distance": round(atr14[-1] * 1.5, 2),
+                            "tp_distance": round(atr14[-1] * 3.0, 2)
+                        }
+                    }))
+                mt5.shutdown()
         else:
-            print(json.dumps({"error": "Unknown command", "usage": "python auto_connect.py [connect|positions|buy SYMBOL VOL SL TP|sell SYMBOL VOL SL TP|close TICKET|price SYMBOL]"}))
+            print(json.dumps({"error": "Unknown command", "usage": "python auto_connect.py [connect|positions|buy SYMBOL VOL SL TP|sell SYMBOL VOL SL TP|close TICKET|price SYMBOL|indicators SYMBOL TIMEFRAME BARS]"}))
