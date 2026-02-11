@@ -74,6 +74,16 @@ This EA will execute 24/7 without needing AI for each decision - pure rule-based
         // Meta
         check_interval_minutes: { type: 'number', description: 'How often to check (default: 5)' },
         description: { type: 'string', description: 'Original strategy description for reference' },
+        // AI Mode
+        use_ai: { 
+          type: 'boolean', 
+          description: 'Let K.I.T. AI make the final trading decision (smarter but slower). If false, pure rule-based execution.' 
+        },
+        ai_mode: {
+          type: 'string',
+          enum: ['rules_only', 'ai_only', 'hybrid'],
+          description: 'rules_only=fast deterministic, ai_only=AI decides everything, hybrid=rules filter + AI confirms'
+        },
       },
       required: ['name', 'asset', 'timeframe'],
     },
@@ -155,6 +165,7 @@ interface InternalEA {
   max_daily_trades: number;
   check_interval_minutes: number;
   description?: string;
+  ai_mode: 'rules_only' | 'ai_only' | 'hybrid';
   // Runtime state
   status: 'running' | 'stopped';
   created_at: string;
@@ -340,6 +351,14 @@ function evaluateConditions(conditions: Condition[], market: MarketSnapshot): bo
 
 const runningEAs: Map<string, NodeJS.Timeout> = new Map();
 
+// AI Evaluator - will be set by gateway
+let aiEvaluator: ((prompt: string) => Promise<string>) | null = null;
+
+export function setEAAIEvaluator(evaluator: (prompt: string) => Promise<string>): void {
+  aiEvaluator = evaluator;
+  console.log('[K.I.T. EA] AI Evaluator connected');
+}
+
 function log(ea: string, message: string): void {
   console.log(`[EA:${ea}] ${new Date().toISOString()} ${message}`);
 }
@@ -451,21 +470,93 @@ async function runEA(eaName: string): Promise<void> {
     return;
   }
   
-  // Evaluate entry conditions
+  // Evaluate entry conditions based on mode
   let signal: 'buy' | 'sell' | null = null;
   let reason = '';
   
-  if (ea.entry_long && ea.entry_long.length > 0) {
-    if (evaluateConditions(ea.entry_long, market)) {
-      signal = 'buy';
-      reason = 'Long entry conditions met';
-    }
-  }
+  const mode = ea.ai_mode || 'rules_only';
   
-  if (!signal && ea.entry_short && ea.entry_short.length > 0) {
-    if (evaluateConditions(ea.entry_short, market)) {
-      signal = 'sell';
-      reason = 'Short entry conditions met';
+  if (mode === 'ai_only') {
+    // Pure AI mode - let AI decide everything
+    if (aiEvaluator && ea.description) {
+      log(eaName, '🧠 Asking AI for decision...');
+      try {
+        const aiPrompt = `Du bist K.I.T., ein Trading-Agent. Entscheide ob du JETZT traden sollst.
+
+STRATEGIE: ${ea.description}
+
+MARKTDATEN für ${ea.asset} (${ea.timeframe}):
+- Preis: ${market.price}
+- EMA21: ${market.ema21}, EMA50: ${market.ema50}
+- Trend: ${market.ema_trend}
+- RSI: ${market.rsi}
+- ATR: ${market.atr}
+- Spread: ${market.spread}
+- Offene Positionen: ${market.positions.length}
+
+Antworte NUR mit JSON: {"action": "buy"|"sell"|"hold", "reason": "..."}`;
+        
+        const aiResponse = await aiEvaluator(aiPrompt);
+        const match = aiResponse.match(/\{[\s\S]*\}/);
+        if (match) {
+          const decision = JSON.parse(match[0]);
+          if (decision.action === 'buy' || decision.action === 'sell') {
+            signal = decision.action;
+            reason = `AI: ${decision.reason}`;
+          }
+        }
+      } catch (e: any) {
+        log(eaName, `❌ AI error: ${e.message}`);
+      }
+    } else {
+      log(eaName, '⚠️ AI mode but no evaluator/description');
+    }
+  } else {
+    // Rule-based evaluation
+    if (ea.entry_long && ea.entry_long.length > 0) {
+      if (evaluateConditions(ea.entry_long, market)) {
+        signal = 'buy';
+        reason = 'Long entry conditions met';
+      }
+    }
+    
+    if (!signal && ea.entry_short && ea.entry_short.length > 0) {
+      if (evaluateConditions(ea.entry_short, market)) {
+        signal = 'sell';
+        reason = 'Short entry conditions met';
+      }
+    }
+    
+    // Hybrid mode - rules found signal, now ask AI to confirm
+    if (mode === 'hybrid' && signal && aiEvaluator && ea.description) {
+      log(eaName, `🧠 Rules say ${signal.toUpperCase()}, asking AI to confirm...`);
+      try {
+        const confirmPrompt = `Du bist K.I.T. Die Regeln sagen ${signal.toUpperCase()} für ${ea.asset}.
+
+STRATEGIE: ${ea.description}
+
+MARKTDATEN:
+- Preis: ${market.price}, EMA21: ${market.ema21}, EMA50: ${market.ema50}
+- Trend: ${market.ema_trend}, RSI: ${market.rsi}, ATR: ${market.atr}
+
+FRAGE: Soll ich den ${signal.toUpperCase()} Trade wirklich ausführen?
+Antworte NUR mit JSON: {"confirm": true|false, "reason": "..."}`;
+        
+        const aiResponse = await aiEvaluator(confirmPrompt);
+        const match = aiResponse.match(/\{[\s\S]*\}/);
+        if (match) {
+          const decision = JSON.parse(match[0]);
+          if (!decision.confirm) {
+            log(eaName, `🧠 AI rejected: ${decision.reason}`);
+            signal = null;
+            reason = `AI rejected: ${decision.reason}`;
+          } else {
+            reason += ` (AI confirmed: ${decision.reason})`;
+          }
+        }
+      } catch (e: any) {
+        log(eaName, `⚠️ AI confirm error: ${e.message}, proceeding with rules`);
+      }
     }
   }
   
@@ -593,6 +684,7 @@ export const INTERNAL_EA_HANDLERS: Record<string, (args: any) => Promise<any>> =
       max_daily_trades: args.max_daily_trades || 10,
       check_interval_minutes: args.check_interval_minutes || 5,
       description: args.description,
+      ai_mode: args.ai_mode || (args.use_ai ? 'hybrid' : 'rules_only'),
       status: 'stopped',
       created_at: new Date().toISOString(),
       trades_today: 0,
@@ -606,6 +698,12 @@ export const INTERNAL_EA_HANDLERS: Record<string, (args: any) => Promise<any>> =
     eas[args.name] = ea;
     saveEAs(eas);
     
+    const modeLabels = {
+      'rules_only': '⚡ Nur Regeln (schnell, deterministisch)',
+      'ai_only': '🧠 Nur KI (intelligent, flexibel)',
+      'hybrid': '🔮 Hybrid (Regeln + KI-Bestätigung)',
+    };
+    
     return {
       success: true,
       message: `✅ Interner EA "${args.name}" erstellt!`,
@@ -613,6 +711,7 @@ export const INTERNAL_EA_HANDLERS: Record<string, (args: any) => Promise<any>> =
         name: ea.name,
         asset: ea.asset,
         timeframe: ea.timeframe,
+        mode: modeLabels[ea.ai_mode],
         entry_long_conditions: ea.entry_long.length,
         entry_short_conditions: ea.entry_short.length,
         sl: `${ea.sl_type} (${ea.sl_value})`,
