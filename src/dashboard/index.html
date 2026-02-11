@@ -1210,39 +1210,51 @@
     
     // Parse onboarding button patterns from K.I.T.'s text responses
     function parseOnboardingButtons(content) {
-      // Check for numbered list patterns like "[1] OpenAI" or "1. OpenAI"
-      const patterns = [
-        /\[(\d+)\]\s*([^\n\[]+)/g,  // [1] Label
-        /^(\d+)\.\s+\*?\*?([^*\n]+)/gm,  // 1. Label or 1. **Label**
-        /^(\d+)\)\s+([^\n]+)/gm,  // 1) Label
-      ];
-      
       let buttons = [];
       
-      for (const pattern of patterns) {
-        let match;
-        const regex = new RegExp(pattern);
-        while ((match = regex.exec(content)) !== null) {
-          const value = match[1];
-          let label = match[2].trim().replace(/\*+/g, '').replace(/<[^>]+>/g, '');
-          // Clean up label
-          if (label.length > 0 && label.length < 50) {
-            buttons.push({ value, label: `${value}. ${label}`, multi: false });
+      // Pattern: "1. **Label** - description" or "1. Label"
+      const linePattern = /^(\d+)\.\s+\*{0,2}([^*\n-]+)\*{0,2}(?:\s*[-–]\s*[^\n]*)?$/gm;
+      let match;
+      
+      while ((match = linePattern.exec(content)) !== null) {
+        const value = match[1];
+        let label = match[2].trim();
+        // Remove any remaining markdown or HTML
+        label = label.replace(/\*+/g, '').replace(/<[^>]+>/g, '').trim();
+        
+        if (label.length > 0 && label.length < 40) {
+          // Check if we already have this value (avoid duplicates)
+          if (!buttons.find(b => b.value === value)) {
+            buttons.push({ value, label: label, multi: false });
           }
         }
       }
       
-      // Check for multi-select hints
+      // Alternative: "[1] Label" pattern
+      if (buttons.length === 0) {
+        const bracketPattern = /\[(\d+)\]\s*([^\n\[]+)/g;
+        while ((match = bracketPattern.exec(content)) !== null) {
+          const value = match[1];
+          let label = match[2].trim().replace(/\*+/g, '');
+          if (label.length > 0 && label.length < 40) {
+            buttons.push({ value, label: label, multi: false });
+          }
+        }
+      }
+      
+      // Check for multi-select hints (e.g., "Select multiple", "e.g., 1,2,3")
       const isMulti = content.toLowerCase().includes('select multiple') || 
                       content.toLowerCase().includes('mehrfach') ||
-                      content.toLowerCase().includes('space to select');
+                      content.toLowerCase().includes('space to select') ||
+                      content.includes('e.g., 1,2') ||
+                      content.includes('z.B. 1,2');
       
       if (isMulti) {
         buttons = buttons.map(b => ({ ...b, multi: true }));
       }
       
-      // Only return buttons if we found a reasonable number (2-10)
-      if (buttons.length >= 2 && buttons.length <= 10) {
+      // Only return buttons if we found a reasonable number (2-12)
+      if (buttons.length >= 2 && buttons.length <= 12) {
         return buttons;
       }
       
