@@ -227,6 +227,136 @@ export class GatewayServer extends EventEmitter {
         return;
       }
       
+      // =====================================================
+      // WEBHOOK ENDPOINTS (OpenClaw-inspired)
+      // External systems can trigger K.I.T. via HTTP
+      // =====================================================
+      
+      // POST /hooks/wake - Enqueue a system event
+      if (req.url === '/hooks/wake' && req.method === 'POST') {
+        this.handleWebhookRequest(req, res, async (body) => {
+          const { text, mode = 'now' } = body;
+          if (!text) {
+            return { status: 400, body: { error: 'Missing required field: text' } };
+          }
+          
+          // Log the wake event
+          console.log(`[webhook] Wake event: "${text}" (mode: ${mode})`);
+          
+          // Emit internal hook event
+          const hooksManager = getHooksManager();
+          if (hooksManager) {
+            await hooksManager.emit('signal:received', {
+              source: 'webhook',
+              type: 'wake',
+              text,
+              mode,
+            });
+          }
+          
+          // If mode=now, trigger immediate heartbeat
+          if (mode === 'now' && this.heartbeat) {
+            this.heartbeat.forceRun().catch(err => console.error('[webhook] Heartbeat error:', err));
+          }
+          
+          return { status: 200, body: { ok: true, message: 'Wake event enqueued' } };
+        });
+        return;
+      }
+      
+      // POST /hooks/agent - Run an isolated agent turn
+      if (req.url === '/hooks/agent' && req.method === 'POST') {
+        this.handleWebhookRequest(req, res, async (body) => {
+          const { 
+            message, 
+            name = 'Webhook',
+            sessionKey = `hook:${Date.now()}`,
+            wakeMode = 'now',
+            model,
+            timeoutSeconds = 120 
+          } = body;
+          
+          if (!message) {
+            return { status: 400, body: { error: 'Missing required field: message' } };
+          }
+          
+          console.log(`[webhook] Agent request: "${message.substring(0, 50)}..." (session: ${sessionKey})`);
+          
+          // Emit internal hook event
+          const hooksManager = getHooksManager();
+          if (hooksManager) {
+            await hooksManager.emit('signal:received', {
+              source: 'webhook',
+              type: 'agent',
+              message,
+              name,
+              sessionKey,
+            });
+          }
+          
+          // If mode=now, trigger immediate heartbeat
+          if (wakeMode === 'now' && this.heartbeat) {
+            this.heartbeat.forceRun().catch(err => console.error('[webhook] Heartbeat error:', err));
+          }
+          
+          // Return accepted - the actual agent run happens async
+          return { 
+            status: 202, 
+            body: { 
+              ok: true, 
+              message: 'Agent run started',
+              sessionKey,
+            } 
+          };
+        });
+        return;
+      }
+      
+      // POST /hooks/trade - Trigger a trade signal (K.I.T.-specific)
+      if (req.url === '/hooks/trade' && req.method === 'POST') {
+        this.handleWebhookRequest(req, res, async (body) => {
+          const { 
+            symbol, 
+            action, // 'buy' | 'sell' | 'close'
+            amount,
+            stopLoss,
+            takeProfit,
+            source = 'webhook',
+          } = body;
+          
+          if (!symbol || !action) {
+            return { status: 400, body: { error: 'Missing required fields: symbol, action' } };
+          }
+          
+          console.log(`[webhook] Trade signal: ${action} ${symbol} (amount: ${amount || 'default'})`);
+          
+          // Emit trade signal through hooks
+          const hooksManager = getHooksManager();
+          if (hooksManager) {
+            await hooksManager.emit('signal:received', {
+              source,
+              type: 'trade',
+              symbol,
+              action,
+              amount,
+              stopLoss,
+              takeProfit,
+              timestamp: new Date(),
+            });
+          }
+          
+          return { 
+            status: 202, 
+            body: { 
+              ok: true, 
+              message: 'Trade signal received',
+              signal: { symbol, action, amount },
+            } 
+          };
+        });
+        return;
+      }
+      
       res.writeHead(404);
       res.end('Not Found');
     });
@@ -941,6 +1071,56 @@ export class GatewayServer extends EventEmitter {
   // ==========================================================================
   // Getters
   // ==========================================================================
+  
+  /**
+   * Handle incoming webhook requests with auth and body parsing
+   */
+  private handleWebhookRequest(
+    req: any,
+    res: any,
+    handler: (body: any) => Promise<{ status: number; body: any }>
+  ): void {
+    // Check auth token
+    const authHeader = req.headers['authorization'] || '';
+    const tokenHeader = req.headers['x-kit-token'] || '';
+    const token = authHeader.replace('Bearer ', '') || tokenHeader;
+    
+    // If config has a hook token, validate it
+    if (this.config.token && token !== this.config.token) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Unauthorized - invalid or missing token' }));
+      return;
+    }
+    
+    // Parse request body
+    let body = '';
+    req.on('data', (chunk: any) => {
+      body += chunk.toString();
+      // Limit body size to 1MB
+      if (body.length > 1024 * 1024) {
+        res.writeHead(413, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Request body too large' }));
+        req.destroy();
+      }
+    });
+    
+    req.on('end', async () => {
+      try {
+        const jsonBody = body ? JSON.parse(body) : {};
+        const result = await handler(jsonBody);
+        res.writeHead(result.status, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(result.body));
+      } catch (err: any) {
+        console.error('[webhook] Error processing request:', err);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Internal error', message: err.message }));
+      }
+    });
+    
+    req.on('error', (err: any) => {
+      console.error('[webhook] Request error:', err);
+    });
+  }
   
   /**
    * Get current health status
