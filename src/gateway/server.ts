@@ -284,6 +284,9 @@ export class GatewayServer extends EventEmitter {
     
     this.state.status = 'starting';
     
+    // Load API keys from config.json into environment variables
+    this.loadApiKeysFromConfig();
+    
     // Show professional banner like OpenClaw
     const taglines = [
       "Your wealth is my mission.",
@@ -517,6 +520,64 @@ export class GatewayServer extends EventEmitter {
       console.log('📱 WhatsApp channel active - listening for messages');
     } catch (error) {
       console.error('[WhatsApp] Failed to start:', error);
+    }
+  }
+  
+  // ==========================================================================
+  // Config Helpers
+  // ==========================================================================
+  
+  /**
+   * Load API keys from config.json into environment variables
+   * This ensures the AI provider can be used even if keys aren't in .env
+   */
+  private loadApiKeysFromConfig(): void {
+    try {
+      const configPath = require('path').join(require('os').homedir(), '.kit', 'config.json');
+      const fs = require('fs');
+      if (!fs.existsSync(configPath)) return;
+      
+      const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+      
+      // Load from ai.apiKey (convenience single key)
+      if (config.ai?.apiKey) {
+        const key = config.ai.apiKey;
+        // Auto-detect provider from key prefix
+        if (key.startsWith('sk-ant-')) {
+          if (!process.env.ANTHROPIC_API_KEY) process.env.ANTHROPIC_API_KEY = key;
+        } else if (key.startsWith('sk-proj-') || key.startsWith('sk-')) {
+          if (!process.env.OPENAI_API_KEY) process.env.OPENAI_API_KEY = key;
+        }
+      }
+      
+      // Load from ai.providers
+      if (config.ai?.providers) {
+        const providers = config.ai.providers;
+        if (providers.anthropic?.apiKey && !process.env.ANTHROPIC_API_KEY) {
+          process.env.ANTHROPIC_API_KEY = providers.anthropic.apiKey;
+        }
+        if (providers.openai?.apiKey && !process.env.OPENAI_API_KEY) {
+          process.env.OPENAI_API_KEY = providers.openai.apiKey;
+        }
+        if (providers.google?.apiKey && !process.env.GOOGLE_API_KEY) {
+          process.env.GOOGLE_API_KEY = providers.google.apiKey;
+        }
+        if (providers.groq?.apiKey && !process.env.GROQ_API_KEY) {
+          process.env.GROQ_API_KEY = providers.groq.apiKey;
+        }
+        if (providers.xai?.apiKey && !process.env.XAI_API_KEY) {
+          process.env.XAI_API_KEY = providers.xai.apiKey;
+        }
+      }
+      
+      // Load Telegram token from channels config
+      if (config.channels?.telegram?.token && !process.env.TELEGRAM_BOT_TOKEN) {
+        process.env.TELEGRAM_BOT_TOKEN = config.channels.telegram.token;
+      }
+      
+      console.log('   Config: API keys loaded from config.json');
+    } catch (error) {
+      // Silently ignore config loading errors
     }
   }
   

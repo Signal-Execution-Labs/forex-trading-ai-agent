@@ -1201,14 +1201,32 @@ Your personal AI financial agent is ready.
       }
     }
 
-    // Get API key from multiple sources
+    // Get API key from multiple sources (env vars AND config.json)
     const anthropicKey = process.env.ANTHROPIC_API_KEY;
     const openaiKey = process.env.OPENAI_API_KEY;
     const googleKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
     const groqKey = process.env.GROQ_API_KEY;
     const xaiKey = process.env.XAI_API_KEY;
+    
+    // Also check config.json for API keys
+    let configHasKey = false;
+    try {
+      const configPath = path.join(os.homedir(), '.kit', 'config.json');
+      if (fs.existsSync(configPath)) {
+        const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        // Check if onboarded flag is set
+        if (config.onboarded === true) {
+          configHasKey = true; // Trust the onboarded flag
+        }
+        // Also check for API keys in config
+        if (config.ai?.apiKey || config.ai?.providers?.openai?.apiKey || 
+            config.ai?.providers?.anthropic?.apiKey || config.ai?.providers?.google?.apiKey) {
+          configHasKey = true;
+        }
+      }
+    } catch {}
 
-    const hasApiKey = !!(anthropicKey || openaiKey || googleKey || groqKey || xaiKey);
+    const hasApiKey = !!(anthropicKey || openaiKey || googleKey || groqKey || xaiKey || configHasKey);
 
     // =========================================================================
     // START ONBOARDING if no API key and not already in wizard
