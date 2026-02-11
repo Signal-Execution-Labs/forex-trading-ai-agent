@@ -45,6 +45,88 @@ export interface RegisteredTool {
   handler: ToolHandler;
   category: 'system' | 'trading' | 'analysis' | 'channel' | 'utility';
   enabled: boolean;
+  groups?: string[];  // For group-based filtering (e.g., 'group:fs', 'group:trading')
+}
+
+// ============================================================================
+// Tool Profiles (OpenClaw-style)
+// ============================================================================
+
+/**
+ * Tool profiles define base allowlists for different use cases.
+ * Like OpenClaw: minimal, coding, messaging, full
+ * Plus K.I.T.-specific: trading, analysis
+ */
+export type ToolProfile = 'minimal' | 'trading' | 'analysis' | 'messaging' | 'full';
+
+/**
+ * Tool groups for bulk allow/deny
+ */
+export const TOOL_GROUPS: Record<string, string[]> = {
+  'group:fs': ['read', 'write', 'edit', 'list'],
+  'group:runtime': ['exec', 'process'],
+  'group:sessions': ['session_spawn', 'session_list', 'session_send', 'session_status', 'session_cancel'],
+  'group:memory': ['memory_search', 'memory_get', 'memory_write', 'memory_update', 'memory_list'],
+  'group:messaging': ['telegram_send', 'whatsapp_send', 'discord_send', 'slack_send'],
+  'group:browser': ['browser_open', 'browser_navigate', 'browser_screenshot', 'browser_snapshot', 
+                    'browser_click', 'browser_type', 'browser_wait', 'browser_close', 'browser_evaluate'],
+  'group:canvas': ['canvas_present', 'canvas_chart', 'canvas_portfolio', 'canvas_signals', 
+                   'canvas_table', 'canvas_snapshot', 'canvas_hide', 'canvas_back'],
+  'group:cron': ['cron_list', 'cron_add', 'cron_remove', 'cron_run', 'cron_enable', 
+                 'cron_disable', 'cron_status', 'cron_history', 'heartbeat_trigger'],
+  'group:trading': ['auto_trade', 'market_analysis', 'portfolio_tracker', 'alert_system',
+                    'task_scheduler', 'tax_tracker', 'backtester', 'defi_connector',
+                    'binary_login', 'binary_trade', 'binary_balance', 'binary_history'],
+  'group:analysis': ['image_analyze', 'chart_analyze', 'screenshot_analyze', 'web_search', 'web_fetch'],
+  'group:tts': ['tts_speak', 'tts_voices', 'tts_play'],
+  'group:onboarding': ['onboarding_start', 'onboarding_continue', 'onboarding_status'],
+  'group:config': ['config_get', 'config_set', 'config_delete', 'env_set', 'status', 'user_profile'],
+  'group:skills': ['skills_list', 'skills_enable', 'skills_disable', 'skills_setup'],
+};
+
+/**
+ * Profile definitions - which groups/tools are allowed by default
+ */
+export const PROFILE_DEFINITIONS: Record<ToolProfile, {
+  allow: string[];
+  description: string;
+}> = {
+  minimal: {
+    allow: ['session_status', 'status'],
+    description: 'Minimal tools - only status checks'
+  },
+  trading: {
+    allow: [
+      'group:fs', 'group:memory', 'group:sessions', 'group:trading',
+      'group:analysis', 'group:canvas', 'group:cron', 'group:config',
+      'session_status', 'status', 'web_search', 'web_fetch'
+    ],
+    description: 'Trading tools - market analysis, portfolio, trading execution'
+  },
+  analysis: {
+    allow: [
+      'group:fs', 'group:memory', 'group:analysis', 'group:canvas',
+      'session_status', 'status', 'web_search', 'web_fetch'
+    ],
+    description: 'Analysis tools - charts, data, research (no trading)'
+  },
+  messaging: {
+    allow: [
+      'group:messaging', 'group:sessions', 'group:memory',
+      'session_status', 'status'
+    ],
+    description: 'Messaging tools - channels, notifications'
+  },
+  full: {
+    allow: ['*'],
+    description: 'Full access - all tools enabled'
+  }
+};
+
+export interface ToolPolicyConfig {
+  profile?: ToolProfile;
+  allow?: string[];  // Additional tools to allow (can include group:* patterns)
+  deny?: string[];   // Tools to deny (overrides allow, can include group:* patterns)
 }
 
 // ============================================================================
@@ -151,6 +233,126 @@ export class ToolRegistry {
     if (!tool) return false;
     tool.enabled = enabled;
     return true;
+  }
+
+  /**
+   * Apply a tool policy (profile + allow/deny)
+   * This is the OpenClaw-style tool filtering system
+   */
+  applyPolicy(policy: ToolPolicyConfig): void {
+    const profile = policy.profile || 'full';
+    const profileDef = PROFILE_DEFINITIONS[profile];
+    
+    // Start by disabling all tools
+    for (const tool of this.tools.values()) {
+      tool.enabled = false;
+    }
+
+    // Build the allow set from profile
+    const allowSet = new Set<string>();
+    
+    // Expand profile allows
+    for (const item of profileDef.allow) {
+      if (item === '*') {
+        // Full access - enable all
+        for (const toolName of this.tools.keys()) {
+          allowSet.add(toolName);
+        }
+      } else if (item.startsWith('group:')) {
+        // Expand group
+        const groupTools = TOOL_GROUPS[item] || [];
+        for (const toolName of groupTools) {
+          allowSet.add(toolName);
+        }
+      } else {
+        allowSet.add(item);
+      }
+    }
+
+    // Add additional allows from policy
+    if (policy.allow) {
+      for (const item of policy.allow) {
+        if (item.startsWith('group:')) {
+          const groupTools = TOOL_GROUPS[item] || [];
+          for (const toolName of groupTools) {
+            allowSet.add(toolName);
+          }
+        } else {
+          allowSet.add(item);
+        }
+      }
+    }
+
+    // Remove denied tools
+    if (policy.deny) {
+      for (const item of policy.deny) {
+        if (item === '*') {
+          // Deny all - clear everything
+          allowSet.clear();
+        } else if (item.startsWith('group:')) {
+          const groupTools = TOOL_GROUPS[item] || [];
+          for (const toolName of groupTools) {
+            allowSet.delete(toolName);
+          }
+        } else {
+          allowSet.delete(item);
+        }
+      }
+    }
+
+    // Apply the allow set
+    for (const toolName of allowSet) {
+      const tool = this.tools.get(toolName);
+      if (tool) {
+        tool.enabled = true;
+      }
+    }
+  }
+
+  /**
+   * Get current profile status
+   */
+  getProfileStatus(): { enabled: number; disabled: number; total: number; enabledTools: string[] } {
+    const tools = Array.from(this.tools.values());
+    const enabled = tools.filter(t => t.enabled);
+    return {
+      enabled: enabled.length,
+      disabled: tools.length - enabled.length,
+      total: tools.length,
+      enabledTools: enabled.map(t => t.definition.name),
+    };
+  }
+
+  /**
+   * Expand a group reference to tool names
+   */
+  expandGroup(group: string): string[] {
+    return TOOL_GROUPS[group] || [];
+  }
+
+  /**
+   * List all available profiles
+   */
+  static getProfiles(): Array<{ name: ToolProfile; description: string; toolCount: number }> {
+    return Object.entries(PROFILE_DEFINITIONS).map(([name, def]) => {
+      let toolCount = 0;
+      if (def.allow.includes('*')) {
+        toolCount = -1; // Unlimited
+      } else {
+        for (const item of def.allow) {
+          if (item.startsWith('group:')) {
+            toolCount += (TOOL_GROUPS[item] || []).length;
+          } else {
+            toolCount += 1;
+          }
+        }
+      }
+      return {
+        name: name as ToolProfile,
+        description: def.description,
+        toolCount,
+      };
+    });
   }
 
   /**

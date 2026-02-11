@@ -893,5 +893,141 @@ program
     }
   });
 
+// ═══════════════════════════════════════════════════════════════
+// TOOLS (Tool Profiles - OpenClaw-style)
+// ═══════════════════════════════════════════════════════════════
+program
+  .command('tools')
+  .description('Manage tool profiles and permissions')
+  .option('-l, --list', 'List all available tools')
+  .option('-p, --profiles', 'Show available tool profiles')
+  .option('-a, --apply <profile>', 'Apply a tool profile (minimal, trading, analysis, messaging, full)')
+  .option('-s, --status', 'Show current tool policy status')
+  .option('-g, --groups', 'List tool groups')
+  .action(async (options) => {
+    const { 
+      createDefaultToolRegistry, 
+      ToolRegistry, 
+      TOOL_GROUPS, 
+      PROFILE_DEFINITIONS 
+    } = await import('../tools/system/tool-registry');
+    
+    if (options.profiles) {
+      console.log('\n🔧 Available Tool Profiles\n');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+      
+      const profiles = ToolRegistry.getProfiles();
+      for (const profile of profiles) {
+        const count = profile.toolCount === -1 ? 'all' : profile.toolCount;
+        console.log(`   ${profile.name.padEnd(12)} - ${profile.description}`);
+        console.log(`                 Tools: ${count}\n`);
+      }
+      
+      console.log('Apply with: kit tools --apply <profile>\n');
+      return;
+    }
+    
+    if (options.groups) {
+      console.log('\n📦 Tool Groups\n');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+      
+      for (const [group, tools] of Object.entries(TOOL_GROUPS)) {
+        console.log(`   ${group}:`);
+        console.log(`      ${tools.join(', ')}\n`);
+      }
+      return;
+    }
+    
+    if (options.apply) {
+      const profile = options.apply.toLowerCase();
+      const validProfiles = ['minimal', 'trading', 'analysis', 'messaging', 'full'];
+      
+      if (!validProfiles.includes(profile)) {
+        console.log(`\n❌ Invalid profile: ${profile}`);
+        console.log(`   Valid profiles: ${validProfiles.join(', ')}\n`);
+        return;
+      }
+      
+      // Load config and update
+      const configPath = path.join(KIT_HOME, 'config.json');
+      let config: any = {};
+      if (fs.existsSync(configPath)) {
+        config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+      }
+      
+      config.tools = config.tools || {};
+      config.tools.profile = profile;
+      
+      // Ensure directory exists
+      if (!fs.existsSync(KIT_HOME)) {
+        fs.mkdirSync(KIT_HOME, { recursive: true });
+      }
+      
+      fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+      
+      const profileDef = PROFILE_DEFINITIONS[profile as keyof typeof PROFILE_DEFINITIONS];
+      console.log(`\n✅ Tool profile set to: ${profile}`);
+      console.log(`   ${profileDef.description}`);
+      console.log(`   Saved to: ${configPath}\n`);
+      return;
+    }
+    
+    if (options.status) {
+      console.log('\n📊 Tool Policy Status\n');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+      
+      // Load config
+      const configPath = path.join(KIT_HOME, 'config.json');
+      let config: any = {};
+      if (fs.existsSync(configPath)) {
+        config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+      }
+      
+      const profile = config.tools?.profile || 'full';
+      const allow = config.tools?.allow || [];
+      const deny = config.tools?.deny || [];
+      
+      console.log(`   Profile: ${profile}`);
+      if (allow.length > 0) console.log(`   Allow:   ${allow.join(', ')}`);
+      if (deny.length > 0) console.log(`   Deny:    ${deny.join(', ')}`);
+      
+      // Create registry and apply policy
+      const registry = createDefaultToolRegistry();
+      registry.applyPolicy({ profile: profile as any, allow, deny });
+      const status = registry.getProfileStatus();
+      
+      console.log(`\n   Enabled:  ${status.enabled} tools`);
+      console.log(`   Disabled: ${status.disabled} tools`);
+      console.log(`   Total:    ${status.total} tools\n`);
+      return;
+    }
+    
+    if (options.list) {
+      console.log('\n🔧 Registered Tools\n');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+      
+      const registry = createDefaultToolRegistry();
+      const tools = registry.list();
+      
+      const categories = ['system', 'trading', 'analysis', 'channel', 'utility'];
+      
+      for (const category of categories) {
+        const catTools = tools.filter(t => t.category === category);
+        if (catTools.length === 0) continue;
+        
+        console.log(`   📁 ${category.toUpperCase()} (${catTools.length})`);
+        for (const tool of catTools) {
+          const status = tool.enabled ? '✓' : '✗';
+          console.log(`      ${status} ${tool.definition.name}`);
+        }
+        console.log('');
+      }
+      return;
+    }
+    
+    // Default: show help
+    program.commands.find(c => c.name() === 'tools')?.help();
+  });
+
 // Parse and execute
 program.parse();
