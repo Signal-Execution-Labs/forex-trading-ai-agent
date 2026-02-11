@@ -5,6 +5,7 @@
  */
 
 import { ToolDefinition as ChatToolDef } from '../gateway/chat-manager';
+import { signalCopierTools } from './signal-copier-tools';
 
 // ============================================================================
 // Tool Definitions (for LLM)
@@ -255,6 +256,129 @@ export const TRADING_TOOLS: ChatToolDef[] = [
       },
     },
   },
+  
+  // ========================================================================
+  // Signal Copier Tools - Copy signals from Telegram/Discord channels
+  // ========================================================================
+  {
+    name: 'signal_copier_add_channel',
+    description: 'Add a Telegram channel or group to copy trading signals from. User just says the channel name, K.I.T. handles everything automatically.',
+    parameters: {
+      type: 'object',
+      properties: {
+        channel: {
+          type: 'string',
+          description: 'Telegram channel/group name or link (e.g., @CryptoSignals, t.me/ForexVIP)',
+        },
+        markets: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Markets to copy: crypto, forex, binary, stocks. Default: all',
+        },
+        autoExecute: {
+          type: 'boolean',
+          description: 'Auto-execute signals without confirmation. Default: true',
+        },
+      },
+      required: ['channel'],
+    },
+  },
+  {
+    name: 'signal_copier_remove_channel',
+    description: 'Stop copying signals from a Telegram channel',
+    parameters: {
+      type: 'object',
+      properties: {
+        channel: {
+          type: 'string',
+          description: 'Channel name to remove',
+        },
+      },
+      required: ['channel'],
+    },
+  },
+  {
+    name: 'signal_copier_list',
+    description: 'List all Telegram channels being monitored for trading signals',
+    parameters: {
+      type: 'object',
+      properties: {},
+    },
+  },
+  {
+    name: 'signal_copier_pause',
+    description: 'Pause signal copying for a channel or all channels',
+    parameters: {
+      type: 'object',
+      properties: {
+        channel: {
+          type: 'string',
+          description: 'Channel to pause, or "all" for all channels',
+        },
+      },
+      required: ['channel'],
+    },
+  },
+  {
+    name: 'signal_copier_resume',
+    description: 'Resume signal copying for a channel or all channels',
+    parameters: {
+      type: 'object',
+      properties: {
+        channel: {
+          type: 'string',
+          description: 'Channel to resume, or "all" for all channels',
+        },
+      },
+      required: ['channel'],
+    },
+  },
+  {
+    name: 'signal_copier_settings',
+    description: 'Update signal copier settings like risk per trade, max trades, confirmation mode',
+    parameters: {
+      type: 'object',
+      properties: {
+        maxRiskPerTrade: {
+          type: 'number',
+          description: 'Max risk per trade in % (e.g., 2 for 2%)',
+        },
+        maxTradesPerDay: {
+          type: 'number',
+          description: 'Max trades per day',
+        },
+        requireConfirmation: {
+          type: 'boolean',
+          description: 'Require confirmation before executing signals',
+        },
+        cryptoExchange: {
+          type: 'string',
+          description: 'Exchange for crypto trades (binance, kraken, etc.)',
+        },
+        forexPlatform: {
+          type: 'string',
+          description: 'Platform for forex trades (mt5, mt4)',
+        },
+        binaryPlatform: {
+          type: 'string',
+          description: 'Platform for binary options (binaryfaster, etc.)',
+        },
+      },
+    },
+  },
+  {
+    name: 'signal_copier_stats',
+    description: 'Get signal copier statistics - signals received, executed, win rate',
+    parameters: {
+      type: 'object',
+      properties: {
+        channel: {
+          type: 'string',
+          description: 'Channel to get stats for, or omit for all channels',
+        },
+      },
+    },
+  },
 ];
 
 // ============================================================================
@@ -461,6 +585,11 @@ export const MOCK_TOOL_HANDLERS: Record<string, (args: Record<string, unknown>) 
     { title: 'Fed Signals No Rate Cuts Until March', source: 'Reuters', sentiment: 'neutral', timestamp: '2025-02-09T18:30:00Z' },
     { title: `${args.symbol || 'Crypto'} ETF Inflows Continue`, source: 'Bloomberg', sentiment: 'bullish', timestamp: '2025-02-09T16:00:00Z' },
   ]),
+  
+  // Signal Copier Handlers (connected to real implementation)
+  ...Object.fromEntries(
+    signalCopierTools.map(tool => [tool.name, tool.handler])
+  ),
 };
 
 // ============================================================================

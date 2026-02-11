@@ -236,3 +236,21 @@ export interface BacktestTrade {
   pnlPct: number;
   reason: string;
 }
+
+// Tool Definition Types
+export interface Tool {
+  name: string;
+  description: string;
+  parameters: {
+    type: 'object';
+    properties: Record<string, {
+      type: string;
+      description?: string;
+      items?: { type: string };
+      enum?: string[];
+      default?: unknown;
+    }>;
+    required?: string[];
+  };
+  handler: (params: Record<string, unknown>) => Promise<unknown>;
+}
