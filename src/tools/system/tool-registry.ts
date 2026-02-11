@@ -78,7 +78,8 @@ export const TOOL_GROUPS: Record<string, string[]> = {
                     'task_scheduler', 'tax_tracker', 'backtester', 'defi_connector',
                     'binary_login', 'binary_trade', 'binary_balance', 'binary_history',
                     'mt5_connect', 'mt5_account_info', 'mt5_positions', 'mt5_market_order', 
-                    'mt5_close_position', 'mt5_price'],
+                    'mt5_close_position', 'mt5_price',
+                    'strategy_save', 'strategy_start', 'strategy_stop', 'strategy_list', 'strategy_evaluate'],
   'group:analysis': ['image_analyze', 'chart_analyze', 'screenshot_analyze', 'web_search', 'web_fetch'],
   'group:tts': ['tts_speak', 'tts_voices', 'tts_play'],
   'group:onboarding': ['onboarding_start', 'onboarding_continue', 'onboarding_status'],
@@ -501,6 +502,7 @@ import {
 
 import { forumTools } from '../forum-tools';
 import { MT5_TOOLS, MT5_TOOL_HANDLERS } from '../mt5-tools';
+import { STRATEGY_TOOLS, STRATEGY_TOOL_HANDLERS, initializeStrategies } from '../strategy-tools';
 
 export function createDefaultToolRegistry(workspaceDir?: string): ToolRegistry {
   const registry = new ToolRegistry(workspaceDir);
@@ -654,6 +656,25 @@ export function createDefaultToolRegistry(workspaceDir?: string): ToolRegistry {
       );
     }
   }
+
+  // Strategy Management tools (24/7 auto-trading)
+  for (const tool of STRATEGY_TOOLS) {
+    const handler = STRATEGY_TOOL_HANDLERS[tool.name];
+    if (handler) {
+      registry.register(
+        {
+          name: tool.name,
+          description: tool.description,
+          parameters: tool.parameters as ToolDefinition['parameters'],
+        },
+        async (args, _context) => handler(args),
+        'trading'
+      );
+    }
+  }
+
+  // Initialize running strategies on startup
+  initializeStrategies();
 
   return registry;
 }
