@@ -330,3 +330,10 @@ export {
   setForumCredentials,
   getForumCredentials,
 } from '../forum-tools';
+
+// MetaTrader 5 Tools (auto-connect, no credentials needed!)
+export {
+  MT5_TOOLS,
+  MT5_TOOL_HANDLERS,
+  registerMT5Tools,
+} from '../mt5-tools';

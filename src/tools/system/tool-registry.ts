@@ -76,7 +76,9 @@ export const TOOL_GROUPS: Record<string, string[]> = {
                  'cron_disable', 'cron_status', 'cron_history', 'heartbeat_trigger'],
   'group:trading': ['auto_trade', 'market_analysis', 'portfolio_tracker', 'alert_system',
                     'task_scheduler', 'tax_tracker', 'backtester', 'defi_connector',
-                    'binary_login', 'binary_trade', 'binary_balance', 'binary_history'],
+                    'binary_login', 'binary_trade', 'binary_balance', 'binary_history',
+                    'mt5_connect', 'mt5_account_info', 'mt5_positions', 'mt5_market_order', 
+                    'mt5_close_position', 'mt5_price'],
   'group:analysis': ['image_analyze', 'chart_analyze', 'screenshot_analyze', 'web_search', 'web_fetch'],
   'group:tts': ['tts_speak', 'tts_voices', 'tts_play'],
   'group:onboarding': ['onboarding_start', 'onboarding_continue', 'onboarding_status'],
@@ -498,6 +500,7 @@ import {
 } from './tts-tools';
 
 import { forumTools } from '../forum-tools';
+import { MT5_TOOLS, MT5_TOOL_HANDLERS } from '../mt5-tools';
 
 export function createDefaultToolRegistry(workspaceDir?: string): ToolRegistry {
   const registry = new ToolRegistry(workspaceDir);
@@ -634,6 +637,22 @@ export function createDefaultToolRegistry(workspaceDir?: string): ToolRegistry {
       async (args, _context) => tool.execute(args as any),
       'channel'
     );
+  }
+
+  // MetaTrader 5 tools (auto-connect, NO CREDENTIALS NEEDED!)
+  for (const tool of MT5_TOOLS) {
+    const handler = MT5_TOOL_HANDLERS[tool.name];
+    if (handler) {
+      registry.register(
+        {
+          name: tool.name,
+          description: tool.description,
+          parameters: tool.parameters as ToolDefinition['parameters'],
+        },
+        async (args, _context) => handler(args),
+        'trading'
+      );
+    }
   }
 
   return registry;
