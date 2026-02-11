@@ -1177,5 +1177,79 @@ program
     program.commands.find(c => c.name() === 'tools')?.help();
   });
 
+// ═══════════════════════════════════════════════════════════════
+// RESET
+// ═══════════════════════════════════════════════════════════════
+program
+  .command('reset')
+  .description('Reset K.I.T. configuration and/or workspace (keeps CLI installed)')
+  .option('-c, --config', 'Reset only config (keeps workspace)')
+  .option('-w, --workspace', 'Reset only workspace (keeps config)')
+  .option('-a, --all', 'Reset everything (config + workspace)')
+  .option('-y, --yes', 'Skip confirmation prompt')
+  .action(async (options) => {
+    const readline = await import('readline');
+    const kitHome = path.join(os.homedir(), '.kit');
+    const configPath = path.join(kitHome, 'config.json');
+    const workspacePath = path.join(kitHome, 'workspace');
+    const onboardingPath = path.join(kitHome, 'onboarding.json');
+    
+    // Determine what to reset
+    let resetConfig = options.all || options.config || (!options.workspace);
+    let resetWorkspace = options.all || options.workspace;
+    
+    if (!options.all && !options.config && !options.workspace) {
+      // Default: reset config only
+      resetConfig = true;
+      resetWorkspace = false;
+    }
+    
+    console.log('\n🚗 K.I.T. Reset\n');
+    console.log('This will delete:');
+    if (resetConfig) {
+      console.log('   ✗ config.json (API keys, settings)');
+      console.log('   ✗ onboarding.json (setup state)');
+    }
+    if (resetWorkspace) {
+      console.log('   ✗ workspace/ (SOUL.md, USER.md, memory/)');
+    }
+    console.log('');
+    
+    // Confirm unless --yes
+    if (!options.yes) {
+      const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+      const answer = await new Promise<string>(resolve => {
+        rl.question('⚠️  Are you sure? (yes/no): ', resolve);
+      });
+      rl.close();
+      
+      if (answer.toLowerCase() !== 'yes' && answer.toLowerCase() !== 'y') {
+        console.log('\n❌ Reset cancelled.\n');
+        process.exit(0);
+      }
+    }
+    
+    // Perform reset
+    console.log('\nResetting...');
+    
+    if (resetConfig) {
+      if (fs.existsSync(configPath)) {
+        fs.unlinkSync(configPath);
+        console.log('   ✓ Deleted config.json');
+      }
+      if (fs.existsSync(onboardingPath)) {
+        fs.unlinkSync(onboardingPath);
+        console.log('   ✓ Deleted onboarding.json');
+      }
+    }
+    
+    if (resetWorkspace && fs.existsSync(workspacePath)) {
+      fs.rmSync(workspacePath, { recursive: true, force: true });
+      console.log('   ✓ Deleted workspace/');
+    }
+    
+    console.log('\n✅ Reset complete! Run "kit start" to reconfigure.\n');
+  });
+
 // Parse and execute
 program.parse();

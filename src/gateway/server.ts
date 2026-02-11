@@ -679,6 +679,40 @@ export class GatewayServer extends EventEmitter {
       return { run };
     });
     
+    // Config handlers (for dashboard config editor)
+    this.protocol.registerHandler('config.get' as any, async () => {
+      try {
+        const configPath = require('path').join(require('os').homedir(), '.kit', 'config.json');
+        const fs = require('fs');
+        if (fs.existsSync(configPath)) {
+          return JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        }
+        return {};
+      } catch (error: any) {
+        throw new Error('Failed to read config: ' + error.message);
+      }
+    });
+    
+    this.protocol.registerHandler('config.set' as any, async (params) => {
+      try {
+        const { config } = params as { config: any };
+        const configPath = require('path').join(require('os').homedir(), '.kit', 'config.json');
+        const kitHome = require('path').join(require('os').homedir(), '.kit');
+        const fs = require('fs');
+        
+        // Ensure directory exists
+        if (!fs.existsSync(kitHome)) {
+          fs.mkdirSync(kitHome, { recursive: true });
+        }
+        
+        // Write config
+        fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+        return { success: true };
+      } catch (error: any) {
+        throw new Error('Failed to save config: ' + error.message);
+      }
+    });
+    
     // Chat handlers
     this.protocol.registerHandler(PROTOCOL_METHODS.CHAT_SEND, async (params, context) => {
       const chatParams = params as unknown as ChatSendParams;

@@ -557,6 +557,22 @@
             </div>
           </div>
         </div>
+        
+        <!-- Config Editor Card -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">📝 Config Editor</span>
+            <button id="configToggle" onclick="toggleConfigEditor()" style="background: rgba(0,212,255,0.2); border: 1px solid rgba(0,212,255,0.3); color: #00d4ff; padding: 0.25rem 0.5rem; border-radius: 0.25rem; cursor: pointer; font-size: 0.75rem;">Edit</button>
+          </div>
+          <div id="configEditorPanel" style="display: none;">
+            <textarea id="configEditor" style="width: 100%; height: 300px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #00ff88; font-family: 'Consolas', 'Monaco', monospace; font-size: 0.8rem; padding: 0.75rem; resize: vertical;" spellcheck="false"></textarea>
+            <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+              <button onclick="saveConfig()" style="flex: 1; padding: 0.5rem; background: linear-gradient(90deg, #00d4ff, #7b2fff); border: none; border-radius: 0.25rem; color: #fff; font-weight: 600; cursor: pointer;">💾 Save</button>
+              <button onclick="reloadConfig()" style="flex: 1; padding: 0.5rem; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 0.25rem; color: #888; cursor: pointer;">🔄 Reload</button>
+            </div>
+            <div id="configStatus" style="font-size: 0.75rem; color: #888; margin-top: 0.5rem; text-align: center;"></div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -1206,6 +1222,11 @@
       } else if (data.type === 'status') {
         updateDashboard(data);
       }
+      
+      // Handle config editor responses
+      if (data.id && (data.id.startsWith('config_get_') || data.id.startsWith('config_set_'))) {
+        handleConfigResponse(data);
+      }
     }
     
     // Parse onboarding button patterns from K.I.T.'s text responses
@@ -1273,6 +1294,90 @@
     window.canvasMinimize = canvasMinimize;
     window.canvasExpand = canvasExpand;
     window.canvasBack = canvasBack;
+    
+    // ═══════════════════════════════════════════════════════════════
+    // CONFIG EDITOR
+    // ═══════════════════════════════════════════════════════════════
+    
+    let configEditorVisible = false;
+    const configEditor = document.getElementById('configEditor');
+    const configEditorPanel = document.getElementById('configEditorPanel');
+    const configToggle = document.getElementById('configToggle');
+    const configStatus = document.getElementById('configStatus');
+    
+    function toggleConfigEditor() {
+      configEditorVisible = !configEditorVisible;
+      configEditorPanel.style.display = configEditorVisible ? 'block' : 'none';
+      configToggle.textContent = configEditorVisible ? 'Hide' : 'Edit';
+      
+      if (configEditorVisible) {
+        reloadConfig();
+      }
+    }
+    
+    function reloadConfig() {
+      // Send request to get config
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: 'req',
+          id: 'config_get_' + Date.now(),
+          method: 'config.get',
+          params: {}
+        }));
+        configStatus.textContent = 'Loading...';
+        configStatus.style.color = '#888';
+      } else {
+        configStatus.textContent = '⚠️ Not connected';
+        configStatus.style.color = '#ff4444';
+      }
+    }
+    
+    function saveConfig() {
+      try {
+        const newConfig = JSON.parse(configEditor.value);
+        
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({
+            type: 'req',
+            id: 'config_set_' + Date.now(),
+            method: 'config.set',
+            params: { config: newConfig }
+          }));
+          configStatus.textContent = 'Saving...';
+          configStatus.style.color = '#888';
+        }
+      } catch (e) {
+        configStatus.textContent = '❌ Invalid JSON: ' + e.message;
+        configStatus.style.color = '#ff4444';
+      }
+    }
+    
+    // Handle config responses
+    function handleConfigResponse(data) {
+      if (data.id && data.id.startsWith('config_get_')) {
+        if (data.ok && data.payload) {
+          configEditor.value = JSON.stringify(data.payload, null, 2);
+          configStatus.textContent = '✅ Loaded';
+          configStatus.style.color = '#00ff88';
+        } else {
+          configStatus.textContent = '❌ Failed to load';
+          configStatus.style.color = '#ff4444';
+        }
+      } else if (data.id && data.id.startsWith('config_set_')) {
+        if (data.ok) {
+          configStatus.textContent = '✅ Saved! Restart K.I.T. to apply changes.';
+          configStatus.style.color = '#00ff88';
+        } else {
+          configStatus.textContent = '❌ Failed to save: ' + (data.error || 'Unknown error');
+          configStatus.style.color = '#ff4444';
+        }
+      }
+    }
+    
+    // Expose config functions globally
+    window.toggleConfigEditor = toggleConfigEditor;
+    window.reloadConfig = reloadConfig;
+    window.saveConfig = saveConfig;
   </script>
 </body>
 </html>
