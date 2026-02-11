@@ -4,6 +4,105 @@ Continuous research into professional finance apps to improve K.I.T.
 
 ---
 
+## Research Session: 2026-02-11 (Late Night - 23:32)
+
+### Research: TradingView Advanced Features Deep Dive
+
+**Source Analyzed:**
+- TradingView Features Page (tradingview.com/features/)
+- TradingView Options Tools
+- TradingView Seasonals & Yield Curve
+
+**Key Findings:**
+- TradingView has 400+ built-in indicators, 100K+ public indicators
+- 110+ smart drawing tools
+- Volume Footprint and TPO charts for institutional analysis
+- **Seasonals feature** - track price movements over years for annual trends
+- **Fundamental Graphs** - compare 100+ metrics across symbols
+- **Options Strategy Builder** - spreads, P&L, greeks, what-if scenarios
+- **Yield Curve Analysis** - 40+ countries, historical comparison
+- **The Leap** - paper trading competitions with prizes
+
+### New Skills Implemented (+5 this session)
+
+#### Skill #74: Seasonality Scanner ✅
+**Category:** Analysis | **Inspired by:** TradingView Seasonals, Seasonax
+
+Uncover recurring annual patterns in any asset:
+- **Multi-Year Overlay**: Compare 5, 10, 20 years of data
+- **Monthly/Weekly/Hourly Patterns**: Find best periods to trade
+- **Calendar Events**: Earnings season, tax season, holidays
+- **Commodities Cycles**: Crop, energy, metals seasonality
+- **Statistical Confidence**: Win rate scoring over 10+ years
+- **Holiday Effects**: Santa Rally, January Effect, Sell in May
+
+---
+
+#### Skill #75: Fundamental Comparator ✅
+**Category:** Analysis | **Inspired by:** TradingView Fundamental Graphs, Koyfin
+
+Compare financial metrics across multiple symbols:
+- **100+ Metrics**: P/E, ROE, margins, growth rates, dividends
+- **Comparison Modes**: Cross-company, sector average, historical
+- **Visualizations**: Multi-line charts, heatmaps, scatter plots
+- **AI Analysis**: "Why is this P/E concerning?"
+- **Quality Score**: Composite fundamental rating
+- **Undervalued Finder**: Automatic value stock screening
+
+---
+
+#### Skill #76: Options Strategy Builder ✅
+**Category:** Trading | **Inspired by:** TradingView Options, OptionStrat, Thinkorswim
+
+Professional options strategy design and analysis:
+- **30+ Templates**: Iron Condor, Butterfly, Calendar, PMCC, Wheel
+- **Visual Builder**: Drag & drop legs on option chain
+- **P&L Diagram**: Real-time profit/loss visualization
+- **Greeks Profile**: Delta, Gamma, Theta, Vega curves
+- **What-If Scenarios**: Price, time, IV impact simulation
+- **Multi-Leg Support**: Up to 8 legs per strategy
+
+---
+
+#### Skill #77: Yield Curve Analyzer ✅
+**Category:** Analysis | **Inspired by:** TradingView Yield Curve, FRED, Bloomberg
+
+Monitor yield curves across 40+ global economies:
+- **40+ Countries**: US, UK, Germany, Japan, China, etc.
+- **Inversion Detection**: 2s10s, 3m10y spread alerts
+- **Recession Indicator**: Historical accuracy analysis
+- **Comparison Tools**: Cross-country, time travel, animation
+- **Trading Signals**: Steepener/flattener trade ideas
+- **Fed Funds Expectations**: Implied rate path
+
+---
+
+#### Skill #78: Trading Competitions ✅
+**Category:** Social | **Inspired by:** TradingView "The Leap", CME Challenge
+
+Compete risk-free for prizes with K.I.T. community:
+- **Competition Types**: Global, private leagues, 1v1, team, AI battles
+- **Formats**: Best returns, Sharpe ratio, consistency, asset-specific
+- **Timeframes**: Sprint (1h), daily, weekly, monthly, quarterly
+- **Prize Pools**: Tokens, cash, NFT trophies, recognition
+- **AI Agent Competitions**: Bot vs bot, human vs AI
+- **Live Leaderboards**: Real-time rankings with spectator mode
+
+---
+
+### K.I.T. Skill Count: 78 Total (+5 this session)
+
+| Category | Count | New This Session |
+|----------|-------|------------------|
+| Analysis | 12 | +3 (seasonality, fundamentals, yield-curve) |
+| Trading | 13 | +1 (options-strategy-builder) |
+| Social | 5 | +1 (trading-competitions) |
+| DeFi | 8 | |
+| Portfolio | 4 | |
+| Other | 36 | |
+
+---
+
 ## Research Session: 2026-02-11 (Night - 21:35)
 
 ### Research: Multi-Platform Feature Analysis
