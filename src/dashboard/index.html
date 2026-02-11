@@ -694,7 +694,7 @@
           // New session - request welcome summary
           messages.innerHTML = '';
           addMessage('kit', '<span class="loading"></span>Loading your portfolio summary...', false);
-          ws.send(JSON.stringify({ type: 'chat', content: 'Zeige mir eine Zusammenfassung meines Portfolios und Status' }));
+          ws.send(JSON.stringify({ type: 'chat', content: 'Show me a summary of my portfolio and current status' }));
         }
         
         // Request status
