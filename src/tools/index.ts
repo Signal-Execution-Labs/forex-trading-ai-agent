@@ -130,6 +130,18 @@ export type { WalletToolResult } from './wallet-tools';
 // Signal Copier Tools - Copy signals from Telegram/Discord channels
 export { signalCopierTools } from './signal-copier-tools';
 
+// ALL Skill Tools - Every skill as AI tool (user says what they want, K.I.T. does it)
+export {
+  allSkillTools,
+  tradingSkillTools,
+  analysisSkillTools,
+  portfolioSkillTools,
+  defiSkillTools,
+  utilitySkillTools,
+  getSkillToolDefinitions,
+  getSkillToolHandlers,
+} from './skill-tools';
+
 // Factory for creating all tools
 export interface ToolInstances {
   autoTrader: InstanceType<typeof import('./auto-trader').AutoTrader>;

@@ -6,6 +6,7 @@
 
 import { ToolDefinition as ChatToolDef } from '../gateway/chat-manager';
 import { signalCopierTools } from './signal-copier-tools';
+import { getSkillToolDefinitions, getSkillToolHandlers } from './skill-tools';
 
 // ============================================================================
 // Tool Definitions (for LLM)
@@ -597,9 +598,11 @@ export const MOCK_TOOL_HANDLERS: Record<string, (args: Record<string, unknown>) 
 // ============================================================================
 
 export function getTradingTools(): ChatToolDef[] {
-  return TRADING_TOOLS;
+  // Combine base trading tools + all skill tools
+  return [...TRADING_TOOLS, ...getSkillToolDefinitions()];
 }
 
 export function getMockHandlers(): Record<string, (args: Record<string, unknown>) => Promise<unknown>> {
-  return MOCK_TOOL_HANDLERS;
+  // Combine mock handlers + real skill handlers
+  return { ...MOCK_TOOL_HANDLERS, ...getSkillToolHandlers() };
 }
