@@ -377,6 +377,9 @@ export class AgentRunner extends EventEmitter {
     }
 
     console.log(`   Total Tools: ${this.toolHandlers.size} registered`);
+    
+    // List all registered tools for debugging
+    console.log(`   Tool list: ${Array.from(this.toolHandlers.keys()).join(', ')}`);
   }
 
   private setupEvents(): void {
