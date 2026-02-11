@@ -98,6 +98,12 @@ export type {
   BacktestResult as BacktestToolResult 
 } from './trading-tools';
 
+// News Analyzer - Financial news analysis for trading signals
+export { newsTools } from './news-analyzer';
+
+// Sentiment Tracker - Social media and market sentiment analysis
+export { sentimentTools } from './sentiment-tracker';
+
 // Factory for creating all tools
 export interface ToolInstances {
   autoTrader: InstanceType<typeof import('./auto-trader').AutoTrader>;

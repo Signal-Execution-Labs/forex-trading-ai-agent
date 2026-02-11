@@ -301,7 +301,9 @@ Select (e.g., 1,2,4):
     `.trim(),
     process: (input, state) => {
       const marketMap: Record<string, string> = { '1': 'crypto', '2': 'forex', '3': 'stocks', '4': 'options', '5': 'commodities', '6': 'defi' };
-      const markets = input.replace(/[,\s]+/g, '').split('').map(n => marketMap[n]).filter(Boolean);
+      // Split by comma or whitespace to handle both "1,2,3" and "1 2 3" and "1, 2, 3" formats
+      const selections = input.split(/[,\s]+/).filter(n => n.trim());
+      const markets = selections.map(n => marketMap[n.trim()]).filter(Boolean);
       state.data.markets = markets.length > 0 ? markets : ['crypto', 'forex'];
       return { nextStep: 'autonomy', message: `Markets: ${state.data.markets.join(', ')}` };
     },
