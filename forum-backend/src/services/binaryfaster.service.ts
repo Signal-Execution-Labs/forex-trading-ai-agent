@@ -13,17 +13,25 @@ interface BinaryFasterCredentials {
 interface BinaryFasterTrade {
   id: string | number;
   trade_id?: string;
-  currency_id: number;
-  trend: 'up' | 'down';
-  lot: number;
-  binarytime: number;
-  status: string;
-  result?: 'win' | 'lose' | 'draw';
-  profit?: number;
+  // Old API format
+  currency_id?: number;
+  trend?: 'up' | 'down';
+  lot?: number;
+  binarytime?: number;
+  status?: string;
   created_at?: string;
-  closed_at?: string;
   open_price?: number;
   close_price?: number;
+  // New API format (actual)
+  symbol?: string;
+  direction?: 'call' | 'put';
+  amount?: number;
+  entry_price?: number;
+  exit_price?: number;
+  result?: 'win' | 'loss' | 'lose' | 'tie' | 'draw';
+  profit?: number;
+  is_demo?: boolean;
+  closed_at?: string;
 }
 
 interface BinaryFasterBalance {
@@ -187,6 +195,7 @@ export class BinaryFasterService {
 
   /**
    * Convert BinaryFaster trade to Journal entry format
+   * Handles both old API format (currency_id, trend) and new format (symbol, direction)
    */
   static toJournalEntry(trade: BinaryFasterTrade): {
     symbol: string;
@@ -202,36 +211,63 @@ export class BinaryFasterService {
     setup?: string;
     outcome?: 'win' | 'loss' | 'breakeven';
   } {
-    const symbol = ASSET_NAMES[trade.currency_id] || `Asset_${trade.currency_id}`;
+    // Handle symbol - new API uses string like "eurusd", old uses currency_id
+    let symbol: string;
+    if (trade.symbol) {
+      symbol = trade.symbol.toUpperCase().replace(/([a-z]{3})([a-z]{3})/i, '$1/$2'); // eurusd -> EUR/USD
+    } else if (trade.currency_id) {
+      symbol = ASSET_NAMES[trade.currency_id] || `Asset_${trade.currency_id}`;
+    } else {
+      symbol = 'UNKNOWN';
+    }
+
+    // Handle direction - new API uses call/put, old uses up/down
+    let direction: 'long' | 'short';
+    if (trade.direction) {
+      direction = trade.direction === 'call' ? 'long' : 'short';
+    } else if (trade.trend) {
+      direction = trade.trend === 'up' ? 'long' : 'short';
+    } else {
+      direction = 'long';
+    }
+
+    // Handle result
     const isWin = trade.result === 'win';
-    const isLose = trade.result === 'lose';
+    const isLose = trade.result === 'lose' || trade.result === 'loss';
+    const isTie = trade.result === 'tie' || trade.result === 'draw';
     
-    // Binary options: CALL = expecting price up = long, PUT = expecting price down = short
-    const direction = trade.trend === 'up' ? 'long' : 'short';
-    
-    // Calculate P&L: win = +lot*payout(~80%), lose = -lot
+    // P&L from API or calculate
     let pnl: number | undefined;
     if (trade.profit !== undefined) {
       pnl = trade.profit;
-    } else if (isWin) {
-      pnl = trade.lot * 0.8; // Approximate 80% payout
-    } else if (isLose) {
-      pnl = -trade.lot;
     }
+
+    // Amount/lot
+    const quantity = trade.amount || trade.lot || 0;
+
+    // Entry/exit prices
+    const entryPrice = trade.entry_price || trade.open_price || 0;
+    const exitPrice = trade.exit_price || trade.close_price;
+
+    // Date - new API uses closed_at, old uses created_at
+    const entryDate = trade.closed_at || trade.created_at || new Date().toISOString();
+
+    // Direction display for notes
+    const dirDisplay = trade.direction?.toUpperCase() || trade.trend?.toUpperCase() || 'UNKNOWN';
 
     return {
       symbol,
       direction,
-      entry_date: trade.created_at || new Date().toISOString(),
-      entry_price: trade.open_price || 0,
-      exit_price: trade.close_price,
-      quantity: trade.lot,
+      entry_date: entryDate,
+      entry_price: entryPrice,
+      exit_price: exitPrice,
+      quantity,
       pnl,
       fees: 0, // Binary options typically no fees
-      status: trade.status === 'closed' || trade.result ? 'closed' : 'open',
-      notes: `BinaryFaster #${trade.id || trade.trade_id} | ${trade.trend.toUpperCase()} | ${trade.binarytime}s expiry`,
+      status: 'closed', // Historical trades are always closed
+      notes: `BinaryFaster #${trade.id} | ${dirDisplay} | ${trade.result?.toUpperCase() || 'UNKNOWN'}`,
       setup: 'Binary Option',
-      outcome: isWin ? 'win' : (isLose ? 'loss' : undefined),
+      outcome: isWin ? 'win' : (isLose ? 'loss' : (isTie ? 'breakeven' : undefined)),
     };
   }
 }
