@@ -588,10 +588,17 @@ export async function connectionsRoutes(fastify: FastifyInstance) {
     schema: {
       description: 'Sync all connections with auto-sync enabled',
       tags: ['Connections'],
+      querystring: {
+        type: 'object',
+        properties: {
+          force: { type: 'boolean', description: 'Force sync regardless of time window' },
+        },
+      },
     },
-  }, async (request: FastifyRequest, reply: FastifyReply) => {
+  }, async (request: FastifyRequest<{ Querystring: { force?: boolean } }>, reply: FastifyReply) => {
     try {
-      const connections = await UserService.getConnectionsForAutoSync();
+      const force = request.query.force === true || (request.query.force as any) === 'true';
+      const connections = await UserService.getConnectionsForAutoSync(force);
       const results: any[] = [];
 
       for (const connection of connections) {

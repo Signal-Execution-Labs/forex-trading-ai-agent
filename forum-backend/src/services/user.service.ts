@@ -250,12 +250,18 @@ export class UserService {
   /**
    * Get all connections that need auto-sync (for cron job)
    */
-  static async getConnectionsForAutoSync(): Promise<PlatformConnection[]> {
-    const { data, error } = await getSupabase()
+  static async getConnectionsForAutoSync(force: boolean = false): Promise<PlatformConnection[]> {
+    let query = getSupabase()
       .from('platform_connections')
       .select('*')
-      .eq('auto_sync', true)
-      .or(`last_sync.is.null,last_sync.lt.${new Date(Date.now() - 15 * 60 * 1000).toISOString()}`);
+      .eq('auto_sync', true);
+
+    // If not forcing, apply the 15-minute time window filter
+    if (!force) {
+      query = query.or(`last_sync.is.null,last_sync.lt.${new Date(Date.now() - 15 * 60 * 1000).toISOString()}`);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error('Error fetching connections for auto-sync:', error);
