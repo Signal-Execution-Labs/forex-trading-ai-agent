@@ -1,8 +1,14 @@
 /**
  * K.I.T. Hooks System
  * 
- * Event-driven automation for trading events, portfolio changes, and lifecycle events.
- * Inspired by OpenClaw's hooks architecture.
+ * OpenClaw-compatible event-driven automation for trading events,
+ * portfolio changes, and lifecycle events.
+ * 
+ * Features:
+ * - Directory-based hook discovery (workspace > managed > bundled)
+ * - HOOK.md metadata format with YAML frontmatter
+ * - Priority-based execution order
+ * - Eligibility checking for requirements
  * 
  * Events:
  * - trade:executed - After a trade is placed
@@ -15,85 +21,140 @@
  * - risk:warning - When risk limits are approached
  * - market:open - When market opens
  * - market:close - When market closes
+ * - gateway:startup - When gateway starts
+ * - command:new - When /new command is issued
+ * - command:reset - When /reset command is issued
  */
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { createLogger } from '../core/logger';
+import { createLogger } from '../core/logger.js';
+import { discoverHooks, checkEligibility, getHookEvents, getHookPriority, getHookEmoji } from './discovery.js';
+import type { HookEvent, HookContext, HookDefinition, LoadedHook, HookHandler, HookResult, HookConfig, Hook, HookMetadata, HookRegistryInterface } from './types.js';
+
+// Re-export types
+export * from './types.js';
+export { discoverHooks, checkEligibility, getHookEvents, getHookPriority, getHookEmoji } from './discovery.js';
+
+// Backward compatibility: HookRegistry class export
+export { HookRegistry };
 
 const logger = createLogger('hooks');
-
-// ============================================================================
-// Types
-// ============================================================================
-
-export type HookEvent = 
-  | 'trade:executed'
-  | 'trade:closed'
-  | 'portfolio:changed'
-  | 'alert:triggered'
-  | 'session:start'
-  | 'session:end'
-  | 'signal:received'
-  | 'risk:warning'
-  | 'market:open'
-  | 'market:close'
-  | 'onboarding:complete'
-  | 'config:changed';
-
-export interface HookContext {
-  event: HookEvent;
-  timestamp: Date;
-  data: Record<string, any>;
-  kitVersion: string;
-  agentId: string;
-}
-
-export interface HookMetadata {
-  id: string;
-  name: string;
-  description: string;
-  version: string;
-  author?: string;
-  events: HookEvent[];
-  enabled: boolean;
-  priority?: number; // Higher = runs first
-}
-
-export interface Hook extends HookMetadata {
-  handler: HookHandler;
-}
-
-export type HookHandler = (context: HookContext) => Promise<void> | void;
-
-export interface HookResult {
-  hookId: string;
-  success: boolean;
-  durationMs: number;
-  error?: string;
-}
 
 // ============================================================================
 // Hook Registry
 // ============================================================================
 
 class HookRegistry {
-  private hooks: Map<string, Hook> = new Map();
-  private hooksByEvent: Map<HookEvent, Hook[]> = new Map();
+  private hooks: Map<string, LoadedHook> = new Map();
+  private hooksByEvent: Map<HookEvent, LoadedHook[]> = new Map();
   private configPath: string;
+  private config: HookConfig = {};
+  private initialized = false;
 
   constructor() {
     this.configPath = path.join(process.env.HOME || process.env.USERPROFILE || '', '.kit', 'hooks.json');
   }
 
   /**
+   * Initialize the hook registry - discover and load hooks
+   */
+  async initialize(): Promise<void> {
+    if (this.initialized) return;
+    
+    this.loadConfig();
+    
+    // Discover hooks from directories
+    const extraDirs = this.config.internal?.load?.extraDirs;
+    const discovered = discoverHooks(extraDirs);
+    
+    // Load each discovered hook
+    for (const hookDef of discovered) {
+      try {
+        // Check eligibility
+        const { eligible, missing } = checkEligibility(hookDef);
+        if (!eligible && !hookDef.metadata?.kit?.always) {
+          logger.debug(`Hook ${hookDef.id} not eligible: ${missing.join(', ')}`);
+          continue;
+        }
+        
+        // Check if enabled in config
+        const configEntry = this.config.internal?.entries?.[hookDef.id];
+        if (configEntry?.enabled === false) {
+          hookDef.enabled = false;
+        }
+        
+        // Load handler
+        await this.loadHook(hookDef);
+      } catch (error) {
+        logger.error(`Failed to load hook ${hookDef.id}:`, error);
+      }
+    }
+    
+    // Also register legacy bundled hooks (for backward compatibility)
+    this.registerLegacyBundledHooks();
+    
+    this.initialized = true;
+    logger.info(`Hooks initialized: ${this.hooks.size} loaded`);
+  }
+
+  /**
+   * Load a single hook's handler
+   */
+  private async loadHook(hookDef: HookDefinition): Promise<void> {
+    // For TypeScript hooks, we need to handle them specially
+    // In production, these would be compiled to JS
+    const handlerModule = await import(`file://${hookDef.handlerPath.replace(/\.ts$/, '.js')}`).catch(async () => {
+      // Fallback: try direct import
+      return import(hookDef.handlerPath);
+    }).catch(() => null);
+    
+    if (!handlerModule) {
+      // Skip - handler not loadable (TypeScript not compiled)
+      logger.debug(`Skipping hook ${hookDef.id} - handler not loadable`);
+      return;
+    }
+    
+    const exportName = hookDef.metadata?.kit?.export || 'default';
+    const handler = handlerModule[exportName] || handlerModule.default;
+    
+    if (typeof handler !== 'function') {
+      logger.warn(`Hook ${hookDef.id} has no valid handler export`);
+      return;
+    }
+    
+    const loadedHook: LoadedHook = {
+      ...hookDef,
+      handler,
+      events: getHookEvents(hookDef),
+      priority: getHookPriority(hookDef),
+      emoji: getHookEmoji(hookDef),
+    };
+    
+    this.register(loadedHook);
+  }
+
+  /**
    * Register a hook
    */
-  register(hook: Hook): void {
+  register(hook: LoadedHook): void {
+    // Don't overwrite existing hooks (first one wins)
+    if (this.hooks.has(hook.id)) {
+      logger.debug(`Hook ${hook.id} already registered, skipping`);
+      return;
+    }
+    
+    // Set convenience properties for backward compatibility
+    const events = getHookEvents(hook);
+    const priority = getHookPriority(hook);
+    const emoji = getHookEmoji(hook);
+    hook.events = events;
+    hook.priority = priority;
+    hook.emoji = emoji;
+    
     this.hooks.set(hook.id, hook);
     
-    // Index by event
-    for (const event of hook.events) {
+    for (const event of events) {
       if (!this.hooksByEvent.has(event)) {
         this.hooksByEvent.set(event, []);
       }
@@ -103,7 +164,7 @@ class HookRegistry {
       hooks.sort((a, b) => (b.priority || 0) - (a.priority || 0));
     }
     
-    logger.info(`Registered hook: ${hook.id} for events: ${hook.events.join(', ')}`);
+    logger.info(`Registered hook: ${emoji} ${hook.id} for events: ${events.join(', ')}`);
   }
 
   /**
@@ -115,7 +176,8 @@ class HookRegistry {
     
     this.hooks.delete(hookId);
     
-    for (const event of hook.events) {
+    const events = getHookEvents(hook);
+    for (const event of events) {
       const hooks = this.hooksByEvent.get(event);
       if (hooks) {
         const index = hooks.findIndex(h => h.id === hookId);
@@ -143,21 +205,21 @@ class HookRegistry {
   /**
    * Get all hooks
    */
-  getAll(): Hook[] {
+  getAll(): LoadedHook[] {
     return Array.from(this.hooks.values());
   }
 
   /**
    * Get hooks for a specific event
    */
-  getForEvent(event: HookEvent): Hook[] {
+  getForEvent(event: HookEvent): LoadedHook[] {
     return this.hooksByEvent.get(event) || [];
   }
 
   /**
    * Get a specific hook
    */
-  get(hookId: string): Hook | undefined {
+  get(hookId: string): LoadedHook | undefined {
     return this.hooks.get(hookId);
   }
 
@@ -165,6 +227,10 @@ class HookRegistry {
    * Emit an event to all registered hooks
    */
   async emit(event: HookEvent, data: Record<string, any> = {}, agentId: string = 'main'): Promise<HookResult[]> {
+    if (!this.initialized) {
+      await this.initialize();
+    }
+    
     const hooks = this.getForEvent(event).filter(h => h.enabled);
     const results: HookResult[] = [];
     
@@ -174,6 +240,10 @@ class HookRegistry {
       data,
       kitVersion: '2.0.0',
       agentId,
+      messages: [],
+      context: {
+        workspaceDir: path.join(process.env.HOME || process.env.USERPROFILE || '', '.kit', 'workspace'),
+      },
     };
     
     for (const hook of hooks) {
@@ -184,7 +254,10 @@ class HookRegistry {
           hookId: hook.id,
           success: true,
           durationMs: Date.now() - start,
+          messages: [...context.messages],
         });
+        // Clear messages for next hook
+        context.messages = [];
       } catch (error) {
         const errMsg = error instanceof Error ? error.message : String(error);
         logger.error(`Hook ${hook.id} failed:`, errMsg);
@@ -206,10 +279,13 @@ class HookRegistry {
   loadConfig(): void {
     try {
       if (fs.existsSync(this.configPath)) {
-        const config = JSON.parse(fs.readFileSync(this.configPath, 'utf-8'));
-        for (const [hookId, enabled] of Object.entries(config.enabled || {})) {
-          const hook = this.hooks.get(hookId);
-          if (hook) hook.enabled = enabled as boolean;
+        this.config = JSON.parse(fs.readFileSync(this.configPath, 'utf-8'));
+        // Also load legacy format
+        if ((this.config as any).enabled) {
+          for (const [hookId, enabled] of Object.entries((this.config as any).enabled)) {
+            const hook = this.hooks.get(hookId);
+            if (hook) hook.enabled = enabled as boolean;
+          }
         }
       }
     } catch (error) {
@@ -227,15 +303,201 @@ class HookRegistry {
         fs.mkdirSync(dir, { recursive: true });
       }
       
-      const config = {
-        enabled: Object.fromEntries(
-          Array.from(this.hooks.entries()).map(([id, hook]) => [id, hook.enabled])
-        ),
+      // Merge with existing config
+      const entries: Record<string, { enabled: boolean }> = {};
+      for (const [id, hook] of this.hooks.entries()) {
+        entries[id] = { enabled: hook.enabled };
+      }
+      
+      this.config = {
+        ...this.config,
+        internal: {
+          ...this.config.internal,
+          enabled: true,
+          entries,
+        },
       };
       
-      fs.writeFileSync(this.configPath, JSON.stringify(config, null, 2));
+      fs.writeFileSync(this.configPath, JSON.stringify(this.config, null, 2));
     } catch (error) {
       logger.warn('Failed to save hooks config:', error);
+    }
+  }
+
+  /**
+   * Register legacy bundled hooks for backward compatibility
+   * These run if HOOK.md-based hooks weren't loaded
+   */
+  private registerLegacyBundledHooks(): void {
+    // Only register if not already discovered
+    const legacyHooks: Array<{ id: string; events: HookEvent[]; priority: number; handler: HookHandler }> = [
+      {
+        id: 'trade-logger',
+        events: ['trade:executed', 'trade:closed'],
+        priority: 100,
+        handler: async (ctx) => {
+          const logPath = path.join(process.env.HOME || process.env.USERPROFILE || '', '.kit', 'logs', 'trades.log');
+          const dir = path.dirname(logPath);
+          if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+          const entry = JSON.stringify({ event: ctx.event, timestamp: ctx.timestamp.toISOString(), ...ctx.data }) + '\n';
+          fs.appendFileSync(logPath, entry);
+        },
+      },
+      {
+        id: 'portfolio-snapshot',
+        events: ['portfolio:changed'],
+        priority: 90,
+        handler: async (ctx) => {
+          const dir = path.join(process.env.HOME || process.env.USERPROFILE || '', '.kit', 'snapshots');
+          if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+          const file = `portfolio_${ctx.timestamp.toISOString().replace(/[:.]/g, '-')}.json`;
+          fs.writeFileSync(path.join(dir, file), JSON.stringify(ctx.data, null, 2));
+        },
+      },
+      {
+        id: 'risk-alert',
+        events: ['risk:warning'],
+        priority: 200,
+        handler: async (ctx) => {
+          logger.warn(`⚠️ RISK WARNING: ${ctx.data.message || 'Risk limit approached'}`, ctx.data);
+        },
+      },
+      {
+        id: 'session-memory',
+        events: ['session:end'],
+        priority: 80,
+        handler: async (ctx) => {
+          const dir = path.join(process.env.HOME || process.env.USERPROFILE || '', '.kit', 'workspace', 'memory');
+          if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+          const date = ctx.timestamp.toISOString().split('T')[0];
+          const entry = `\n## Session End - ${ctx.timestamp.toLocaleTimeString()}\n${ctx.data.summary || 'Session ended.'}\n`;
+          fs.appendFileSync(path.join(dir, `${date}.md`), entry);
+        },
+      },
+      {
+        id: 'signal-logger',
+        events: ['signal:received'],
+        priority: 85,
+        handler: async (ctx) => {
+          const logPath = path.join(process.env.HOME || process.env.USERPROFILE || '', '.kit', 'logs', 'signals.log');
+          const dir = path.dirname(logPath);
+          if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+          const entry = JSON.stringify({ timestamp: ctx.timestamp.toISOString(), signal: ctx.data }) + '\n';
+          fs.appendFileSync(logPath, entry);
+        },
+      },
+      {
+        id: 'market-hours',
+        events: ['market:open', 'market:close'],
+        priority: 75,
+        handler: async (ctx) => {
+          const logPath = path.join(process.env.HOME || process.env.USERPROFILE || '', '.kit', 'logs', 'market-hours.log');
+          const dir = path.dirname(logPath);
+          if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+          const eventType = ctx.event === 'market:open' ? '🟢 OPEN' : '🔴 CLOSE';
+          const entry = JSON.stringify({ event: eventType, market: ctx.data.market, timestamp: ctx.timestamp.toISOString() }) + '\n';
+          fs.appendFileSync(logPath, entry);
+          logger.info(`${eventType}: ${ctx.data.market || 'Unknown'}`);
+        },
+      },
+      {
+        id: 'daily-pnl',
+        events: ['market:close', 'session:end'],
+        priority: 70,
+        handler: async (ctx) => {
+          if (ctx.event === 'session:end' && !ctx.data.generatePnl) return;
+          const dir = path.join(process.env.HOME || process.env.USERPROFILE || '', '.kit', 'reports', 'daily');
+          if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+          const date = ctx.timestamp.toISOString().split('T')[0];
+          const pnl = ctx.data.pnl || { realized: 0, unrealized: 0, trades: 0, winRate: 0 };
+          const emoji = (pnl.realized || 0) >= 0 ? '📈' : '📉';
+          const report = `# Daily P&L Report - ${date}\n\n${emoji} **Net P&L:** $${(pnl.realized || 0).toFixed(2)}\n`;
+          fs.writeFileSync(path.join(dir, `pnl_${date}.md`), report);
+        },
+      },
+      {
+        id: 'onboarding-complete',
+        events: ['onboarding:complete'],
+        priority: 100,
+        handler: async (ctx) => {
+          logger.info(`🎉 Onboarding complete for ${ctx.data.userName || 'Trader'}!`);
+          const dir = path.join(process.env.HOME || process.env.USERPROFILE || '', '.kit');
+          if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+          fs.writeFileSync(path.join(dir, 'onboarding.json'), JSON.stringify({
+            completedAt: ctx.timestamp.toISOString(),
+            userName: ctx.data.userName,
+            goals: ctx.data.goals,
+            markets: ctx.data.markets,
+          }, null, 2));
+        },
+      },
+      {
+        id: 'alert-tracker',
+        events: ['alert:triggered'],
+        priority: 95,
+        handler: async (ctx) => {
+          const dir = path.join(process.env.HOME || process.env.USERPROFILE || '', '.kit', 'alerts');
+          if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+          const date = ctx.timestamp.toISOString().split('T')[0];
+          const entry = JSON.stringify({ id: ctx.data.alertId, timestamp: ctx.timestamp.toISOString(), ...ctx.data }) + '\n';
+          fs.appendFileSync(path.join(dir, `alerts_${date}.jsonl`), entry);
+        },
+      },
+      {
+        id: 'config-watcher',
+        events: ['config:changed'],
+        priority: 100,
+        handler: async (ctx) => {
+          const dir = path.join(process.env.HOME || process.env.USERPROFILE || '', '.kit', 'audit');
+          if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+          const ts = ctx.timestamp.toISOString().replace(/[:.]/g, '-');
+          if (ctx.data.newConfig) {
+            fs.writeFileSync(path.join(dir, `config_${ts}.json`), JSON.stringify(ctx.data.newConfig, null, 2));
+          }
+          logger.info(`⚙️ Config changed: ${ctx.data.reason || 'No reason'}`);
+        },
+      },
+      {
+        id: 'position-monitor',
+        events: ['trade:executed', 'portfolio:changed'],
+        priority: 90,
+        handler: async (ctx) => {
+          const dir = path.join(process.env.HOME || process.env.USERPROFILE || '', '.kit', 'positions');
+          if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+          const snapshotPath = path.join(dir, 'position_snapshot.json');
+          let prev: Record<string, any> = {};
+          if (fs.existsSync(snapshotPath)) {
+            try { prev = JSON.parse(fs.readFileSync(snapshotPath, 'utf-8')); } catch (e) {}
+          }
+          const positions = ctx.data.positions || [];
+          for (const pos of positions) {
+            const id = pos.id || pos.ticket || `${pos.symbol}_${pos.openTime}`;
+            prev[id] = { ...pos, lastUpdated: ctx.timestamp.toISOString() };
+          }
+          fs.writeFileSync(snapshotPath, JSON.stringify(prev, null, 2));
+        },
+      },
+    ];
+
+    for (const lh of legacyHooks) {
+      if (this.hooks.has(lh.id)) continue; // Skip if already loaded from directory
+      
+      const loadedHook: LoadedHook = {
+        id: lh.id,
+        name: lh.id.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+        description: `Legacy bundled hook: ${lh.id}`,
+        path: '',
+        handlerPath: '',
+        enabled: true,
+        source: 'bundled',
+        metadata: { kit: { events: lh.events, priority: lh.priority } },
+        handler: lh.handler,
+        events: lh.events,
+        priority: lh.priority,
+        emoji: '🪝',
+      };
+      
+      this.register(loadedHook);
     }
   }
 }
@@ -249,463 +511,8 @@ let registry: HookRegistry | null = null;
 export function getHookRegistry(): HookRegistry {
   if (!registry) {
     registry = new HookRegistry();
-    registerBundledHooks(registry);
-    registry.loadConfig();
   }
   return registry;
-}
-
-// ============================================================================
-// Bundled Hooks
-// ============================================================================
-
-function registerBundledHooks(registry: HookRegistry): void {
-  // Trade Logger - logs all trades to file
-  registry.register({
-    id: 'trade-logger',
-    name: 'Trade Logger',
-    description: 'Logs all executed and closed trades to ~/.kit/logs/trades.log',
-    version: '1.0.0',
-    events: ['trade:executed', 'trade:closed'],
-    enabled: true,
-    priority: 100,
-    handler: async (ctx) => {
-      const logPath = path.join(process.env.HOME || process.env.USERPROFILE || '', '.kit', 'logs', 'trades.log');
-      const dir = path.dirname(logPath);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
-      
-      const entry = JSON.stringify({
-        event: ctx.event,
-        timestamp: ctx.timestamp.toISOString(),
-        ...ctx.data,
-      }) + '\n';
-      
-      fs.appendFileSync(logPath, entry);
-    },
-  });
-
-  // Portfolio Snapshot - saves portfolio state on changes
-  registry.register({
-    id: 'portfolio-snapshot',
-    name: 'Portfolio Snapshot',
-    description: 'Saves portfolio snapshots when significant changes occur',
-    version: '1.0.0',
-    events: ['portfolio:changed'],
-    enabled: true,
-    priority: 90,
-    handler: async (ctx) => {
-      const snapshotDir = path.join(process.env.HOME || process.env.USERPROFILE || '', '.kit', 'snapshots');
-      if (!fs.existsSync(snapshotDir)) {
-        fs.mkdirSync(snapshotDir, { recursive: true });
-      }
-      
-      const filename = `portfolio_${ctx.timestamp.toISOString().replace(/[:.]/g, '-')}.json`;
-      fs.writeFileSync(
-        path.join(snapshotDir, filename),
-        JSON.stringify(ctx.data, null, 2)
-      );
-    },
-  });
-
-  // Risk Alert - notifies on risk warnings
-  registry.register({
-    id: 'risk-alert',
-    name: 'Risk Alert Handler',
-    description: 'Handles risk warning events (could integrate with notifications)',
-    version: '1.0.0',
-    events: ['risk:warning'],
-    enabled: true,
-    priority: 200, // High priority for risk events
-    handler: async (ctx) => {
-      logger.warn(`⚠️ RISK WARNING: ${ctx.data.message || 'Risk limit approached'}`, ctx.data);
-      // TODO: Could integrate with Telegram/Discord notifications
-    },
-  });
-
-  // Session Memory - saves context at session end
-  registry.register({
-    id: 'session-memory',
-    name: 'Session Memory',
-    description: 'Saves session context to memory when trading session ends',
-    version: '1.0.0',
-    events: ['session:end'],
-    enabled: true,
-    priority: 80,
-    handler: async (ctx) => {
-      const memoryDir = path.join(process.env.HOME || process.env.USERPROFILE || '', '.kit', 'workspace', 'memory');
-      if (!fs.existsSync(memoryDir)) {
-        fs.mkdirSync(memoryDir, { recursive: true });
-      }
-      
-      const date = ctx.timestamp.toISOString().split('T')[0];
-      const memoryPath = path.join(memoryDir, `${date}.md`);
-      
-      const entry = `\n## Session End - ${ctx.timestamp.toLocaleTimeString()}\n${ctx.data.summary || 'Session ended.'}\n`;
-      fs.appendFileSync(memoryPath, entry);
-    },
-  });
-
-  // Signal Logger - tracks received signals
-  registry.register({
-    id: 'signal-logger',
-    name: 'Signal Logger',
-    description: 'Logs all received trading signals for analysis',
-    version: '1.0.0',
-    events: ['signal:received'],
-    enabled: true,
-    priority: 85,
-    handler: async (ctx) => {
-      const logPath = path.join(process.env.HOME || process.env.USERPROFILE || '', '.kit', 'logs', 'signals.log');
-      const dir = path.dirname(logPath);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
-      
-      const entry = JSON.stringify({
-        timestamp: ctx.timestamp.toISOString(),
-        signal: ctx.data,
-      }) + '\n';
-      
-      fs.appendFileSync(logPath, entry);
-    },
-  });
-
-  // Market Hours Logger - tracks market open/close events
-  registry.register({
-    id: 'market-hours',
-    name: 'Market Hours Logger',
-    description: 'Logs market open/close events for session analysis',
-    version: '1.0.0',
-    events: ['market:open', 'market:close'],
-    enabled: true,
-    priority: 75,
-    handler: async (ctx) => {
-      const logPath = path.join(process.env.HOME || process.env.USERPROFILE || '', '.kit', 'logs', 'market-hours.log');
-      const dir = path.dirname(logPath);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
-      
-      const marketName = ctx.data.market || 'Unknown';
-      const eventType = ctx.event === 'market:open' ? '🟢 OPEN' : '🔴 CLOSE';
-      const entry = JSON.stringify({
-        event: eventType,
-        market: marketName,
-        timestamp: ctx.timestamp.toISOString(),
-        timezone: ctx.data.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
-        ...ctx.data,
-      }) + '\n';
-      
-      fs.appendFileSync(logPath, entry);
-      logger.info(`${eventType}: ${marketName} at ${ctx.timestamp.toLocaleTimeString()}`);
-    },
-  });
-
-  // Daily P&L Summary - creates end-of-day P&L report
-  registry.register({
-    id: 'daily-pnl',
-    name: 'Daily P&L Summary',
-    description: 'Generates daily profit/loss summary when market closes',
-    version: '1.0.0',
-    events: ['market:close', 'session:end'],
-    enabled: true,
-    priority: 70,
-    handler: async (ctx) => {
-      // Only generate summary at market close or explicit session end
-      if (ctx.event === 'session:end' && !ctx.data.generatePnl) return;
-      
-      const reportsDir = path.join(process.env.HOME || process.env.USERPROFILE || '', '.kit', 'reports', 'daily');
-      if (!fs.existsSync(reportsDir)) {
-        fs.mkdirSync(reportsDir, { recursive: true });
-      }
-      
-      const date = ctx.timestamp.toISOString().split('T')[0];
-      const reportPath = path.join(reportsDir, `pnl_${date}.md`);
-      
-      // Build P&L summary from context data
-      const pnl = ctx.data.pnl || { realized: 0, unrealized: 0, trades: 0, winRate: 0 };
-      const emoji = (pnl.realized || 0) >= 0 ? '📈' : '📉';
-      
-      const report = `# Daily P&L Report - ${date}
-
-${emoji} **Net P&L:** $${(pnl.realized || 0).toFixed(2)}
-
-## Summary
-- **Realized P&L:** $${(pnl.realized || 0).toFixed(2)}
-- **Unrealized P&L:** $${(pnl.unrealized || 0).toFixed(2)}
-- **Total Trades:** ${pnl.trades || 0}
-- **Win Rate:** ${((pnl.winRate || 0) * 100).toFixed(1)}%
-
-## Markets
-${ctx.data.market ? `- ${ctx.data.market}` : '- All markets'}
-
----
-*Generated by K.I.T. at ${ctx.timestamp.toISOString()}*
-`;
-      
-      fs.writeFileSync(reportPath, report);
-      logger.info(`📊 Daily P&L report saved: ${reportPath}`);
-    },
-  });
-
-  // Onboarding Complete - runs after user completes setup
-  registry.register({
-    id: 'onboarding-complete',
-    name: 'Onboarding Complete Handler',
-    description: 'Runs after user completes K.I.T. onboarding wizard',
-    version: '1.0.0',
-    events: ['onboarding:complete'],
-    enabled: true,
-    priority: 100,
-    handler: async (ctx) => {
-      const userName = ctx.data.userName || 'Trader';
-      logger.info(`🎉 Onboarding complete for ${userName}!`);
-      
-      // Save onboarding timestamp
-      const configDir = path.join(process.env.HOME || process.env.USERPROFILE || '', '.kit');
-      if (!fs.existsSync(configDir)) {
-        fs.mkdirSync(configDir, { recursive: true });
-      }
-      
-      const onboardingLog = path.join(configDir, 'onboarding.json');
-      const record = {
-        completedAt: ctx.timestamp.toISOString(),
-        userName,
-        goals: ctx.data.goals || [],
-        markets: ctx.data.markets || [],
-        riskProfile: ctx.data.riskProfile || 'moderate',
-      };
-      
-      fs.writeFileSync(onboardingLog, JSON.stringify(record, null, 2));
-    },
-  });
-
-  // Alert Tracker - logs triggered alerts with analytics
-  registry.register({
-    id: 'alert-tracker',
-    name: 'Alert Tracker',
-    description: 'Tracks all triggered alerts with timestamps and conditions for analysis',
-    version: '1.0.0',
-    events: ['alert:triggered'],
-    enabled: true,
-    priority: 95,
-    handler: async (ctx) => {
-      const alertsDir = path.join(process.env.HOME || process.env.USERPROFILE || '', '.kit', 'alerts');
-      if (!fs.existsSync(alertsDir)) {
-        fs.mkdirSync(alertsDir, { recursive: true });
-      }
-      
-      // Log to daily file
-      const date = ctx.timestamp.toISOString().split('T')[0];
-      const logPath = path.join(alertsDir, `alerts_${date}.jsonl`);
-      
-      const entry = JSON.stringify({
-        id: ctx.data.alertId || `alert_${Date.now()}`,
-        timestamp: ctx.timestamp.toISOString(),
-        type: ctx.data.type || 'price', // price, indicator, pattern, custom
-        symbol: ctx.data.symbol,
-        condition: ctx.data.condition,
-        currentValue: ctx.data.currentValue,
-        triggerValue: ctx.data.triggerValue,
-        message: ctx.data.message,
-        action: ctx.data.action, // notify, trade, webhook
-        priority: ctx.data.priority || 'normal', // low, normal, high, critical
-      }) + '\n';
-      
-      fs.appendFileSync(logPath, entry);
-      
-      // Also update summary stats
-      const statsPath = path.join(alertsDir, 'alert_stats.json');
-      let stats: Record<string, any> = { 
-        total: 0, 
-        byType: {}, 
-        bySymbol: {}, 
-        byPriority: {},
-        lastUpdated: null 
-      };
-      
-      if (fs.existsSync(statsPath)) {
-        try {
-          stats = JSON.parse(fs.readFileSync(statsPath, 'utf-8'));
-        } catch (e) { /* use defaults */ }
-      }
-      
-      stats.total = (stats.total || 0) + 1;
-      const type = ctx.data.type || 'price';
-      const symbol = ctx.data.symbol || 'unknown';
-      const priority = ctx.data.priority || 'normal';
-      
-      stats.byType[type] = (stats.byType[type] || 0) + 1;
-      stats.bySymbol[symbol] = (stats.bySymbol[symbol] || 0) + 1;
-      stats.byPriority[priority] = (stats.byPriority[priority] || 0) + 1;
-      stats.lastUpdated = ctx.timestamp.toISOString();
-      
-      fs.writeFileSync(statsPath, JSON.stringify(stats, null, 2));
-      
-      logger.info(`🔔 Alert triggered: ${ctx.data.symbol || 'unknown'} - ${ctx.data.message || 'Alert condition met'}`);
-    },
-  });
-
-  // Config Change Watcher - tracks configuration changes
-  registry.register({
-    id: 'config-watcher',
-    name: 'Config Change Watcher',
-    description: 'Logs configuration changes for audit trail and backup',
-    version: '1.0.0',
-    events: ['config:changed'],
-    enabled: true,
-    priority: 100,
-    handler: async (ctx) => {
-      const auditDir = path.join(process.env.HOME || process.env.USERPROFILE || '', '.kit', 'audit');
-      if (!fs.existsSync(auditDir)) {
-        fs.mkdirSync(auditDir, { recursive: true });
-      }
-      
-      // Save config snapshot
-      const timestamp = ctx.timestamp.toISOString().replace(/[:.]/g, '-');
-      const backupPath = path.join(auditDir, `config_${timestamp}.json`);
-      
-      if (ctx.data.newConfig) {
-        fs.writeFileSync(backupPath, JSON.stringify(ctx.data.newConfig, null, 2));
-      }
-      
-      // Log the change
-      const auditLog = path.join(auditDir, 'config_changes.jsonl');
-      const entry = JSON.stringify({
-        timestamp: ctx.timestamp.toISOString(),
-        changedBy: ctx.data.changedBy || 'system',
-        changedFields: ctx.data.changedFields || [],
-        reason: ctx.data.reason,
-        backupFile: path.basename(backupPath),
-      }) + '\n';
-      
-      fs.appendFileSync(auditLog, entry);
-      logger.info(`⚙️ Config changed by ${ctx.data.changedBy || 'system'}: ${ctx.data.reason || 'No reason provided'}`);
-    },
-  });
-
-  // Position Monitor - tracks open positions and alerts on significant changes
-  registry.register({
-    id: 'position-monitor',
-    name: 'Position Monitor',
-    description: 'Monitors open positions for significant P&L changes, approaching SL/TP, and duration warnings',
-    version: '1.0.0',
-    events: ['trade:executed', 'portfolio:changed'],
-    enabled: true,
-    priority: 90,
-    handler: async (ctx) => {
-      const monitorDir = path.join(process.env.HOME || process.env.USERPROFILE || '', '.kit', 'positions');
-      if (!fs.existsSync(monitorDir)) {
-        fs.mkdirSync(monitorDir, { recursive: true });
-      }
-      
-      const snapshotPath = path.join(monitorDir, 'position_snapshot.json');
-      const alertsPath = path.join(monitorDir, 'position_alerts.jsonl');
-      
-      // Load previous snapshot
-      let prevSnapshot: Record<string, any> = {};
-      if (fs.existsSync(snapshotPath)) {
-        try {
-          prevSnapshot = JSON.parse(fs.readFileSync(snapshotPath, 'utf-8'));
-        } catch (e) { /* use empty */ }
-      }
-      
-      // Current positions from context
-      const positions = ctx.data.positions || [];
-      const alerts: Array<{type: string; symbol: string; message: string; severity: string}> = [];
-      
-      for (const pos of positions) {
-        const posId = pos.id || pos.ticket || `${pos.symbol}_${pos.openTime}`;
-        const prev = prevSnapshot[posId];
-        
-        // Check for significant P&L change (>20% of initial risk)
-        if (prev && pos.unrealizedPnl !== undefined && prev.unrealizedPnl !== undefined) {
-          const pnlChange = Math.abs(pos.unrealizedPnl - prev.unrealizedPnl);
-          const initialRisk = pos.initialRisk || pos.volume * 100; // Estimate if not provided
-          if (pnlChange > initialRisk * 0.2) {
-            const direction = pos.unrealizedPnl > prev.unrealizedPnl ? '📈' : '📉';
-            alerts.push({
-              type: 'pnl_change',
-              symbol: pos.symbol,
-              message: `${direction} ${pos.symbol}: P&L changed by $${pnlChange.toFixed(2)}`,
-              severity: pnlChange > initialRisk * 0.5 ? 'high' : 'medium',
-            });
-          }
-        }
-        
-        // Check if approaching SL (within 20%)
-        if (pos.stopLoss && pos.currentPrice) {
-          const distanceToSL = Math.abs(pos.currentPrice - pos.stopLoss);
-          const totalRange = Math.abs(pos.openPrice - pos.stopLoss);
-          if (totalRange > 0 && distanceToSL / totalRange < 0.2) {
-            alerts.push({
-              type: 'approaching_sl',
-              symbol: pos.symbol,
-              message: `⚠️ ${pos.symbol}: Approaching stop loss (${((1 - distanceToSL/totalRange) * 100).toFixed(0)}% of range)`,
-              severity: 'high',
-            });
-          }
-        }
-        
-        // Check if approaching TP (within 10%)
-        if (pos.takeProfit && pos.currentPrice) {
-          const distanceToTP = Math.abs(pos.takeProfit - pos.currentPrice);
-          const totalRange = Math.abs(pos.takeProfit - pos.openPrice);
-          if (totalRange > 0 && distanceToTP / totalRange < 0.1) {
-            alerts.push({
-              type: 'approaching_tp',
-              symbol: pos.symbol,
-              message: `🎯 ${pos.symbol}: Approaching take profit (${((1 - distanceToTP/totalRange) * 100).toFixed(0)}% of target)`,
-              severity: 'medium',
-            });
-          }
-        }
-        
-        // Check for long-duration positions (>24h for day trading style)
-        if (pos.openTime) {
-          const openTime = new Date(pos.openTime).getTime();
-          const durationHours = (Date.now() - openTime) / (1000 * 60 * 60);
-          if (durationHours > 24 && !prev?.durationWarned) {
-            alerts.push({
-              type: 'long_duration',
-              symbol: pos.symbol,
-              message: `⏰ ${pos.symbol}: Position open for ${durationHours.toFixed(1)}h`,
-              severity: 'low',
-            });
-            pos.durationWarned = true;
-          }
-        }
-        
-        // Update snapshot
-        prevSnapshot[posId] = { ...pos, lastUpdated: ctx.timestamp.toISOString() };
-      }
-      
-      // Remove closed positions from snapshot
-      const currentIds = new Set(positions.map((p: any) => p.id || p.ticket || `${p.symbol}_${p.openTime}`));
-      for (const id of Object.keys(prevSnapshot)) {
-        if (!currentIds.has(id)) {
-          delete prevSnapshot[id];
-        }
-      }
-      
-      // Save updated snapshot
-      fs.writeFileSync(snapshotPath, JSON.stringify(prevSnapshot, null, 2));
-      
-      // Log alerts
-      if (alerts.length > 0) {
-        for (const alert of alerts) {
-          const entry = JSON.stringify({
-            timestamp: ctx.timestamp.toISOString(),
-            ...alert,
-          }) + '\n';
-          fs.appendFileSync(alertsPath, entry);
-          logger.info(`Position Alert: ${alert.message}`);
-        }
-      }
-    },
-  });
 }
 
 // ============================================================================
@@ -738,19 +545,31 @@ export function createHook(
     enabled?: boolean;
     priority?: number;
   }
-): Hook {
+): LoadedHook {
   return {
     id,
     name,
     description: options?.description || `Custom hook: ${name}`,
     version: options?.version || '1.0.0',
     author: options?.author,
-    events,
+    path: '',
+    handlerPath: '',
     enabled: options?.enabled ?? true,
-    priority: options?.priority,
+    source: 'workspace',
+    metadata: {
+      kit: {
+        events,
+        priority: options?.priority,
+      },
+    },
     handler,
+    events,
+    priority: options?.priority || 0,
+    emoji: '🪝',
   };
 }
 
-// Export types for external use
-export { HookRegistry };
+// Initialize on first import (lazy)
+export async function initializeHooks(): Promise<void> {
+  await getHookRegistry().initialize();
+}
