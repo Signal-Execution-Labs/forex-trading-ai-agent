@@ -894,6 +894,111 @@ export async function journalRoutes(fastify: FastifyInstance) {
       },
     };
   });
+
+  // ============================================================================
+  // PLATFORM CONNECTIONS
+  // ============================================================================
+
+  // Get all connections
+  fastify.get('/connections', async (request: FastifyRequest, reply: FastifyReply) => {
+    ensureJournalCollections();
+    const data = db.data as any;
+    if (!data.platformConnections) data.platformConnections = [];
+    
+    const userId = request.headers['x-user-id'] as string || 'default';
+    const connections = data.platformConnections.filter((c: any) => c.userId === userId);
+    
+    // Return as a map of platform -> connected status
+    const connectionMap: Record<string, boolean> = {};
+    connections.forEach((c: any) => {
+      connectionMap[c.platform] = c.isActive;
+    });
+    
+    return { success: true, connections: connectionMap };
+  });
+
+  // Save a platform connection
+  fastify.post('/connections', async (request: FastifyRequest<{ Body: { platform: string, credentials: Record<string, string> } }>, reply: FastifyReply) => {
+    ensureJournalCollections();
+    const data = db.data as any;
+    if (!data.platformConnections) data.platformConnections = [];
+    
+    const userId = request.headers['x-user-id'] as string || 'default';
+    const { platform, credentials } = request.body;
+    
+    // Check if connection already exists
+    const existingIndex = data.platformConnections.findIndex(
+      (c: any) => c.userId === userId && c.platform === platform
+    );
+    
+    const connection = {
+      id: existingIndex >= 0 ? data.platformConnections[existingIndex].id : uuidv4(),
+      userId,
+      platform,
+      credentials: credentials, // In production, encrypt these!
+      isActive: true,
+      connectedAt: new Date().toISOString(),
+      lastSyncAt: null,
+    };
+    
+    if (existingIndex >= 0) {
+      data.platformConnections[existingIndex] = connection;
+    } else {
+      data.platformConnections.push(connection);
+    }
+    
+    await db.write();
+    
+    return { 
+      success: true, 
+      connection: { 
+        id: connection.id, 
+        platform: connection.platform, 
+        isActive: connection.isActive,
+        connectedAt: connection.connectedAt 
+      } 
+    };
+  });
+
+  // Delete a platform connection
+  fastify.delete('/connections/:platform', async (request: FastifyRequest<{ Params: { platform: string } }>, reply: FastifyReply) => {
+    ensureJournalCollections();
+    const data = db.data as any;
+    if (!data.platformConnections) data.platformConnections = [];
+    
+    const userId = request.headers['x-user-id'] as string || 'default';
+    const { platform } = request.params;
+    
+    const index = data.platformConnections.findIndex(
+      (c: any) => c.userId === userId && c.platform === platform
+    );
+    
+    if (index >= 0) {
+      data.platformConnections.splice(index, 1);
+      await db.write();
+    }
+    
+    return { success: true };
+  });
+
+  // Test a platform connection
+  fastify.post('/connections/:platform/test', async (request: FastifyRequest<{ Params: { platform: string } }>, reply: FastifyReply) => {
+    const { platform } = request.params;
+    
+    // Simulate connection test (in production, actually test the API)
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // For demo, always succeed
+    return { 
+      success: true, 
+      message: `${platform} connection verified!`,
+      accountInfo: {
+        balance: 10000,
+        currency: 'USD',
+        broker: platform,
+      }
+    };
+  });
 }
 
 export default journalRoutes;
