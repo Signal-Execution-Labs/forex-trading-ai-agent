@@ -139,6 +139,41 @@ export const MT5_TOOLS: ChatToolDef[] = [
       required: ['ticket', 'new_sl'],
     },
   },
+  {
+    name: 'mt5_history',
+    description: 'Get closed trade history from MT5',
+    parameters: {
+      type: 'object',
+      properties: {
+        days: {
+          type: 'number',
+          description: 'Number of days to look back (default: 30)',
+        },
+      },
+    },
+  },
+  {
+    name: 'journal_sync_mt5',
+    description: 'Sync trades from MT5 to the Trading Journal on kitbot.finance. This auto-imports all open positions and recent trade history.',
+    parameters: {
+      type: 'object',
+      properties: {
+        accountId: {
+          type: 'string',
+          description: 'Journal account ID to sync to',
+        },
+        syncKey: {
+          type: 'string',
+          description: 'Sync key from the Journal account',
+        },
+        days: {
+          type: 'number',
+          description: 'Number of days of history to sync (default: 30)',
+        },
+      },
+      required: ['accountId', 'syncKey'],
+    },
+  },
 ];
 
 // ============================================================================
@@ -233,6 +268,63 @@ export const MT5_TOOL_HANDLERS: Record<string, (args: any) => Promise<any>> = {
   
   mt5_modify_sl: async (args: { ticket: number; new_sl: number }) => {
     return execMT5Python(`modify_sl ${args.ticket} ${args.new_sl}`);
+  },
+  
+  mt5_history: async (args: { days?: number }) => {
+    const days = args.days || 30;
+    return execMT5Python(`history ${days}`);
+  },
+  
+  journal_sync_mt5: async (args: { accountId: string; syncKey: string; days?: number }) => {
+    const { accountId, syncKey, days = 30 } = args;
+    
+    // 1. Get open positions
+    const positions = execMT5Python('positions');
+    if (!positions.success && positions.error) {
+      return positions;
+    }
+    
+    // 2. Get trade history
+    const history = execMT5Python(`history ${days}`);
+    if (!history.success && history.error) {
+      return history;
+    }
+    
+    // 3. Combine and sync to Journal
+    const trades = [
+      ...(positions.positions || []),
+      ...(history.deals || history.trades || []),
+    ];
+    
+    if (trades.length === 0) {
+      return { success: true, message: 'No trades to sync', synced: 0 };
+    }
+    
+    // 4. Push to Journal API
+    const JOURNAL_API = process.env.JOURNAL_API_URL || 'https://kitbot-api-40qp.onrender.com';
+    
+    try {
+      const response = await fetch(`${JOURNAL_API}/api/journal/sync/mt5`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accountId,
+          syncKey,
+          trades,
+        }),
+      });
+      
+      const result = await response.json();
+      return {
+        success: result.success,
+        message: result.message || `Synced ${result.total || 0} trades`,
+        imported: result.imported,
+        updated: result.updated,
+        skipped: result.skipped,
+      };
+    } catch (error: any) {
+      return { success: false, error: `Failed to sync to Journal: ${error.message}` };
+    }
   },
 };
 

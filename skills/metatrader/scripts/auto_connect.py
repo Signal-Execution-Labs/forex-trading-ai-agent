@@ -165,6 +165,48 @@ def modify_sl(ticket: int, new_sl: float):
     
     return {"success": True, "new_sl": new_sl}
 
+def get_history(days: int = 30):
+    """Holt Trade-Historie der letzten X Tage"""
+    if not mt5.initialize():
+        return {"success": False, "error": "MT5 nicht verbunden"}
+    
+    from datetime import datetime, timedelta
+    
+    now = datetime.now()
+    from_date = now - timedelta(days=days)
+    
+    # Get deals (executed trades)
+    deals = mt5.history_deals_get(from_date, now)
+    
+    if deals is None:
+        return {"success": True, "deals": [], "count": 0}
+    
+    result = []
+    for deal in deals:
+        # Skip balance operations, only keep actual trades
+        if deal.type > 1:  # 0=BUY, 1=SELL, 2+=balance/credit/etc
+            continue
+            
+        result.append({
+            "ticket": deal.ticket,
+            "order": deal.order,
+            "position_id": deal.position_id,
+            "symbol": deal.symbol,
+            "type": deal.type,  # 0=BUY, 1=SELL
+            "volume": deal.volume,
+            "price": deal.price,
+            "profit": deal.profit,
+            "commission": deal.commission,
+            "swap": deal.swap,
+            "fee": deal.fee,
+            "magic": deal.magic,
+            "comment": deal.comment,
+            "time": deal.time,  # Unix timestamp
+            "time_msc": deal.time_msc,
+        })
+    
+    return {"success": True, "deals": result, "count": len(result)}
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print(json.dumps(connect()))
@@ -189,6 +231,10 @@ if __name__ == "__main__":
         elif cmd == "modify_sl" and len(sys.argv) >= 4:
             # modify_sl TICKET NEW_SL
             print(json.dumps(modify_sl(int(sys.argv[2]), float(sys.argv[3]))))
+        elif cmd == "history":
+            # history [DAYS]
+            days = int(sys.argv[2]) if len(sys.argv) > 2 else 30
+            print(json.dumps(get_history(days)))
         elif cmd == "price" and len(sys.argv) >= 3:
             # Get current price
             if not mt5.initialize():
