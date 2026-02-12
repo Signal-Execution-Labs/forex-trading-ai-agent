@@ -2,7 +2,7 @@
  * User Service - Manages GitHub users in Supabase
  */
 
-import { supabase } from '../db/supabase.ts';
+import { getSupabase } from '../db/getSupabase().ts';
 
 export interface User {
   id: string;
