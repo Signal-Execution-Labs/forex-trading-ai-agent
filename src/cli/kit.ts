@@ -1423,6 +1423,13 @@ async function main() {
   }
   
   try {
+    const { registerSystemCommand } = await import('./commands/system');
+    registerSystemCommand(program);
+  } catch {
+    // System module not available
+  }
+  
+  try {
     const { createDiagnosticsCommand } = await import('./commands/diagnostics');
     program.addCommand(createDiagnosticsCommand());
   } catch {
