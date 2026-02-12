@@ -1430,6 +1430,13 @@ async function main() {
   }
   
   try {
+    const { registerChannelsCommand } = await import('./commands/channels');
+    registerChannelsCommand(program);
+  } catch {
+    // Channels module not available
+  }
+  
+  try {
     const { createDiagnosticsCommand } = await import('./commands/diagnostics');
     program.addCommand(createDiagnosticsCommand());
   } catch {
