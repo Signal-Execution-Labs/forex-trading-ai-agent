@@ -511,4 +511,100 @@ Ideas for #100:
 
 ---
 
-*Last updated: February 12, 2026 15:20 CET*
+---
+
+## Research Session: February 12, 2026 (17:02 CET)
+
+### Sources Analyzed
+- TradingView 2025 Review (newtrading.io)
+- TradingView Release Notes (floating tooltip)
+- TradingView Features Page (baseline analysis)
+- LuxAlgo AI Backtesting Platform
+- CoinTracking TradingView Forex Screener Analysis
+
+### Key Findings
+
+#### 1. Floating Bar Tooltip (TradingView New Feature)
+- Long-press activation on any chart bar
+- Displays OHLCV values and price change
+- Follows cursor/finger movement seamlessly
+- Essential for mobile/touch analysis
+
+#### 2. Baseline Analysis Tool
+- Explore price movements relative to any reference point
+- Calculate deviation from moving averages, VWAP, custom levels
+- Essential for mean reversion and trend analysis
+- Standard deviation bands for statistical analysis
+
+#### 3. LuxAlgo AI Backtesting
+- AI-powered strategy critique and optimization
+- Accelerated testing of hundreds of parameter combinations
+- GPU support for complex calculations
+- Intelligent parameter suggestions
+
+#### 4. Professional Forex Screening
+- 26+ indicator aggregate rating (vs TradingView's ~13)
+- Bid/Ask/Spread/High/Low real-time data
+- Technical rating breakdown (oscillators vs MAs)
+- Quick screens for oversold/overbought/trending
+
+### New Skills Implemented (17:02 CET)
+
+| # | Skill | Inspired By | Description |
+|---|-------|-------------|-------------|
+| 111 | Floating Bar Tooltip | TradingView Release Notes | OHLCV tooltip that follows cursor |
+| 112 | Baseline Analysis | TradingView Features | Deviation analysis from any reference |
+| 113 | AI Backtest Accelerator | LuxAlgo Platform | GPU-accelerated AI strategy optimization |
+| 114 | Forex Screener Pro | TradingView + CoinTracking | 26+ indicator FX screener |
+
+### Implementation Details
+
+#### Floating Bar Tooltip (#111)
+- Long-press/hover activation (300ms default)
+- OHLCV + price change display
+- Custom indicator values in tooltip
+- Dark/light theme support
+- Auto-positioning to avoid chart edges
+
+#### Baseline Analysis (#112)
+- 5 baseline types: fixed price, MA, VWAP, prev close, custom
+- 4 deviation modes: %, standard deviation, ATR, pips
+- Deviation bands at ±1σ, ±2σ, ±3σ
+- Alerts for crosses, thresholds, mean reversion
+
+#### AI Backtest Accelerator (#113)
+- Parallel execution + GPU acceleration
+- 4 optimization algorithms: grid, genetic, Bayesian, random forest
+- Walk-forward + Monte Carlo + stress testing
+- AI critique and parameter suggestions
+
+#### Forex Screener Pro (#114)
+- 26 technical indicators for aggregate rating
+- Strong Buy/Buy/Neutral/Sell/Strong Sell ratings
+- Quick screens: oversold, trending, low spread
+- Covers 70+ FX pairs (majors, minors, exotics)
+
+---
+
+## Total K.I.T. Skills: 114
+
+### Skill Growth Timeline
+| Date | Skills | Added |
+|------|--------|-------|
+| Feb 12 05:22 | 71 | Initial research session |
+| Feb 12 07:18 | 90 | +19 TradingView features |
+| Feb 12 09:15 | 96 | +6 advanced analysis |
+| Feb 12 13:08 | 99 | +3 Wyckoff/Pine |
+| Feb 12 15:20 | 110 | +11 bots & copy trading |
+| Feb 12 17:02 | 114 | +4 charting & screening |
+
+### Next Research Targets
+- [ ] Derive.com synthetic indices trading
+- [ ] Coinbase Advanced trading features
+- [ ] Kraken staking & earn features
+- [ ] Robinhood fractional shares & options
+- [ ] Interactive Brokers API features
+
+---
+
+*Last updated: February 12, 2026 17:02 CET*
