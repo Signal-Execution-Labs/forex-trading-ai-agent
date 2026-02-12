@@ -585,6 +585,127 @@ ${ctx.data.market ? `- ${ctx.data.market}` : '- All markets'}
       logger.info(`⚙️ Config changed by ${ctx.data.changedBy || 'system'}: ${ctx.data.reason || 'No reason provided'}`);
     },
   });
+
+  // Position Monitor - tracks open positions and alerts on significant changes
+  registry.register({
+    id: 'position-monitor',
+    name: 'Position Monitor',
+    description: 'Monitors open positions for significant P&L changes, approaching SL/TP, and duration warnings',
+    version: '1.0.0',
+    events: ['trade:executed', 'portfolio:changed'],
+    enabled: true,
+    priority: 90,
+    handler: async (ctx) => {
+      const monitorDir = path.join(process.env.HOME || process.env.USERPROFILE || '', '.kit', 'positions');
+      if (!fs.existsSync(monitorDir)) {
+        fs.mkdirSync(monitorDir, { recursive: true });
+      }
+      
+      const snapshotPath = path.join(monitorDir, 'position_snapshot.json');
+      const alertsPath = path.join(monitorDir, 'position_alerts.jsonl');
+      
+      // Load previous snapshot
+      let prevSnapshot: Record<string, any> = {};
+      if (fs.existsSync(snapshotPath)) {
+        try {
+          prevSnapshot = JSON.parse(fs.readFileSync(snapshotPath, 'utf-8'));
+        } catch (e) { /* use empty */ }
+      }
+      
+      // Current positions from context
+      const positions = ctx.data.positions || [];
+      const alerts: Array<{type: string; symbol: string; message: string; severity: string}> = [];
+      
+      for (const pos of positions) {
+        const posId = pos.id || pos.ticket || `${pos.symbol}_${pos.openTime}`;
+        const prev = prevSnapshot[posId];
+        
+        // Check for significant P&L change (>20% of initial risk)
+        if (prev && pos.unrealizedPnl !== undefined && prev.unrealizedPnl !== undefined) {
+          const pnlChange = Math.abs(pos.unrealizedPnl - prev.unrealizedPnl);
+          const initialRisk = pos.initialRisk || pos.volume * 100; // Estimate if not provided
+          if (pnlChange > initialRisk * 0.2) {
+            const direction = pos.unrealizedPnl > prev.unrealizedPnl ? '📈' : '📉';
+            alerts.push({
+              type: 'pnl_change',
+              symbol: pos.symbol,
+              message: `${direction} ${pos.symbol}: P&L changed by $${pnlChange.toFixed(2)}`,
+              severity: pnlChange > initialRisk * 0.5 ? 'high' : 'medium',
+            });
+          }
+        }
+        
+        // Check if approaching SL (within 20%)
+        if (pos.stopLoss && pos.currentPrice) {
+          const distanceToSL = Math.abs(pos.currentPrice - pos.stopLoss);
+          const totalRange = Math.abs(pos.openPrice - pos.stopLoss);
+          if (totalRange > 0 && distanceToSL / totalRange < 0.2) {
+            alerts.push({
+              type: 'approaching_sl',
+              symbol: pos.symbol,
+              message: `⚠️ ${pos.symbol}: Approaching stop loss (${((1 - distanceToSL/totalRange) * 100).toFixed(0)}% of range)`,
+              severity: 'high',
+            });
+          }
+        }
+        
+        // Check if approaching TP (within 10%)
+        if (pos.takeProfit && pos.currentPrice) {
+          const distanceToTP = Math.abs(pos.takeProfit - pos.currentPrice);
+          const totalRange = Math.abs(pos.takeProfit - pos.openPrice);
+          if (totalRange > 0 && distanceToTP / totalRange < 0.1) {
+            alerts.push({
+              type: 'approaching_tp',
+              symbol: pos.symbol,
+              message: `🎯 ${pos.symbol}: Approaching take profit (${((1 - distanceToTP/totalRange) * 100).toFixed(0)}% of target)`,
+              severity: 'medium',
+            });
+          }
+        }
+        
+        // Check for long-duration positions (>24h for day trading style)
+        if (pos.openTime) {
+          const openTime = new Date(pos.openTime).getTime();
+          const durationHours = (Date.now() - openTime) / (1000 * 60 * 60);
+          if (durationHours > 24 && !prev?.durationWarned) {
+            alerts.push({
+              type: 'long_duration',
+              symbol: pos.symbol,
+              message: `⏰ ${pos.symbol}: Position open for ${durationHours.toFixed(1)}h`,
+              severity: 'low',
+            });
+            pos.durationWarned = true;
+          }
+        }
+        
+        // Update snapshot
+        prevSnapshot[posId] = { ...pos, lastUpdated: ctx.timestamp.toISOString() };
+      }
+      
+      // Remove closed positions from snapshot
+      const currentIds = new Set(positions.map((p: any) => p.id || p.ticket || `${p.symbol}_${p.openTime}`));
+      for (const id of Object.keys(prevSnapshot)) {
+        if (!currentIds.has(id)) {
+          delete prevSnapshot[id];
+        }
+      }
+      
+      // Save updated snapshot
+      fs.writeFileSync(snapshotPath, JSON.stringify(prevSnapshot, null, 2));
+      
+      // Log alerts
+      if (alerts.length > 0) {
+        for (const alert of alerts) {
+          const entry = JSON.stringify({
+            timestamp: ctx.timestamp.toISOString(),
+            ...alert,
+          }) + '\n';
+          fs.appendFileSync(alertsPath, entry);
+          logger.info(`Position Alert: ${alert.message}`);
+        }
+      }
+    },
+  });
 }
 
 // ============================================================================
