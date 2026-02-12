@@ -87,4 +87,102 @@ Based on research, added 5 new skills:
 
 ---
 
-*Last updated: February 12, 2026 05:22 CET*
+---
+
+## Research Session: February 12, 2026 (07:18 CET)
+
+### Sources Analyzed
+- TradingView 2025 Features & Pine v6 Release Notes
+- TradingView Top Indicators 2025 (community picks)
+- Mind Math Money: 4 Powerful TradingView Indicators
+
+### Key Findings
+
+#### 1. TradingView Pine v6 Features
+- **Volume Footprint API:** Premium feature for volume analysis at each price level
+- **Footprint Requests:** Custom footprint calculations, delta analysis, POC detection
+- **Featuresets:** `disable_legend_inplace_resolution_change`, `disable_legend_inplace_symbol_change`
+
+#### 2. TradingView Community Top Indicators 2025
+1. CM_Ultimate RSI Multi Time Frame by ChrisMoody
+2. Death Cross - 200 MA / 50 Cross Checker by MexPayne
+3. Gaps indicator
+4. WaveTrend Oscillator by LazyBear
+5. MACD
+6. Pi Cycle (already implemented!)
+7. Various SMC (Smart Money Concepts) scripts
+
+#### 3. Smart Money Features
+- **Liquidity Sweeps:** ⤴ (bullish) and ⤵ (bearish) symbols for reclaim patterns
+- Price sweeps high/low then reclaims = reversal signal
+- Multi-condition alerts combining drawings, indicators, chart values
+
+#### 4. Advanced Alert System
+- Alerts from chart drawings (trendlines, rectangles)
+- Alerts from Pine scripts
+- Watchlist-wide alerts (hundreds of symbols, single alert)
+- Combine up to 5 settings in one alert
+
+### New Skills Implemented (07:18 CET)
+
+| # | Skill | Inspired By |
+|---|-------|-------------|
+| 86 | Volume Footprint | TradingView Pine v6 footprint API |
+| 87 | Liquidity Sweep | TradingView SMC scripts, reclaim patterns |
+| 88 | Heat Map | TradingView Crypto Heat Map |
+| 89 | Pattern Pro | TradingView Pattern Detector + AI |
+| 90 | Alert Combiner | TradingView multi-condition alerts |
+
+### Implementation Details
+
+#### Volume Footprint (#86)
+- Footprint charts showing volume at each price level
+- Delta analysis (buy vs sell volume imbalance)
+- Point of Control (POC) detection
+- Value Area High/Low calculation
+- Imbalance and absorption detection
+
+#### Liquidity Sweep Detector (#87)
+- Detects sweeps above/below swing highs/lows
+- Identifies stop hunts before reversals
+- Session high/low sweep detection
+- Multi-timeframe support
+- Confluence with FVG and Order Blocks
+
+#### Heat Map Generator (#88)
+- Sector performance heat maps
+- Volume-weighted box sizing
+- Correlation matrices
+- Volatility heat maps
+- Real-time updates
+
+#### Pattern Recognition Pro (#89)
+- Classic patterns (H&S, flags, triangles)
+- 20+ candlestick patterns
+- Harmonic patterns (Gartley, Bat, etc.)
+- AI probability scoring
+- Historical success rate lookup
+
+#### Alert Combiner (#90)
+- Combine price, indicator, drawing, volume, time conditions
+- AND/OR/NOT/THEN logic operators
+- Watchlist-wide scanning
+- Webhook and auto-trade actions
+
+---
+
+## Total K.I.T. Skills: 90
+
+### Updated Roadmap
+- [x] Volume footprint analysis
+- [x] Liquidity sweep detection
+- [x] Heat maps for markets
+- [x] Advanced pattern recognition
+- [x] Multi-condition alerts
+- [ ] Visual strategy builder (drag-and-drop)
+- [ ] Paper trading tournaments
+- [ ] Pine Script import/export
+
+---
+
+*Last updated: February 12, 2026 07:18 CET*
