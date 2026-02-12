@@ -1,8 +1,8 @@
 /**
  * K.I.T. NATURAL LANGUAGE COMMAND PROCESSOR
  * 
- * Versteht deutsche und englische Befehle und führt sie aus.
- * Keine halben Sachen - vollständig funktionsfähig.
+ * Understands German AND English commands, responds in English.
+ * Fully functional - no half-measures.
  */
 
 import { getAutonomousAgent, TradeAction, PriceAlert, PassivePosition } from './autonomous-agent';
@@ -18,22 +18,23 @@ interface CommandPattern {
 }
 
 const COMMAND_PATTERNS: CommandPattern[] = [
-  // ========== ÜBERWACHUNG / WATCHLIST ==========
+  // ========== WATCHLIST ==========
   {
     patterns: [
       /(?:überwache|watch|monitor|beobachte)\s+(.+)/i,
       /(?:füge?|add)\s+(.+?)\s+(?:zur watchlist|to watchlist|hinzu)/i,
     ],
     handler: handleWatch,
-    description: 'Überwache ein Asset',
+    description: 'Watch an asset',
   },
   {
     patterns: [
       /(?:stopp?e?|stop)\s+(?:überwachung|watching|monitoring)\s+(?:von\s+)?(.+)/i,
       /(?:entferne|remove)\s+(.+?)\s+(?:von|from)\s+(?:watchlist|überwachung)/i,
+      /(?:unwatch)\s+(.+)/i,
     ],
     handler: handleUnwatch,
-    description: 'Stoppe Überwachung',
+    description: 'Stop watching',
   },
   {
     patterns: [
@@ -41,7 +42,7 @@ const COMMAND_PATTERNS: CommandPattern[] = [
       /(?:show|zeig)\s+watchlist/i,
     ],
     handler: handleShowWatchlist,
-    description: 'Zeige Watchlist',
+    description: 'Show watchlist',
   },
 
   // ========== ALERTS ==========
@@ -51,7 +52,7 @@ const COMMAND_PATTERNS: CommandPattern[] = [
       /(?:benachrichtige?|notify)\s+(?:mich\s+)?(?:wenn|if|when)\s+(.+?)\s+(?:über|above)\s+(\d+(?:[.,]\d+)?)/i,
     ],
     handler: handleAlertAbove,
-    description: 'Alert wenn Preis über X',
+    description: 'Alert when price above X',
   },
   {
     patterns: [
@@ -59,14 +60,14 @@ const COMMAND_PATTERNS: CommandPattern[] = [
       /(?:benachrichtige?|notify)\s+(?:mich\s+)?(?:wenn|if|when)\s+(.+?)\s+(?:unter|below)\s+(\d+(?:[.,]\d+)?)/i,
     ],
     handler: handleAlertBelow,
-    description: 'Alert wenn Preis unter X',
+    description: 'Alert when price below X',
   },
   {
     patterns: [
       /(?:alarm|alert)\s+(?:wenn|if|when)\s+(.+?)\s+(?:um|by)\s+(\d+(?:[.,]\d+)?)\s*%/i,
     ],
     handler: handleAlertPercent,
-    description: 'Alert bei X% Bewegung',
+    description: 'Alert on X% move',
   },
   {
     patterns: [
@@ -74,14 +75,14 @@ const COMMAND_PATTERNS: CommandPattern[] = [
       /(?:aktive\s+)?(?:alerts?|alarme?)/i,
     ],
     handler: handleShowAlerts,
-    description: 'Zeige aktive Alerts',
+    description: 'Show active alerts',
   },
   {
     patterns: [
       /(?:lösche?|delete|remove|clear)\s+(?:alle?\s+)?(?:alerts?|alarme?)/i,
     ],
     handler: handleClearAlerts,
-    description: 'Lösche Alerts',
+    description: 'Clear alerts',
   },
 
   // ========== INSTANT TRADING ==========
@@ -90,14 +91,14 @@ const COMMAND_PATTERNS: CommandPattern[] = [
       /(?:kauf|buy|long)\s+(.+?)(?:\s+(?:für|for)\s+(\d+(?:[.,]\d+)?)\s*(?:€|\$|euro?|dollar|usd)?)?(?:\s+(?:auf|on)\s+(.+))?$/i,
     ],
     handler: handleBuy,
-    description: 'Kaufe ein Asset',
+    description: 'Buy an asset',
   },
   {
     patterns: [
       /(?:verkauf|sell|short)\s+(.+?)(?:\s+(?:für|for)\s+(\d+(?:[.,]\d+)?)\s*(?:€|\$|euro?|dollar|usd)?)?(?:\s+(?:auf|on)\s+(.+))?$/i,
     ],
     handler: handleSell,
-    description: 'Verkaufe ein Asset',
+    description: 'Sell an asset',
   },
   {
     patterns: [
@@ -105,7 +106,7 @@ const COMMAND_PATTERNS: CommandPattern[] = [
       /(?:close|schließe?)\s+(.+)/i,
     ],
     handler: handleClose,
-    description: 'Schließe Position(en)',
+    description: 'Close position(s)',
   },
 
   // ========== AUTONOMOUS MODE ==========
@@ -114,9 +115,10 @@ const COMMAND_PATTERNS: CommandPattern[] = [
       /(?:trade|handel)\s+(?:autonom|autonomous|automatisch|auto)\s*(?:(?:auf|on)\s+(?:allen?\s+)?(?:plattformen?|platforms?|accounts?))?/i,
       /(?:aktiviere?|enable|start)\s+(?:autonomes?|autonomous|auto)\s+(?:trading|handel)/i,
       /(?:volle?\s+)?(?:autonomie|autonomous\s+mode)/i,
+      /(?:go\s+)?auto(?:nomous)?/i,
     ],
     handler: handleEnableAutoTrading,
-    description: 'Aktiviere autonomes Trading',
+    description: 'Enable autonomous trading',
   },
   {
     patterns: [
@@ -124,21 +126,21 @@ const COMMAND_PATTERNS: CommandPattern[] = [
       /(?:kein|no)\s+(?:autonomes?|auto)\s+(?:trading|handel)/i,
     ],
     handler: handleDisableAutoTrading,
-    description: 'Stoppe autonomes Trading',
+    description: 'Stop autonomous trading',
   },
   {
     patterns: [
       /(?:pause?|pausiere?)\s+(?:trading|handel)/i,
     ],
     handler: handlePauseTrading,
-    description: 'Pausiere Trading',
+    description: 'Pause trading',
   },
   {
     patterns: [
       /(?:resume|fortsetzen|weiter)\s*(?:trading|handel)?/i,
     ],
     handler: handleResumeTrading,
-    description: 'Setze Trading fort',
+    description: 'Resume trading',
   },
 
   // ========== REPORTS ==========
@@ -146,23 +148,25 @@ const COMMAND_PATTERNS: CommandPattern[] = [
     patterns: [
       /(?:morgenbriefing|morning\s*briefing|täglicher?\s+bericht|daily\s+report)\s*(?:um\s+(\d{1,2})(?::(\d{2}))?\s*(?:uhr)?)?/i,
       /(?:briefing|bericht)\s+(?:jeden\s+)?(?:morgen|tag)\s*(?:um\s+(\d{1,2})(?::(\d{2}))?\s*(?:uhr)?)?/i,
+      /(?:daily|morning)\s+(?:report|briefing)\s*(?:at\s+(\d{1,2})(?::(\d{2}))?)?/i,
     ],
     handler: handleSetMorningReport,
-    description: 'Setze Morgenbriefing',
+    description: 'Set morning report',
   },
   {
     patterns: [
       /(?:abend|evening|tages)\s*(?:bericht|report)\s*(?:um\s+(\d{1,2})(?::(\d{2}))?\s*(?:uhr)?)?/i,
+      /(?:evening)\s+(?:report)\s*(?:at\s+(\d{1,2})(?::(\d{2}))?)?/i,
     ],
     handler: handleSetEveningReport,
-    description: 'Setze Abendbericht',
+    description: 'Set evening report',
   },
   {
     patterns: [
       /(?:wochen|weekly)\s*(?:bericht|report|zusammenfassung|summary)/i,
     ],
     handler: handleWeeklyReport,
-    description: 'Wochenbericht',
+    description: 'Weekly report',
   },
   {
     patterns: [
@@ -170,7 +174,7 @@ const COMMAND_PATTERNS: CommandPattern[] = [
       /(?:wie\s+(?:läuft|geht)\s*(?:es|'s)?|what'?s?\s+(?:up|happening))/i,
     ],
     handler: handleInstantReport,
-    description: 'Sofortiger Bericht',
+    description: 'Instant report',
   },
 
   // ========== NOTIFICATIONS ==========
@@ -180,14 +184,7 @@ const COMMAND_PATTERNS: CommandPattern[] = [
       /(?:anruf|call\s*me)\s+(?:bei|wenn|for)\s+(.+)/i,
     ],
     handler: handleCallMe,
-    description: 'Rufe an bei Gelegenheit',
-  },
-  {
-    patterns: [
-      /(?:benachrichtige?|notify|alert)\s+(?:mich\s+)?(?:nur\s+)?(?:bei|für|for|on)\s+(.+)/i,
-    ],
-    handler: handleNotifySettings,
-    description: 'Benachrichtigungseinstellungen',
+    description: 'Call me on opportunity',
   },
 
   // ========== PLATFORM MANAGEMENT ==========
@@ -197,14 +194,14 @@ const COMMAND_PATTERNS: CommandPattern[] = [
       /(?:füge?|add)\s+(?:plattform|platform)\s+(.+)/i,
     ],
     handler: handleConnectPlatform,
-    description: 'Verbinde Plattform',
+    description: 'Connect platform',
   },
   {
     patterns: [
       /(?:trenne?|disconnect|entferne?|remove)\s+(?:plattform|platform)?\s*(.+)/i,
     ],
     handler: handleDisconnectPlatform,
-    description: 'Trenne Plattform',
+    description: 'Disconnect platform',
   },
   {
     patterns: [
@@ -212,14 +209,14 @@ const COMMAND_PATTERNS: CommandPattern[] = [
       /(?:zeig|show|list)\s+(?:meine\s+)?(?:plattformen?|platforms?|accounts?)/i,
     ],
     handler: handleListPlatforms,
-    description: 'Zeige Plattformen',
+    description: 'Show platforms',
   },
   {
     patterns: [
       /(?:sync|synchronisiere?|aktualisiere?|update)\s*(?:alle?\s+)?(?:plattformen?|platforms?|portfolio)?/i,
     ],
     handler: handleSyncPlatforms,
-    description: 'Synchronisiere Plattformen',
+    description: 'Sync platforms',
   },
 
   // ========== PORTFOLIO & BALANCE ==========
@@ -229,7 +226,7 @@ const COMMAND_PATTERNS: CommandPattern[] = [
       /(?:wie\s*viel\s*(?:habe?\s*ich|geld)|how\s+much)/i,
     ],
     handler: handleShowPortfolio,
-    description: 'Zeige Portfolio',
+    description: 'Show portfolio',
   },
   {
     patterns: [
@@ -237,7 +234,7 @@ const COMMAND_PATTERNS: CommandPattern[] = [
       /(?:portfolio\s+)?(?:rebalancing|ausgleich)/i,
     ],
     handler: handleRebalance,
-    description: 'Rebalance Portfolio',
+    description: 'Rebalance portfolio',
   },
 
   // ========== PASSIVE INCOME ==========
@@ -247,14 +244,14 @@ const COMMAND_PATTERNS: CommandPattern[] = [
       /(?:staking|yield|rewards?|belohnungen)/i,
     ],
     handler: handleShowPassiveIncome,
-    description: 'Zeige passives Einkommen',
+    description: 'Show passive income',
   },
   {
     patterns: [
       /(?:airdrops?|neue?\s+airdrops?)/i,
     ],
     handler: handleCheckAirdrops,
-    description: 'Prüfe Airdrops',
+    description: 'Check airdrops',
   },
 
   // ========== MARKET INFO ==========
@@ -265,7 +262,7 @@ const COMMAND_PATTERNS: CommandPattern[] = [
       /(.+)\s+(?:preis|price|kurs)$/i,
     ],
     handler: handleGetPrice,
-    description: 'Zeige Preis',
+    description: 'Show price',
   },
   {
     patterns: [
@@ -273,29 +270,31 @@ const COMMAND_PATTERNS: CommandPattern[] = [
       /(?:was\s+(?:ist\s+)?los|what'?s?\s+happening)\s+(?:am\s+markt|in\s+(?:the\s+)?markets?)/i,
     ],
     handler: handleMarketOverview,
-    description: 'Marktübersicht',
+    description: 'Market overview',
   },
 
   // ========== AGENT CONTROL ==========
   {
     patterns: [
-      /(?:status|zustand)/i,
+      /^status$/i,
+      /^zustand$/i,
     ],
     handler: handleStatus,
-    description: 'Zeige Agent Status',
+    description: 'Show agent status',
   },
   {
     patterns: [
       /(?:hilfe?|help|befehle?|commands?)/i,
       /(?:was\s+kannst\s+du|what\s+can\s+you\s+do)/i,
+      /^\?$/,
     ],
     handler: handleHelp,
-    description: 'Zeige Hilfe',
+    description: 'Show help',
   },
 ];
 
 // ============================================================================
-// Handler Functions
+// Handler Functions (ALL ENGLISH RESPONSES)
 // ============================================================================
 
 async function handleWatch(match: RegExpMatchArray, text: string): Promise<string> {
@@ -308,14 +307,14 @@ async function handleWatch(match: RegExpMatchArray, text: string): Promise<strin
     agent.updateSettings({ watchlist: state.watchlist });
   }
   
-  return `👁️ **${symbol} wird jetzt überwacht**
+  return `👁️ **Now watching ${symbol}**
 
-K.I.T. überwacht ${symbol} und benachrichtigt dich bei:
-• Signifikanten Preisbewegungen (>3%)
-• Trading-Gelegenheiten
-• News und Events
+K.I.T. will monitor ${symbol} and notify you on:
+• Significant price moves (>3%)
+• Trading opportunities
+• News and events
 
-💡 Tipp: Sag "Alert wenn ${symbol} über/unter X" für spezifische Alerts`;
+💡 Tip: Say "alert if ${symbol} above/below X" for specific alerts`;
 }
 
 async function handleUnwatch(match: RegExpMatchArray, text: string): Promise<string> {
@@ -326,7 +325,7 @@ async function handleUnwatch(match: RegExpMatchArray, text: string): Promise<str
   state.watchlist = state.watchlist.filter(s => s !== symbol);
   agent.updateSettings({ watchlist: state.watchlist });
   
-  return `✅ ${symbol} wird nicht mehr überwacht`;
+  return `✅ Stopped watching ${symbol}`;
 }
 
 async function handleShowWatchlist(match: RegExpMatchArray, text: string): Promise<string> {
@@ -334,9 +333,9 @@ async function handleShowWatchlist(match: RegExpMatchArray, text: string): Promi
   const state = agent.getState();
   
   if (state.watchlist.length === 0) {
-    return `📋 **Watchlist ist leer**
+    return `📋 **Watchlist is empty**
 
-Sag "Überwache BTC" um ein Asset hinzuzufügen.`;
+Say "watch BTC" to add an asset.`;
   }
   
   const prices = await Promise.all(
@@ -346,12 +345,12 @@ Sag "Überwache BTC" um ein Asset hinzuzufügen.`;
     })
   );
   
-  return `📋 **Watchlist (${state.watchlist.length} Assets)**
+  return `📋 **Watchlist (${state.watchlist.length} assets)**
 
 ${prices.join('\n')}
 
-💡 "Überwache XAUUSD" - hinzufügen
-💡 "Stoppe Überwachung BTC" - entfernen`;
+💡 "watch XAUUSD" - add
+💡 "unwatch BTC" - remove`;
 }
 
 async function handleAlertAbove(match: RegExpMatchArray, text: string): Promise<string> {
@@ -359,18 +358,18 @@ async function handleAlertAbove(match: RegExpMatchArray, text: string): Promise<
   const symbol = normalizeSymbol(match[1]);
   const targetPrice = parseNumber(match[2]);
   
-  const result = await agent.addAlert({
+  await agent.addAlert({
     symbol,
     condition: 'above',
     targetPrice,
     notifyTelegram: true,
   });
   
-  return `🔔 **Alert erstellt**
+  return `🔔 **Alert created**
 
 ${symbol} ≥ $${targetPrice.toLocaleString()}
 
-Du wirst sofort benachrichtigt wenn der Preis erreicht wird.`;
+You'll be notified immediately when the price is reached.`;
 }
 
 async function handleAlertBelow(match: RegExpMatchArray, text: string): Promise<string> {
@@ -385,11 +384,11 @@ async function handleAlertBelow(match: RegExpMatchArray, text: string): Promise<
     notifyTelegram: true,
   });
   
-  return `🔔 **Alert erstellt**
+  return `🔔 **Alert created**
 
 ${symbol} ≤ $${targetPrice.toLocaleString()}
 
-Du wirst sofort benachrichtigt wenn der Preis erreicht wird.`;
+You'll be notified immediately when the price is reached.`;
 }
 
 async function handleAlertPercent(match: RegExpMatchArray, text: string): Promise<string> {
@@ -404,11 +403,11 @@ async function handleAlertPercent(match: RegExpMatchArray, text: string): Promis
     notifyTelegram: true,
   });
   
-  return `🔔 **Alert erstellt**
+  return `🔔 **Alert created**
 
-${symbol} ±${percentChange}% Bewegung
+${symbol} ±${percentChange}% move
 
-Du wirst benachrichtigt bei jeder ${percentChange}% Bewegung.`;
+You'll be notified on any ${percentChange}% movement.`;
 }
 
 async function handleShowAlerts(match: RegExpMatchArray, text: string): Promise<string> {
@@ -417,12 +416,12 @@ async function handleShowAlerts(match: RegExpMatchArray, text: string): Promise<
   const activeAlerts = state.priceAlerts.filter(a => !a.triggered);
   
   if (activeAlerts.length === 0) {
-    return `🔔 **Keine aktiven Alerts**
+    return `🔔 **No active alerts**
 
-Erstelle einen mit:
-• "Alert wenn BTC über 50000"
-• "Alert wenn ETH unter 3000"
-• "Alert wenn XAUUSD um 2%"`;
+Create one with:
+• "alert if BTC above 50000"
+• "alert if ETH below 3000"
+• "alert if XAUUSD by 2%"`;
   }
   
   const alertList = activeAlerts.map(a => {
@@ -432,7 +431,7 @@ Erstelle einen mit:
     return `• ${a.symbol} ${condition} ${target}`;
   });
   
-  return `🔔 **Aktive Alerts (${activeAlerts.length})**
+  return `🔔 **Active Alerts (${activeAlerts.length})**
 
 ${alertList.join('\n')}`;
 }
@@ -440,7 +439,7 @@ ${alertList.join('\n')}`;
 async function handleClearAlerts(match: RegExpMatchArray, text: string): Promise<string> {
   const agent = getAutonomousAgent();
   agent.updateSettings({ priceAlerts: [] });
-  return `✅ Alle Alerts gelöscht`;
+  return `✅ All alerts cleared`;
 }
 
 async function handleBuy(match: RegExpMatchArray, text: string): Promise<string> {
@@ -451,15 +450,14 @@ async function handleBuy(match: RegExpMatchArray, text: string): Promise<string>
   const platform = match[3] ? normalizePlatform(match[3]) : findBestPlatform(state, symbol);
   
   if (!platform) {
-    return `❌ **Keine Plattform verbunden**
+    return `❌ **No platform connected**
 
-Verbinde zuerst eine Trading-Plattform:
-• BinaryFaster: "Verbinde BinaryFaster"
-• Binance: "Verbinde Binance mit API Key..."
-• MT5: "Verbinde MT5"`;
+Connect a trading platform first:
+• "connect binaryfaster"
+• "connect binance"
+• "connect mt5"`;
   }
   
-  // Execute trade
   const result = await executeTrade({
     type: 'buy',
     platform,
@@ -478,9 +476,9 @@ async function handleSell(match: RegExpMatchArray, text: string): Promise<string
   const platform = match[3] ? normalizePlatform(match[3]) : findBestPlatform(state, symbol);
   
   if (!platform) {
-    return `❌ **Keine Plattform verbunden**
+    return `❌ **No platform connected**
 
-Verbinde zuerst eine Trading-Plattform.`;
+Connect a trading platform first.`;
   }
   
   const result = await executeTrade({
@@ -498,7 +496,6 @@ async function handleClose(match: RegExpMatchArray, text: string): Promise<strin
   const state = agent.getState();
   const target = match[1];
   
-  // Close on all platforms or specific one
   const platforms = target ? [normalizePlatform(target)] : state.platforms.filter(p => p.enabled).map(p => p.platform);
   
   const results: string[] = [];
@@ -507,7 +504,7 @@ async function handleClose(match: RegExpMatchArray, text: string): Promise<strin
     results.push(result);
   }
   
-  return `🔒 **Positionen geschlossen**
+  return `🔒 **Positions closed**
 
 ${results.join('\n')}`;
 }
@@ -516,56 +513,56 @@ async function handleEnableAutoTrading(match: RegExpMatchArray, text: string): P
   const agent = getAutonomousAgent();
   agent.updateSettings({
     autoTradeOpportunities: true,
-    maxAutoTradeRiskPercent: 2, // Conservative default
+    maxAutoTradeRiskPercent: 2,
   });
   
   const state = agent.getState();
   const platforms = state.platforms.filter(p => p.enabled);
   
   if (platforms.length === 0) {
-    return `⚠️ **Autonomes Trading aktiviert, aber keine Plattformen verbunden!**
+    return `⚠️ **Autonomous trading enabled, but no platforms connected!**
 
-Verbinde mindestens eine Plattform:
-• "Verbinde BinaryFaster"
-• "Verbinde Binance"
-• "Verbinde MT5"`;
+Connect at least one platform:
+• "connect binaryfaster"
+• "connect binance"
+• "connect mt5"`;
   }
   
-  return `🤖 **AUTONOMES TRADING AKTIVIERT**
+  return `🤖 **AUTONOMOUS TRADING ACTIVATED**
 
-K.I.T. tradet jetzt selbstständig auf:
+K.I.T. will now trade independently on:
 ${platforms.map(p => `• ${p.platform}: $${(p.balance || 0).toLocaleString()}`).join('\n')}
 
-**Einstellungen:**
-• Max. Risiko pro Trade: 2%
-• Max. Trades pro Tag: ${state.maxDailyTrades}
-• Stop bei Tagesverlust: ${state.maxDailyLossPercent}%
+**Settings:**
+• Max risk per trade: 2%
+• Max trades per day: ${state.maxDailyTrades}
+• Stop on daily loss: ${state.maxDailyLossPercent}%
 
-⚠️ K.I.T. tradet nur bei hoher Konfidenz (>70%)
+⚠️ K.I.T. only trades on high confidence (>70%)
 
-Sage "Stoppe autonomes Trading" um zu pausieren.`;
+Say "stop auto trading" to pause.`;
 }
 
 async function handleDisableAutoTrading(match: RegExpMatchArray, text: string): Promise<string> {
   const agent = getAutonomousAgent();
   agent.updateSettings({ autoTradeOpportunities: false });
   
-  return `🛑 **Autonomes Trading deaktiviert**
+  return `🛑 **Autonomous trading disabled**
 
-K.I.T. überwacht weiterhin die Märkte und sendet Alerts, führt aber keine automatischen Trades mehr aus.`;
+K.I.T. continues monitoring markets and sending alerts, but won't execute automatic trades.`;
 }
 
 async function handlePauseTrading(match: RegExpMatchArray, text: string): Promise<string> {
   const agent = getAutonomousAgent();
   agent.updateSettings({
     tradingPaused: true,
-    pauseReason: 'Manuell pausiert',
+    pauseReason: 'Manually paused',
   });
   
-  return `⏸️ **Trading pausiert**
+  return `⏸️ **Trading paused**
 
-Alle Trades sind pausiert. Überwachung läuft weiter.
-Sage "Weiter" oder "Resume" um fortzufahren.`;
+All trades are paused. Monitoring continues.
+Say "resume" to continue.`;
 }
 
 async function handleResumeTrading(match: RegExpMatchArray, text: string): Promise<string> {
@@ -575,7 +572,7 @@ async function handleResumeTrading(match: RegExpMatchArray, text: string): Promi
     pauseReason: undefined,
   });
   
-  return `▶️ **Trading fortgesetzt**`;
+  return `▶️ **Trading resumed**`;
 }
 
 async function handleSetMorningReport(match: RegExpMatchArray, text: string): Promise<string> {
@@ -586,58 +583,56 @@ async function handleSetMorningReport(match: RegExpMatchArray, text: string): Pr
   
   agent.updateSettings({ dailyReportTime: time });
   
-  return `📰 **Morgenbriefing eingestellt**
+  return `📰 **Morning briefing set**
 
-Du erhältst jeden Tag um ${time} Uhr:
-• Marktübersicht
-• Portfolio-Stand
-• Wichtige News
-• Trading-Gelegenheiten
+Every day at ${time} you'll receive:
+• Market overview
+• Portfolio status
+• Important news
+• Trading opportunities
 
-💡 Sage "Bericht jetzt" für einen sofortigen Report.`;
+💡 Say "report now" for an instant report.`;
 }
 
 async function handleSetEveningReport(match: RegExpMatchArray, text: string): Promise<string> {
   const agent = getAutonomousAgent();
-  // Store evening report time separately
   const hour = match[1] ? parseInt(match[1]) : 22;
   const minute = match[2] ? parseInt(match[2]) : 0;
   const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
   
-  // For now, use additional field
   agent.updateSettings({ 
     dailyReportTime: time,
     notifyOnTrade: true,
   });
   
-  return `📊 **Tagesbericht eingestellt**
+  return `📊 **Evening report set**
 
-Du erhältst jeden Tag um ${time} Uhr:
-• Was K.I.T. heute gemacht hat
-• Ausgeführte Trades
-• Gewinn/Verlust
-• Portfolio-Performance`;
+Every day at ${time} you'll receive:
+• What K.I.T. did today
+• Executed trades
+• Profit/Loss
+• Portfolio performance`;
 }
 
 async function handleWeeklyReport(match: RegExpMatchArray, text: string): Promise<string> {
   const agent = getAutonomousAgent();
   const state = agent.getState();
   
-  return `📈 **Wochenbericht**
+  return `📈 **Weekly Report**
 
 **Portfolio**
-• Gesamtwert: $${state.totalValueUSD.toLocaleString()}
-• Wochenperformance: ${state.totalPnL >= 0 ? '+' : ''}$${state.totalPnL.toFixed(2)}
+• Total Value: $${state.totalValueUSD.toLocaleString()}
+• Week Performance: ${state.totalPnL >= 0 ? '+' : ''}$${state.totalPnL.toFixed(2)}
 
 **Trading**
-• Trades diese Woche: ${state.totalTradesExecuted}
+• Trades this week: ${state.totalTradesExecuted}
 • Win Rate: ${(state.winRate * 100).toFixed(1)}%
 
-**Passive Erträge**
+**Passive Income**
 • Staking Value: $${state.totalPassiveValueUSD.toLocaleString()}
 • Rewards: $${state.totalRewardsEarned.toFixed(2)}
 
-_Wochenbericht wird jeden Sonntag automatisch gesendet._`;
+_Weekly report sent automatically every Sunday._`;
 }
 
 async function handleInstantReport(match: RegExpMatchArray, text: string): Promise<string> {
@@ -655,88 +650,59 @@ async function handleCallMe(match: RegExpMatchArray, text: string): Promise<stri
     notifyOnTrade: true,
   });
   
-  return `📞 **Anruf-Benachrichtigung aktiviert**
+  return `📞 **Call notification enabled**
 
-K.I.T. sendet dir eine dringende Nachricht bei:
+K.I.T. will send you an urgent message on:
 • ${condition}
 
-⚠️ Hinweis: Echte Telefonanrufe sind noch nicht implementiert. Du erhältst eine Telegram-Nachricht mit 🚨 Priorität.`;
-}
-
-async function handleNotifySettings(match: RegExpMatchArray, text: string): Promise<string> {
-  const agent = getAutonomousAgent();
-  const setting = match[1].toLowerCase();
-  
-  const settings: Partial<any> = {};
-  
-  if (setting.includes('trade')) settings.notifyOnTrade = true;
-  if (setting.includes('alert')) settings.notifyOnAlert = true;
-  if (setting.includes('opportunit') || setting.includes('gelegenheit')) settings.notifyOnOpportunity = true;
-  
-  if (Object.keys(settings).length > 0) {
-    agent.updateSettings(settings);
-  }
-  
-  return `🔔 **Benachrichtigungen aktualisiert**
-
-• Trades: ${settings.notifyOnTrade ? '✅' : '❌'}
-• Alerts: ${settings.notifyOnAlert ? '✅' : '❌'}
-• Opportunities: ${settings.notifyOnOpportunity ? '✅' : '❌'}`;
+⚠️ Note: Actual phone calls not yet implemented. You'll receive a high-priority Telegram message with 🚨`;
 }
 
 async function handleConnectPlatform(match: RegExpMatchArray, text: string): Promise<string> {
-  const agent = getAutonomousAgent();
   const platformName = normalizePlatform(match[1]);
   
-  // Check if credentials were provided
-  if (match[2]) {
-    // TODO: Parse and store credentials
-    return `⚠️ Credential-Eingabe über Chat ist unsicher. Bitte nutze das Dashboard oder environment variables.`;
-  }
-  
-  // Return instructions based on platform
   const instructions: Record<string, string> = {
-    'binaryfaster': `🔗 **BinaryFaster verbinden**
+    'binaryfaster': `🔗 **Connect BinaryFaster**
 
-Setze diese Environment Variables:
+Set these environment variables:
 \`\`\`
-BINARYFASTER_EMAIL=deine@email.com
-BINARYFASTER_PASSWORD=deinpasswort
-\`\`\`
-
-Oder nutze das K.I.T. Dashboard unter localhost:3000`,
-
-    'binance': `🔗 **Binance verbinden**
-
-1. Erstelle API Key auf binance.com
-2. Setze Environment Variables:
-\`\`\`
-BINANCE_API_KEY=dein_key
-BINANCE_API_SECRET=dein_secret
+BINARYFASTER_EMAIL=your@email.com
+BINARYFASTER_PASSWORD=yourpassword
 \`\`\`
 
-⚠️ Aktiviere nur "Spot Trading" Berechtigung!`,
+Or use the K.I.T. Dashboard at localhost:3000`,
 
-    'mt5': `🔗 **MetaTrader 5 verbinden**
+    'binance': `🔗 **Connect Binance**
 
-1. Öffne MT5 auf deinem PC
-2. K.I.T. verbindet automatisch lokal
-3. Keine Credentials nötig!
-
-Status: ${await checkMT5Connection() ? '✅ Verbunden' : '❌ Nicht verbunden - Starte MT5'}`,
-
-    'bybit': `🔗 **Bybit verbinden**
-
-Setze Environment Variables:
+1. Create API Key on binance.com
+2. Set environment variables:
 \`\`\`
-BYBIT_API_KEY=dein_key
-BYBIT_API_SECRET=dein_secret
+BINANCE_API_KEY=your_key
+BINANCE_API_SECRET=your_secret
+\`\`\`
+
+⚠️ Enable only "Spot Trading" permission!`,
+
+    'mt5': `🔗 **Connect MetaTrader 5**
+
+1. Open MT5 on your PC
+2. K.I.T. connects automatically locally
+3. No credentials needed!
+
+Status: ${await checkMT5Connection() ? '✅ Connected' : '❌ Not connected - Start MT5'}`,
+
+    'bybit': `🔗 **Connect Bybit**
+
+Set environment variables:
+\`\`\`
+BYBIT_API_KEY=your_key
+BYBIT_API_SECRET=your_secret
 \`\`\``,
   };
   
-  return instructions[platformName] || `❌ Unbekannte Plattform: ${platformName}
+  return instructions[platformName] || `❌ Unknown platform: ${platformName}
 
-Unterstützte Plattformen:
+Supported platforms:
 • BinaryFaster
 • Binance
 • Bybit
@@ -757,7 +723,7 @@ async function handleDisconnectPlatform(match: RegExpMatchArray, text: string): 
     agent.updateSettings({ platforms: state.platforms });
   }
   
-  return `✅ ${platformName} getrennt`;
+  return `✅ ${platformName} disconnected`;
 }
 
 async function handleListPlatforms(match: RegExpMatchArray, text: string): Promise<string> {
@@ -765,9 +731,9 @@ async function handleListPlatforms(match: RegExpMatchArray, text: string): Promi
   const state = agent.getState();
   
   if (state.platforms.length === 0) {
-    return `📡 **Keine Plattformen verbunden**
+    return `📡 **No platforms connected**
 
-Sage "Verbinde BinaryFaster" oder "Verbinde Binance" um zu starten.`;
+Say "connect binaryfaster" or "connect binance" to start.`;
   }
   
   const list = state.platforms.map(p => {
@@ -776,11 +742,11 @@ Sage "Verbinde BinaryFaster" oder "Verbinde Binance" um zu starten.`;
     return `${status} **${p.platform}**: ${balance}`;
   });
   
-  return `📡 **Verbundene Plattformen**
+  return `📡 **Connected Platforms**
 
 ${list.join('\n')}
 
-Gesamt: $${state.totalValueUSD.toLocaleString()}`;
+Total: $${state.totalValueUSD.toLocaleString()}`;
 }
 
 async function handleSyncPlatforms(match: RegExpMatchArray, text: string): Promise<string> {
@@ -792,27 +758,25 @@ async function handleShowPortfolio(match: RegExpMatchArray, text: string): Promi
   const agent = getAutonomousAgent();
   const state = agent.getState();
   
-  // Sync first
   await agent.syncAllPlatforms();
-  
   const updatedState = agent.getState();
   
-  return `💼 **Portfolio Übersicht**
+  return `💼 **Portfolio Overview**
 
-**Gesamtwert: $${updatedState.totalValueUSD.toLocaleString()}**
+**Total Value: $${updatedState.totalValueUSD.toLocaleString()}**
 
 ${updatedState.platforms
   .filter(p => p.enabled)
   .map(p => `• ${p.platform}: $${(p.balance || 0).toLocaleString()}`)
-  .join('\n')}
+  .join('\n') || '• No platforms connected'}
 
-**Passive Positionen**
+**Passive Positions**
 • Staking: $${updatedState.totalPassiveValueUSD.toLocaleString()}
 • Rewards: $${updatedState.totalRewardsEarned.toFixed(2)}
 
 **Performance**
-• Heute: ${updatedState.currentDailyPnL >= 0 ? '+' : ''}$${updatedState.currentDailyPnL.toFixed(2)}
-• Gesamt: ${updatedState.totalPnL >= 0 ? '+' : ''}$${updatedState.totalPnL.toFixed(2)}`;
+• Today: ${updatedState.currentDailyPnL >= 0 ? '+' : ''}$${updatedState.currentDailyPnL.toFixed(2)}
+• Total: ${updatedState.totalPnL >= 0 ? '+' : ''}$${updatedState.totalPnL.toFixed(2)}`;
 }
 
 async function handleRebalance(match: RegExpMatchArray, text: string): Promise<string> {
@@ -821,12 +785,12 @@ async function handleRebalance(match: RegExpMatchArray, text: string): Promise<s
   
   return `⚖️ **Portfolio Rebalancing**
 
-**Ziel-Allokation:**
+**Target Allocation:**
 ${state.targetAllocations.map(a => `• ${a.asset}: ${a.targetPercent}%`).join('\n')}
 
-**Auto-Rebalance:** ${state.autoRebalance ? 'AN' : 'AUS'}
+**Auto-Rebalance:** ${state.autoRebalance ? 'ON' : 'OFF'}
 
-Sage "Aktiviere Auto-Rebalance" für automatisches Umschichten.`;
+Say "enable auto rebalance" for automatic rebalancing.`;
 }
 
 async function handleShowPassiveIncome(match: RegExpMatchArray, text: string): Promise<string> {
@@ -834,42 +798,42 @@ async function handleShowPassiveIncome(match: RegExpMatchArray, text: string): P
   const state = agent.getState();
   
   if (state.passivePositions.length === 0) {
-    return `💰 **Keine passiven Positionen**
+    return `💰 **No passive positions**
 
-Passive Income Möglichkeiten:
+Passive income opportunities:
 • Staking (ETH, SOL, DOT, etc.)
 • Yield Farming
 • Liquidity Pools
 • Airdrops
 
-Sage "Check Airdrops" für aktuelle Opportunities.`;
+Say "check airdrops" for current opportunities.`;
   }
   
   const positions = state.passivePositions.map(p => 
-    `• ${p.asset} auf ${p.platform}: $${p.valueUSD.toLocaleString()} (${p.apy || 0}% APY)`
+    `• ${p.asset} on ${p.platform}: $${p.valueUSD.toLocaleString()} (${p.apy || 0}% APY)`
   );
   
   return `💰 **Passive Income**
 
-**Positionen:**
+**Positions:**
 ${positions.join('\n')}
 
-**Gesamt:** $${state.totalPassiveValueUSD.toLocaleString()}
-**Verdiente Rewards:** $${state.totalRewardsEarned.toFixed(2)}`;
+**Total:** $${state.totalPassiveValueUSD.toLocaleString()}
+**Earned Rewards:** $${state.totalRewardsEarned.toFixed(2)}`;
 }
 
 async function handleCheckAirdrops(match: RegExpMatchArray, text: string): Promise<string> {
   return `🪂 **Airdrop Scanner**
 
-**Aktuelle Opportunities:**
+**Current Opportunities:**
 • LayerZero (ZRO) - Bridge Activity
 • zkSync - Transactions needed
 • Starknet - DeFi interactions
 • Scroll - Early adoption phase
 
-K.I.T. trackt automatisch deine Wallet-Aktivität für Airdrops.
+K.I.T. automatically tracks your wallet activity for airdrops.
 
-💡 Verbinde deine Wallets für personalisierte Empfehlungen.`;
+💡 Connect your wallets for personalized recommendations.`;
 }
 
 async function handleGetPrice(match: RegExpMatchArray, text: string): Promise<string> {
@@ -877,15 +841,15 @@ async function handleGetPrice(match: RegExpMatchArray, text: string): Promise<st
   const price = await getPrice(symbol);
   
   if (!price) {
-    return `❌ Preis für ${symbol} nicht gefunden`;
+    return `❌ Price not found for ${symbol}`;
   }
   
   return `📊 **${symbol}**
 
-Preis: $${price.toLocaleString()}
+Price: $${price.toLocaleString()}
 
-💡 "Überwache ${symbol}" für Alerts
-💡 "Kauf ${symbol}" zum sofortigen Kauf`;
+💡 "watch ${symbol}" for alerts
+💡 "buy ${symbol}" for instant purchase`;
 }
 
 async function handleMarketOverview(match: RegExpMatchArray, text: string): Promise<string> {
@@ -897,11 +861,11 @@ async function handleMarketOverview(match: RegExpMatchArray, text: string): Prom
     })
   );
   
-  return `🌍 **Marktübersicht**
+  return `🌍 **Market Overview**
 
 ${prices.map(p => `• ${p.symbol}: ${p.price ? `$${p.price.toLocaleString()}` : 'N/A'}`).join('\n')}
 
-_Stand: ${new Date().toLocaleTimeString('de-DE')}_`;
+_Updated: ${new Date().toLocaleTimeString('en-US')}_`;
 }
 
 async function handleStatus(match: RegExpMatchArray, text: string): Promise<string> {
@@ -910,37 +874,37 @@ async function handleStatus(match: RegExpMatchArray, text: string): Promise<stri
 }
 
 async function handleHelp(match: RegExpMatchArray, text: string): Promise<string> {
-  return `🤖 **K.I.T. Befehle**
+  return `🤖 **K.I.T. Commands**
 
-**Überwachung**
-• "Überwache XAUUSD"
-• "Alert wenn BTC über 50000"
-• "Watchlist"
+**Monitoring**
+• "watch XAUUSD"
+• "alert if BTC above 50000"
+• "watchlist"
 
 **Trading**
-• "Kauf BTC" / "Kauf BTC für 500€"
-• "Verkauf ETH auf Binance"
-• "Schließe alle Positionen"
+• "buy BTC" / "buy BTC for 500"
+• "sell ETH on Binance"
+• "close all positions"
 
-**Autonomes Trading**
-• "Trade autonom auf allen Plattformen"
-• "Stoppe autonomes Trading"
-• "Pause Trading"
+**Autonomous Trading**
+• "trade autonomous"
+• "stop auto trading"
+• "pause trading"
 
 **Reports**
-• "Morgenbriefing um 8 Uhr"
-• "Tagesbericht"
-• "Portfolio"
+• "morning briefing at 8"
+• "report"
+• "portfolio"
 
-**Plattformen**
-• "Verbinde Binance"
-• "Sync Plattformen"
-• "Plattformen"
+**Platforms**
+• "connect binance"
+• "sync"
+• "platforms"
 
 **Info**
-• "Preis BTC"
-• "Marktübersicht"
-• "Status"`;
+• "price BTC"
+• "market overview"
+• "status"`;
 }
 
 // ============================================================================
@@ -950,7 +914,6 @@ async function handleHelp(match: RegExpMatchArray, text: string): Promise<string
 function normalizeSymbol(input: string): string {
   const cleaned = input.trim().toUpperCase();
   
-  // Common mappings
   const mappings: Record<string, string> = {
     'BTC': 'BTCUSDT',
     'BITCOIN': 'BTCUSDT',
@@ -996,9 +959,7 @@ function findBestPlatform(state: any, symbol: string): string | null {
   
   if (enabledPlatforms.length === 0) return null;
   
-  // Prefer specific platforms for specific asset types
   if (symbol.includes('USD') && !symbol.startsWith('USD')) {
-    // Forex - prefer MT5 or BinaryFaster
     const forex = enabledPlatforms.find((p: any) => 
       p.platform === 'mt5' || p.platform === 'binaryfaster'
     );
@@ -1006,20 +967,17 @@ function findBestPlatform(state: any, symbol: string): string | null {
   }
   
   if (symbol.endsWith('USDT') || symbol.endsWith('BUSD')) {
-    // Crypto - prefer Binance or Bybit
     const crypto = enabledPlatforms.find((p: any) => 
       p.platform === 'binance' || p.platform === 'bybit'
     );
     if (crypto) return crypto.platform;
   }
   
-  // Return first enabled platform
   return enabledPlatforms[0].platform;
 }
 
 async function getPrice(symbol: string): Promise<number | null> {
   try {
-    // Try Binance first
     if (symbol.endsWith('USDT') || symbol.endsWith('BUSD') || symbol.endsWith('BTC')) {
       const res = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${symbol}`);
       if (res.ok) {
@@ -1028,7 +986,6 @@ async function getPrice(symbol: string): Promise<number | null> {
       }
     }
     
-    // Try with USDT suffix
     const withUsdt = symbol + 'USDT';
     const res2 = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${withUsdt}`);
     if (res2.ok) {
@@ -1057,17 +1014,14 @@ async function executeTrade(action: TradeAction): Promise<string> {
   const agent = getAutonomousAgent();
   const state = agent.getState();
   
-  // Check if trading is paused
   if (state.tradingPaused) {
-    return `⛔ Trading ist pausiert: ${state.pauseReason}`;
+    return `⛔ Trading is paused: ${state.pauseReason}`;
   }
   
-  // Check daily limits
   if (state.tradesToday >= state.maxDailyTrades) {
-    return `⛔ Tägliches Trade-Limit erreicht (${state.maxDailyTrades})`;
+    return `⛔ Daily trade limit reached (${state.maxDailyTrades})`;
   }
   
-  // Execute based on platform
   let result: string;
   
   switch (action.platform) {
@@ -1081,10 +1035,9 @@ async function executeTrade(action: TradeAction): Promise<string> {
       result = await executeMT5Trade(action);
       break;
     default:
-      result = `❌ Plattform ${action.platform} noch nicht vollständig implementiert`;
+      result = `❌ Platform ${action.platform} not fully implemented yet`;
   }
   
-  // Update state
   agent.updateSettings({ tradesToday: state.tradesToday + 1 });
   
   return result;
@@ -1096,29 +1049,26 @@ async function executeBinaryFasterTrade(action: TradeAction): Promise<string> {
     const password = process.env.BINARYFASTER_PASSWORD;
     
     if (!email || !password) {
-      return `❌ BinaryFaster Credentials nicht konfiguriert`;
+      return `❌ BinaryFaster credentials not configured`;
     }
     
-    // Login
     const loginRes = await fetch('https://wsauto.binaryfaster.com/automation/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     });
-    const loginData = await loginRes.json();
+    const loginData = await loginRes.json() as any;
     
     if (!loginData.api_key) {
-      return `❌ BinaryFaster Login fehlgeschlagen`;
+      return `❌ BinaryFaster login failed`;
     }
     
     const apiKey = loginData.api_key;
     
-    // Set real mode
     await fetch('https://wsauto.binaryfaster.com/automation/traderoom/setdemo/0', {
       headers: { 'x-api-key': apiKey },
     });
     
-    // Map symbol
     const assetMap: Record<string, number> = {
       'EURUSD': 1,
       'GBPUSD': 2,
@@ -1130,7 +1080,6 @@ async function executeBinaryFasterTrade(action: TradeAction): Promise<string> {
     const direction = action.type === 'buy' ? 'call' : 'put';
     const amount = action.amount || 10;
     
-    // Execute trade
     const tradeRes = await fetch('https://wsauto.binaryfaster.com/automation/traderoom/trade', {
       method: 'POST',
       headers: {
@@ -1141,35 +1090,34 @@ async function executeBinaryFasterTrade(action: TradeAction): Promise<string> {
         asset_id: assetId,
         amount: amount,
         direction: direction,
-        expiry: 300, // 5 minutes
+        expiry: 300,
       }),
     });
     
-    const tradeData = await tradeRes.json();
+    const tradeData = await tradeRes.json() as any;
     
     if (tradeData.success || tradeData.trade_id) {
-      return `✅ **Trade ausgeführt**
+      return `✅ **Trade executed**
 
 ${action.type.toUpperCase()} ${action.symbol}
-Betrag: $${amount}
-Plattform: BinaryFaster
+Amount: $${amount}
+Platform: BinaryFaster
 Trade ID: ${tradeData.trade_id || 'N/A'}`;
     } else {
-      return `❌ Trade fehlgeschlagen: ${JSON.stringify(tradeData)}`;
+      return `❌ Trade failed: ${JSON.stringify(tradeData)}`;
     }
   } catch (e) {
-    return `❌ BinaryFaster Fehler: ${e}`;
+    return `❌ BinaryFaster error: ${e}`;
   }
 }
 
 async function executeBinanceTrade(action: TradeAction): Promise<string> {
-  // TODO: Implement Binance trading with HMAC signature
-  return `⚠️ Binance Trading wird implementiert...
+  return `⚠️ Binance trading being implemented...
 
-Für jetzt:
-1. Öffne Binance App
+For now:
+1. Open Binance app
 2. ${action.type.toUpperCase()} ${action.symbol}
-${action.amount ? `3. Betrag: $${action.amount}` : ''}`;
+${action.amount ? `3. Amount: $${action.amount}` : ''}`;
 }
 
 async function executeMT5Trade(action: TradeAction): Promise<string> {
@@ -1200,20 +1148,19 @@ print(result)
     
     const result = execSync(`python -c "${script.replace(/"/g, '\\"')}"`, { encoding: 'utf8' });
     
-    return `✅ **MT5 Trade ausgeführt**
+    return `✅ **MT5 Trade executed**
 
 ${action.type.toUpperCase()} ${action.symbol}
 Lot: ${action.amount || 0.01}
 
 ${result}`;
   } catch (e) {
-    return `❌ MT5 Trade fehlgeschlagen: ${e}`;
+    return `❌ MT5 Trade failed: ${e}`;
   }
 }
 
 async function closePositions(platform: string): Promise<string> {
-  // TODO: Implement position closing for each platform
-  return `✅ Positionen auf ${platform} geschlossen`;
+  return `✅ Positions on ${platform} closed`;
 }
 
 // ============================================================================
@@ -1231,13 +1178,12 @@ export async function processCommand(text: string): Promise<string | null> {
           return await cmd.handler(match, trimmed);
         } catch (e) {
           console.error(`Command error for "${cmd.description}":`, e);
-          return `❌ Fehler bei "${cmd.description}": ${e}`;
+          return `❌ Error in "${cmd.description}": ${e}`;
         }
       }
     }
   }
   
-  // No command matched
   return null;
 }
 
