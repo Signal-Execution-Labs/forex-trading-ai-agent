@@ -102,6 +102,53 @@ export interface PerformanceMetrics {
   byDayOfWeek: Record<string, { trades: number; pnl: number; wins: number; winRate: number }>;
   byHourOfDay: Record<string, { trades: number; pnl: number; wins: number; winRate: number }>;
   byEmotion: Record<string, { trades: number; pnl: number; wins: number; winRate: number }>;
+  byMistake: Record<string, { trades: number; pnl: number; wins: number; winRate: number }>;
+}
+
+// Advanced Statistics (Myfxbook/Edgewonk style)
+export interface AdvancedStatistics {
+  // Risk-Adjusted Returns
+  sharpeRatio: number;        // (Return - RiskFreeRate) / StdDev
+  sortinoRatio: number;       // (Return - RiskFreeRate) / DownsideStdDev
+  calmarRatio: number;        // CAGR / MaxDrawdown
+  
+  // Drawdown Analysis
+  maxDrawdown: number;        // Largest peak-to-trough decline %
+  maxDrawdownAmount: number;  // Largest peak-to-trough in $
+  averageDrawdown: number;    // Average drawdown %
+  recoveryFactor: number;     // Net Profit / Max Drawdown
+  ulcerIndex: number;         // Measure of drawdown severity
+  
+  // Statistical Edge
+  zScore: number;             // Measures dependency between trades
+  expectancyPerR: number;     // Expectancy per unit of risk
+  systemQualityNumber: number; // Van Tharp's SQN
+  
+  // Return Metrics
+  ahpr: number;               // Average Holding Period Return %
+  ghpr: number;               // Geometric Holding Period Return %
+  standardDeviation: number;  // Volatility of returns
+  downsideDeviation: number;  // Volatility of negative returns
+  
+  // Trading Patterns
+  avgWinningStreak: number;
+  avgLosingStreak: number;
+  payoffRatio: number;        // Average Win / Average Loss
+  kellyPercentage: number;    // Optimal position sizing %
+  
+  // Time-based
+  avgHoldingTimeWins: number;   // Minutes
+  avgHoldingTimeLosses: number; // Minutes
+  bestTradingHour: string;
+  worstTradingHour: string;
+  bestTradingDay: string;
+  worstTradingDay: string;
+  
+  // Recent Performance
+  last7DaysPnL: number;
+  last30DaysPnL: number;
+  last7DaysWinRate: number;
+  last30DaysWinRate: number;
 }
 
 export class JournalService {
@@ -761,6 +808,41 @@ export class JournalService {
       byDayOfWeek: {},
       byHourOfDay: {},
       byEmotion: {},
+      byMistake: {},
+    };
+  }
+
+  private static emptyAdvancedStats(): AdvancedStatistics {
+    return {
+      sharpeRatio: 0,
+      sortinoRatio: 0,
+      calmarRatio: 0,
+      maxDrawdown: 0,
+      maxDrawdownAmount: 0,
+      averageDrawdown: 0,
+      recoveryFactor: 0,
+      ulcerIndex: 0,
+      zScore: 0,
+      expectancyPerR: 0,
+      systemQualityNumber: 0,
+      ahpr: 0,
+      ghpr: 0,
+      standardDeviation: 0,
+      downsideDeviation: 0,
+      avgWinningStreak: 0,
+      avgLosingStreak: 0,
+      payoffRatio: 0,
+      kellyPercentage: 0,
+      avgHoldingTimeWins: 0,
+      avgHoldingTimeLosses: 0,
+      bestTradingHour: '',
+      worstTradingHour: '',
+      bestTradingDay: '',
+      worstTradingDay: '',
+      last7DaysPnL: 0,
+      last30DaysPnL: 0,
+      last7DaysWinRate: 0,
+      last30DaysWinRate: 0,
     };
   }
 
@@ -809,6 +891,7 @@ export class JournalService {
     const byDayOfWeek: Record<string, any> = {};
     const byHourOfDay: Record<string, any> = {};
     const byEmotion: Record<string, any> = {};
+    const byMistake: Record<string, any> = {};
 
     for (const trade of trades) {
       // By Symbol
@@ -852,6 +935,14 @@ export class JournalService {
         if (trade.is_win) byEmotion[trade.emotion].wins++;
         byEmotion[trade.emotion].winRate = (byEmotion[trade.emotion].wins / byEmotion[trade.emotion].trades) * 100;
       }
+
+      // By Mistake
+      const mistakeKey = trade.mistake || 'none';
+      if (!byMistake[mistakeKey]) byMistake[mistakeKey] = { trades: 0, pnl: 0, wins: 0 };
+      byMistake[mistakeKey].trades++;
+      byMistake[mistakeKey].pnl += trade.pnl || 0;
+      if (trade.is_win) byMistake[mistakeKey].wins++;
+      byMistake[mistakeKey].winRate = (byMistake[mistakeKey].wins / byMistake[mistakeKey].trades) * 100;
     }
 
     return {
@@ -882,6 +973,409 @@ export class JournalService {
       byDayOfWeek,
       byHourOfDay,
       byEmotion,
+      byMistake,
+    };
+  }
+
+  // ============================================
+  // ADVANCED STATISTICS (Sharpe, Sortino, etc.)
+  // ============================================
+
+  static async getAdvancedStatistics(
+    userId: string,
+    options: { accountId?: string; from?: string; to?: string } = {}
+  ): Promise<AdvancedStatistics> {
+    let query = getSupabase()
+      .from('journal_entries')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('status', 'closed')
+      .order('entry_time', { ascending: true });
+
+    if (options.accountId) query = query.eq('account_id', options.accountId);
+    if (options.from) query = query.gte('entry_time', options.from);
+    if (options.to) query = query.lte('entry_time', options.to);
+
+    const { data: trades } = await query;
+
+    if (!trades || trades.length < 2) {
+      return this.emptyAdvancedStats();
+    }
+
+    // Get initial balance
+    let initialBalance = 10000;
+    if (options.accountId) {
+      const { data: account } = await getSupabase()
+        .from('journal_accounts')
+        .select('initial_balance')
+        .eq('id', options.accountId)
+        .single();
+      if (account) initialBalance = account.initial_balance;
+    }
+
+    return this.calculateAdvancedStats(trades, initialBalance);
+  }
+
+  private static calculateAdvancedStats(trades: any[], initialBalance: number): AdvancedStatistics {
+    const n = trades.length;
+    const pnls = trades.map(t => t.pnl || 0);
+    const returns = trades.map(t => ((t.pnl || 0) / initialBalance) * 100);
+    
+    // Basic calculations
+    const totalPnL = pnls.reduce((a, b) => a + b, 0);
+    const avgReturn = returns.reduce((a, b) => a + b, 0) / n;
+    const wins = trades.filter(t => t.is_win === true);
+    const losses = trades.filter(t => t.is_win === false && t.pnl < 0);
+    const winRate = wins.length / n;
+    const avgWin = wins.length > 0 ? wins.reduce((s, t) => s + (t.pnl || 0), 0) / wins.length : 0;
+    const avgLoss = losses.length > 0 ? Math.abs(losses.reduce((s, t) => s + (t.pnl || 0), 0)) / losses.length : 0;
+    
+    // Standard Deviation
+    const squaredDiffs = returns.map(r => Math.pow(r - avgReturn, 2));
+    const variance = squaredDiffs.reduce((a, b) => a + b, 0) / n;
+    const stdDev = Math.sqrt(variance);
+    
+    // Downside Deviation (only negative returns)
+    const negativeReturns = returns.filter(r => r < 0);
+    const downsideVariance = negativeReturns.length > 0 
+      ? negativeReturns.map(r => Math.pow(r, 2)).reduce((a, b) => a + b, 0) / negativeReturns.length
+      : 0;
+    const downsideDev = Math.sqrt(downsideVariance);
+    
+    // Sharpe Ratio (assuming 0% risk-free rate for simplicity)
+    const sharpeRatio = stdDev > 0 ? (avgReturn / stdDev) * Math.sqrt(252) : 0; // Annualized
+    
+    // Sortino Ratio
+    const sortinoRatio = downsideDev > 0 ? (avgReturn / downsideDev) * Math.sqrt(252) : 0;
+    
+    // Equity curve for drawdown calculations
+    let balance = initialBalance;
+    let peak = initialBalance;
+    let maxDD = 0;
+    let maxDDAmount = 0;
+    const drawdowns: number[] = [];
+    const equityCurve: number[] = [initialBalance];
+    
+    for (const trade of trades) {
+      balance += trade.pnl || 0;
+      equityCurve.push(balance);
+      peak = Math.max(peak, balance);
+      const dd = ((peak - balance) / peak) * 100;
+      drawdowns.push(dd);
+      if (dd > maxDD) {
+        maxDD = dd;
+        maxDDAmount = peak - balance;
+      }
+    }
+    
+    const avgDrawdown = drawdowns.length > 0 ? drawdowns.reduce((a, b) => a + b, 0) / drawdowns.length : 0;
+    
+    // Recovery Factor
+    const recoveryFactor = maxDDAmount > 0 ? totalPnL / maxDDAmount : 0;
+    
+    // Calmar Ratio (using max drawdown)
+    const calmarRatio = maxDD > 0 ? (avgReturn * 252) / maxDD : 0;
+    
+    // Ulcer Index (RMS of drawdowns)
+    const ulcerIndex = drawdowns.length > 0 
+      ? Math.sqrt(drawdowns.map(d => d * d).reduce((a, b) => a + b, 0) / drawdowns.length) 
+      : 0;
+    
+    // Z-Score (measures dependency between trades)
+    // Positive Z = wins follow losses, Negative Z = streaks persist
+    let runs = 1;
+    for (let i = 1; i < trades.length; i++) {
+      if (trades[i].is_win !== trades[i-1].is_win) runs++;
+    }
+    const W = wins.length;
+    const L = losses.length;
+    const expectedRuns = (2 * W * L) / (W + L) + 1;
+    const runsStdDev = Math.sqrt((2 * W * L * (2 * W * L - W - L)) / ((W + L) * (W + L) * (W + L - 1)));
+    const zScore = runsStdDev > 0 ? (runs - expectedRuns) / runsStdDev : 0;
+    
+    // AHPR (Average Holding Period Return) & GHPR
+    const ahpr = avgReturn;
+    const ghpr = n > 0 ? (Math.pow(balance / initialBalance, 1 / n) - 1) * 100 : 0;
+    
+    // Payoff Ratio
+    const payoffRatio = avgLoss > 0 ? avgWin / avgLoss : avgWin > 0 ? 999 : 0;
+    
+    // Kelly Percentage
+    const kellyPercentage = payoffRatio > 0 
+      ? ((winRate * payoffRatio - (1 - winRate)) / payoffRatio) * 100 
+      : 0;
+    
+    // System Quality Number (SQN) - Van Tharp
+    const rMultiples = trades.filter(t => t.r_multiple).map(t => t.r_multiple);
+    let sqn = 0;
+    if (rMultiples.length > 0) {
+      const avgR = rMultiples.reduce((a, b) => a + b, 0) / rMultiples.length;
+      const rVariance = rMultiples.map(r => Math.pow(r - avgR, 2)).reduce((a, b) => a + b, 0) / rMultiples.length;
+      const rStdDev = Math.sqrt(rVariance);
+      sqn = rStdDev > 0 ? (avgR / rStdDev) * Math.sqrt(rMultiples.length) : 0;
+    }
+    
+    // Expectancy per R
+    const expectancyPerR = rMultiples.length > 0 
+      ? rMultiples.reduce((a, b) => a + b, 0) / rMultiples.length 
+      : 0;
+    
+    // Streak Analysis
+    const winStreaks: number[] = [];
+    const loseStreaks: number[] = [];
+    let currentWinStreak = 0;
+    let currentLoseStreak = 0;
+    
+    for (const trade of trades) {
+      if (trade.is_win) {
+        currentWinStreak++;
+        if (currentLoseStreak > 0) {
+          loseStreaks.push(currentLoseStreak);
+          currentLoseStreak = 0;
+        }
+      } else if (trade.pnl < 0) {
+        currentLoseStreak++;
+        if (currentWinStreak > 0) {
+          winStreaks.push(currentWinStreak);
+          currentWinStreak = 0;
+        }
+      }
+    }
+    if (currentWinStreak > 0) winStreaks.push(currentWinStreak);
+    if (currentLoseStreak > 0) loseStreaks.push(currentLoseStreak);
+    
+    const avgWinningStreak = winStreaks.length > 0 ? winStreaks.reduce((a, b) => a + b, 0) / winStreaks.length : 0;
+    const avgLosingStreak = loseStreaks.length > 0 ? loseStreaks.reduce((a, b) => a + b, 0) / loseStreaks.length : 0;
+    
+    // Holding Time Analysis
+    const winsWithDuration = wins.filter(t => t.duration);
+    const lossesWithDuration = losses.filter(t => t.duration);
+    const avgHoldingTimeWins = winsWithDuration.length > 0 
+      ? winsWithDuration.reduce((s, t) => s + t.duration, 0) / winsWithDuration.length 
+      : 0;
+    const avgHoldingTimeLosses = lossesWithDuration.length > 0 
+      ? lossesWithDuration.reduce((s, t) => s + t.duration, 0) / lossesWithDuration.length 
+      : 0;
+    
+    // Best/Worst Trading Hour
+    const byHour: Record<string, { pnl: number; trades: number }> = {};
+    for (const trade of trades) {
+      const hour = new Date(trade.entry_time).getHours().toString().padStart(2, '0') + ':00';
+      if (!byHour[hour]) byHour[hour] = { pnl: 0, trades: 0 };
+      byHour[hour].pnl += trade.pnl || 0;
+      byHour[hour].trades++;
+    }
+    const hourEntries = Object.entries(byHour).filter(([, v]) => v.trades >= 3);
+    const bestTradingHour = hourEntries.length > 0 
+      ? hourEntries.sort((a, b) => b[1].pnl - a[1].pnl)[0][0] 
+      : '';
+    const worstTradingHour = hourEntries.length > 0 
+      ? hourEntries.sort((a, b) => a[1].pnl - b[1].pnl)[0][0] 
+      : '';
+    
+    // Best/Worst Trading Day
+    const byDay: Record<string, { pnl: number; trades: number }> = {};
+    for (const trade of trades) {
+      const day = new Date(trade.entry_time).toLocaleDateString('en-US', { weekday: 'long' });
+      if (!byDay[day]) byDay[day] = { pnl: 0, trades: 0 };
+      byDay[day].pnl += trade.pnl || 0;
+      byDay[day].trades++;
+    }
+    const dayEntries = Object.entries(byDay).filter(([, v]) => v.trades >= 3);
+    const bestTradingDay = dayEntries.length > 0 
+      ? dayEntries.sort((a, b) => b[1].pnl - a[1].pnl)[0][0] 
+      : '';
+    const worstTradingDay = dayEntries.length > 0 
+      ? dayEntries.sort((a, b) => a[1].pnl - b[1].pnl)[0][0] 
+      : '';
+    
+    // Recent Performance
+    const now = new Date();
+    const last7Days = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    
+    const tradesLast7 = trades.filter(t => new Date(t.entry_time) >= last7Days);
+    const tradesLast30 = trades.filter(t => new Date(t.entry_time) >= last30Days);
+    
+    const last7DaysPnL = tradesLast7.reduce((s, t) => s + (t.pnl || 0), 0);
+    const last30DaysPnL = tradesLast30.reduce((s, t) => s + (t.pnl || 0), 0);
+    const last7DaysWinRate = tradesLast7.length > 0 
+      ? (tradesLast7.filter(t => t.is_win).length / tradesLast7.length) * 100 
+      : 0;
+    const last30DaysWinRate = tradesLast30.length > 0 
+      ? (tradesLast30.filter(t => t.is_win).length / tradesLast30.length) * 100 
+      : 0;
+    
+    return {
+      sharpeRatio: Math.round(sharpeRatio * 100) / 100,
+      sortinoRatio: Math.round(sortinoRatio * 100) / 100,
+      calmarRatio: Math.round(calmarRatio * 100) / 100,
+      maxDrawdown: Math.round(maxDD * 100) / 100,
+      maxDrawdownAmount: Math.round(maxDDAmount * 100) / 100,
+      averageDrawdown: Math.round(avgDrawdown * 100) / 100,
+      recoveryFactor: Math.round(recoveryFactor * 100) / 100,
+      ulcerIndex: Math.round(ulcerIndex * 100) / 100,
+      zScore: Math.round(zScore * 100) / 100,
+      expectancyPerR: Math.round(expectancyPerR * 100) / 100,
+      systemQualityNumber: Math.round(sqn * 100) / 100,
+      ahpr: Math.round(ahpr * 100) / 100,
+      ghpr: Math.round(ghpr * 100) / 100,
+      standardDeviation: Math.round(stdDev * 100) / 100,
+      downsideDeviation: Math.round(downsideDev * 100) / 100,
+      avgWinningStreak: Math.round(avgWinningStreak * 10) / 10,
+      avgLosingStreak: Math.round(avgLosingStreak * 10) / 10,
+      payoffRatio: Math.round(payoffRatio * 100) / 100,
+      kellyPercentage: Math.round(kellyPercentage * 100) / 100,
+      avgHoldingTimeWins: Math.round(avgHoldingTimeWins),
+      avgHoldingTimeLosses: Math.round(avgHoldingTimeLosses),
+      bestTradingHour,
+      worstTradingHour,
+      bestTradingDay,
+      worstTradingDay,
+      last7DaysPnL: Math.round(last7DaysPnL * 100) / 100,
+      last30DaysPnL: Math.round(last30DaysPnL * 100) / 100,
+      last7DaysWinRate: Math.round(last7DaysWinRate * 10) / 10,
+      last30DaysWinRate: Math.round(last30DaysWinRate * 10) / 10,
+    };
+  }
+
+  // ============================================
+  // EXPORT FUNCTIONS
+  // ============================================
+
+  static async exportToCSV(userId: string, accountId?: string): Promise<string> {
+    const { entries } = await this.getEntries(userId, { accountId, limit: 10000 });
+    
+    const headers = [
+      'Date', 'Symbol', 'Direction', 'Entry Price', 'Exit Price', 'Quantity',
+      'Stop Loss', 'Take Profit', 'P&L', 'P&L %', 'R-Multiple', 'Duration (min)',
+      'Setup', 'Emotion', 'Mistake', 'Tags', 'Notes'
+    ];
+    
+    const rows = entries.map(e => [
+      e.entry_time?.split('T')[0] || '',
+      e.symbol,
+      e.direction,
+      e.entry_price,
+      e.exit_price || '',
+      e.quantity,
+      e.stop_loss || '',
+      e.take_profit || '',
+      e.pnl || '',
+      e.pnl_percent?.toFixed(2) || '',
+      e.r_multiple?.toFixed(2) || '',
+      e.duration || '',
+      e.setup || '',
+      e.emotion || '',
+      e.mistake || '',
+      Array.isArray(e.tags) ? e.tags.join(';') : e.tags || '',
+      (e.notes || '').replace(/"/g, '""'),
+    ]);
+    
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+    
+    return csvContent;
+  }
+
+  static async getReportData(
+    userId: string,
+    period: 'weekly' | 'monthly',
+    accountId?: string
+  ): Promise<{
+    period: string;
+    startDate: string;
+    endDate: string;
+    metrics: PerformanceMetrics;
+    advancedStats: AdvancedStatistics;
+    dailyPnL: Array<{ date: string; pnl: number; tradesCount: number }>;
+    topSymbols: Array<{ symbol: string; pnl: number; trades: number; winRate: number }>;
+    comparison: {
+      pnlChange: number;
+      winRateChange: number;
+      tradesChange: number;
+    };
+  }> {
+    const now = new Date();
+    let startDate: Date;
+    let endDate: Date;
+    let prevStartDate: Date;
+    let prevEndDate: Date;
+    
+    if (period === 'weekly') {
+      // Current week (Monday to Sunday)
+      const dayOfWeek = now.getDay();
+      const monday = new Date(now);
+      monday.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+      monday.setHours(0, 0, 0, 0);
+      startDate = monday;
+      endDate = now;
+      
+      // Previous week
+      prevEndDate = new Date(monday);
+      prevEndDate.setDate(monday.getDate() - 1);
+      prevStartDate = new Date(prevEndDate);
+      prevStartDate.setDate(prevEndDate.getDate() - 6);
+    } else {
+      // Current month
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      endDate = now;
+      
+      // Previous month
+      prevEndDate = new Date(startDate);
+      prevEndDate.setDate(0);
+      prevStartDate = new Date(prevEndDate.getFullYear(), prevEndDate.getMonth(), 1);
+    }
+    
+    const fromStr = startDate.toISOString().split('T')[0];
+    const toStr = endDate.toISOString().split('T')[0];
+    const prevFromStr = prevStartDate.toISOString().split('T')[0];
+    const prevToStr = prevEndDate.toISOString().split('T')[0];
+    
+    // Get current period metrics
+    const metrics = await this.getPerformanceMetrics(userId, { accountId, from: fromStr, to: toStr });
+    const advancedStats = await this.getAdvancedStatistics(userId, { accountId, from: fromStr, to: toStr });
+    
+    // Get previous period metrics for comparison
+    const prevMetrics = await this.getPerformanceMetrics(userId, { accountId, from: prevFromStr, to: prevToStr });
+    
+    // Get daily P&L
+    const calendar = await this.getCalendarData(userId, { accountId });
+    const dailyPnL = calendar
+      .filter(d => d.date >= fromStr && d.date <= toStr)
+      .map(d => ({ date: d.date, pnl: d.pnl, tradesCount: d.tradesCount }));
+    
+    // Top symbols
+    const topSymbols = Object.entries(metrics.bySymbol)
+      .map(([symbol, data]: [string, any]) => ({
+        symbol,
+        pnl: data.pnl,
+        trades: data.trades,
+        winRate: data.winRate,
+      }))
+      .sort((a, b) => b.pnl - a.pnl)
+      .slice(0, 5);
+    
+    // Comparison
+    const comparison = {
+      pnlChange: prevMetrics.totalPnL !== 0 
+        ? ((metrics.totalPnL - prevMetrics.totalPnL) / Math.abs(prevMetrics.totalPnL)) * 100 
+        : metrics.totalPnL > 0 ? 100 : 0,
+      winRateChange: metrics.winRate - prevMetrics.winRate,
+      tradesChange: metrics.totalTrades - prevMetrics.totalTrades,
+    };
+    
+    return {
+      period,
+      startDate: fromStr,
+      endDate: toStr,
+      metrics,
+      advancedStats,
+      dailyPnL,
+      topSymbols,
+      comparison,
     };
   }
 

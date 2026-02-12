@@ -340,6 +340,81 @@ export async function userJournalRoutes(fastify: FastifyInstance) {
   });
 
   // ========================================
+  // ADVANCED STATISTICS
+  // ========================================
+
+  /**
+   * GET /api/user/journal/advanced-stats
+   * Get advanced statistics (Sharpe, Sortino, Drawdown, etc.)
+   */
+  fastify.get('/advanced-stats', async (request: FastifyRequest<{
+    Querystring: { accountId?: string; from?: string; to?: string };
+  }>, reply) => {
+    const userId = await getUserId(request);
+    if (!userId) return reply.status(401).send({ error: 'Unauthorized' });
+
+    const stats = await JournalService.getAdvancedStatistics(userId, {
+      accountId: request.query.accountId,
+      from: request.query.from,
+      to: request.query.to,
+    });
+    return { success: true, stats };
+  });
+
+  // ========================================
+  // EXPORT
+  // ========================================
+
+  /**
+   * GET /api/user/journal/export/csv
+   * Export trades to CSV
+   */
+  fastify.get('/export/csv', async (request: FastifyRequest<{
+    Querystring: { accountId?: string };
+  }>, reply) => {
+    const userId = await getUserId(request);
+    if (!userId) return reply.status(401).send({ error: 'Unauthorized' });
+
+    const csv = await JournalService.exportToCSV(userId, request.query.accountId);
+    
+    reply.header('Content-Type', 'text/csv');
+    reply.header('Content-Disposition', `attachment; filename="trades_${new Date().toISOString().split('T')[0]}.csv"`);
+    return csv;
+  });
+
+  // ========================================
+  // REPORTS
+  // ========================================
+
+  /**
+   * GET /api/user/journal/report/weekly
+   * Get weekly performance report
+   */
+  fastify.get('/report/weekly', async (request: FastifyRequest<{
+    Querystring: { accountId?: string };
+  }>, reply) => {
+    const userId = await getUserId(request);
+    if (!userId) return reply.status(401).send({ error: 'Unauthorized' });
+
+    const report = await JournalService.getReportData(userId, 'weekly', request.query.accountId);
+    return { success: true, report };
+  });
+
+  /**
+   * GET /api/user/journal/report/monthly
+   * Get monthly performance report
+   */
+  fastify.get('/report/monthly', async (request: FastifyRequest<{
+    Querystring: { accountId?: string };
+  }>, reply) => {
+    const userId = await getUserId(request);
+    if (!userId) return reply.status(401).send({ error: 'Unauthorized' });
+
+    const report = await JournalService.getReportData(userId, 'monthly', request.query.accountId);
+    return { success: true, report };
+  });
+
+  // ========================================
   // CONNECTIONS (convenience endpoints)
   // ========================================
 
