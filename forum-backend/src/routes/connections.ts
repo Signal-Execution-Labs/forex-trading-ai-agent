@@ -615,27 +615,13 @@ export async function connectionsRoutes(fastify: FastifyInstance) {
               syncResult.tradesFound = result.trades?.length || 0;
 
               // Also update journal account balance and import trades (like :id/sync does)
-              syncResult.userId = connection.user_id;
-              syncResult.balance = result.balance;
-              
               if (result.success && connection.user_id) {
                 const accounts = await JournalService.getAccounts(connection.user_id);
-                syncResult.accountsFound = accounts.length;
-                syncResult.accountNames = accounts.map(a => ({ id: a.id, name: a.name, broker: a.broker, connection_id: a.connection_id }));
-                
                 let linkedAccount = accounts.find(a => 
                   a.connection_id === connection.id || 
                   a.broker?.toLowerCase().includes('binaryfaster') ||
                   a.name?.toLowerCase().includes('binaryfaster')
                 );
-
-                if (linkedAccount) {
-                  syncResult.linkedAccountId = linkedAccount.id;
-                  syncResult.linkedAccountName = linkedAccount.name;
-                } else {
-                  syncResult.linkedAccountId = null;
-                  syncResult.linkedAccountReason = 'No account matched by connection_id, broker, or name containing binaryfaster';
-                }
 
                 // Update balance if we have an account
                 if (linkedAccount && result.balance) {
@@ -644,7 +630,6 @@ export async function connectionsRoutes(fastify: FastifyInstance) {
                   // Link connection_id if not already set
                   if (!linkedAccount.connection_id) {
                     await JournalService.linkAccountToConnection(linkedAccount.id, connection.id);
-                    syncResult.connectionLinked = true;
                   }
                 }
 
