@@ -324,6 +324,9 @@ export class JournalService {
   }
 
   static async createEntry(userId: string, entry: Partial<JournalEntry>): Promise<JournalEntry | null> {
+    // Normalize direction to uppercase
+    const normalizedDirection = (entry.direction || 'LONG').toUpperCase() as 'LONG' | 'SHORT';
+    
     // Calculate P&L if exit price provided
     let pnl: number | null = null;
     let pnlPercent: number | null = null;
@@ -331,7 +334,7 @@ export class JournalService {
     let duration: number | null = null;
 
     if (entry.exit_price && entry.entry_price && entry.quantity) {
-      const direction = entry.direction === 'LONG' ? 1 : -1;
+      const direction = normalizedDirection === 'LONG' ? 1 : -1;
       pnl = (entry.exit_price - entry.entry_price) * entry.quantity * direction;
       pnlPercent = ((entry.exit_price - entry.entry_price) / entry.entry_price) * 100 * direction;
       isWin = pnl > 0;
@@ -349,7 +352,7 @@ export class JournalService {
         user_id: userId,
         account_id: entry.account_id,
         symbol: entry.symbol,
-        direction: entry.direction,
+        direction: normalizedDirection,
         entry_price: entry.entry_price,
         exit_price: entry.exit_price || null,
         quantity: entry.quantity,

@@ -378,10 +378,13 @@ export async function connectionsRoutes(fastify: FastifyInstance) {
           if (linkedAccount && resultBF.trades && resultBF.trades.length > 0) {
             for (const trade of resultBF.trades) {
               try {
+                // Normalize direction to UPPERCASE (DB expects 'LONG' | 'SHORT')
+                const normalizedDirection = (trade.direction || 'long').toUpperCase() as 'LONG' | 'SHORT';
+                
                 await JournalService.createEntry(user.userId!, {
                   account_id: linkedAccount.id,
                   symbol: trade.symbol,
-                  direction: trade.direction,
+                  direction: normalizedDirection,
                   entry_time: trade.entry_date,
                   entry_price: trade.entry_price,
                   exit_time: trade.entry_date, // Binary options close immediately
