@@ -603,7 +603,20 @@ K.I.T. is now monitoring markets 24/7.`;
           
           // Auto-trade if enabled
           if (this.state.autoTradeOpportunities && opportunity.confidence > 70) {
-            // TODO: Implement auto-trade logic
+            const action = opportunity.suggestedAction;
+            const size = this.calculatePositionSize(opportunity.confidence);
+            
+            this.emit('trade_signal', {
+              symbol,
+              action,
+              size,
+              confidence: opportunity.confidence,
+              reason: opportunity.reason,
+              timestamp: new Date().toISOString(),
+            });
+            
+            // Log the auto-trade decision
+            this.emit('notification', `🤖 **Auto-Trade Triggered**\n\n${action.toUpperCase()} ${symbol}\nSize: ${size}%\nConfidence: ${opportunity.confidence}%`);
           }
         }
       }
@@ -625,8 +638,57 @@ K.I.T. is now monitoring markets 24/7.`;
     
     this.state.lastRebalanceCheck = new Date().toISOString();
     
-    // TODO: Calculate current allocations and compare to targets
-    // Execute rebalance trades if needed
+    // Calculate current allocations and compare to targets
+    const currentAllocations = this.calculateCurrentAllocations();
+    const targetAllocations = this.state.targetAllocations || [];
+    
+    const rebalanceTrades: Array<{symbol: string; action: 'buy' | 'sell'; percentage: number}> = [];
+    
+    for (const allocation of targetAllocations) {
+      const current = currentAllocations[allocation.asset] || 0;
+      const diff = allocation.targetPercent - current;
+      
+      // Only rebalance if deviation > threshold
+      if (Math.abs(diff) > allocation.rebalanceThreshold) {
+        rebalanceTrades.push({
+          symbol: allocation.asset,
+          action: diff > 0 ? 'buy' : 'sell',
+          percentage: Math.abs(diff),
+        });
+      }
+    }
+    
+    if (rebalanceTrades.length > 0) {
+      this.emit('notification', `⚖️ **Rebalance Needed**\n\n${rebalanceTrades.map(t => `${t.action.toUpperCase()} ${t.percentage.toFixed(1)}% ${t.symbol}`).join('\n')}`);
+      
+      // Emit rebalance signals for execution
+      for (const trade of rebalanceTrades) {
+        this.emit('rebalance_signal', trade);
+      }
+    }
+  }
+
+  private calculateCurrentAllocations(): Record<string, number> {
+    // Calculate portfolio allocation percentages
+    const allocations: Record<string, number> = {};
+    const totalValue = this.state.totalValueUSD || 0;
+    
+    if (totalValue <= 0) return allocations;
+    
+    // Aggregate positions by asset
+    for (const position of this.state.passivePositions) {
+      const asset = position.asset;
+      allocations[asset] = (allocations[asset] || 0) + (position.valueUSD / totalValue * 100);
+    }
+    
+    return allocations;
+  }
+
+  private calculatePositionSize(confidence: number): number {
+    // Calculate position size based on confidence and risk settings
+    const baseSize = this.state.maxAutoTradeRiskPercent || 5;
+    const confidenceMultiplier = confidence / 100;
+    return Math.min(baseSize * confidenceMultiplier, baseSize);
   }
 
   // ========== PASSIVE INCOME ==========
@@ -656,8 +718,23 @@ K.I.T. is now monitoring markets 24/7.`;
       }
       
       // Auto-compound if enabled
-      if (position.autoCompound) {
-        // TODO: Implement auto-compound logic per platform
+      if (position.autoCompound && position.rewards > 0) {
+        const minCompoundAmount = 10; // USD minimum to compound
+        if (position.rewards >= minCompoundAmount) {
+          this.emit('compound_signal', {
+            positionId: position.id,
+            platform: position.platform,
+            asset: position.asset,
+            amount: position.rewards,
+            timestamp: new Date().toISOString(),
+          });
+          
+          this.emit('notification', `🔄 **Auto-Compound**\n\nCompounding ${position.rewards.toFixed(2)} USD of ${position.asset} rewards on ${position.platform}`);
+          
+          // Add to principal (reset rewards)
+          position.valueUSD += position.rewards;
+          position.rewards = 0;
+        }
       }
     }
   }

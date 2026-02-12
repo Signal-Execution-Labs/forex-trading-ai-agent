@@ -864,18 +864,41 @@ export class GatewayServer extends EventEmitter {
     
     // Trading handlers (K.I.T. specific)
     this.protocol.registerHandler(PROTOCOL_METHODS.PORTFOLIO_GET, async () => {
-      // TODO: Integrate with trading system
+      // Get portfolio from autonomous agent if available
+      const state = this.loadAgentState();
       return {
-        totalValue: 0,
-        positions: [],
-        pnl: { daily: 0, total: 0 },
+        totalValue: state.totalPortfolioValueUSD || 0,
+        positions: state.passivePositions || [],
+        pnl: { 
+          daily: state.dailyPnL || 0, 
+          total: state.totalPnL || 0 
+        },
+        lastUpdate: state.lastUpdate || new Date().toISOString(),
       };
     });
     
     this.protocol.registerHandler(PROTOCOL_METHODS.TRADE_POSITIONS, async () => {
-      // TODO: Integrate with trading system
-      return { positions: [] };
+      // Get active trading positions
+      const state = this.loadAgentState();
+      return { 
+        positions: state.activePositions || [],
+        count: (state.activePositions || []).length,
+      };
     });
+  }
+  
+  private loadAgentState(): any {
+    try {
+      const fs = require('fs');
+      const os = require('os');
+      const statePath = path.join(os.homedir(), '.kit', 'agent-state.json');
+      if (fs.existsSync(statePath)) {
+        return JSON.parse(fs.readFileSync(statePath, 'utf8'));
+      }
+    } catch {
+      // State file doesn't exist or is invalid
+    }
+    return {};
   }
   
   // ==========================================================================
