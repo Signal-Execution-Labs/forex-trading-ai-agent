@@ -1,8 +1,8 @@
 # 🛠️ K.I.T. Skills Documentation
 
-> **66 Skills** - Your complete trading arsenal
+> **71 Skills** - Your complete trading arsenal
 
-K.I.T. comes with 66 professional trading skills, all ready to use. Each skill is a specialized module that handles specific trading tasks.
+K.I.T. comes with 71 professional trading skills, all ready to use. Each skill is a specialized module that handles specific trading tasks.
 
 ---
 
