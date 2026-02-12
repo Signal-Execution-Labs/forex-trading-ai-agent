@@ -2,15 +2,13 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { v4 as uuidv4 } from 'uuid';
 import { db, dbHelpers } from '../db/database.ts';
 import {
-  PortfolioCreateSchema,
-  PositionOpenSchema,
-  PositionCloseSchema,
-  PositionUpdateSchema,
   Portfolio,
   Position,
   Trade,
   PortfolioSnapshot,
 } from '../models/types.ts';
+
+// Note: Using inline JSON schemas instead of Zod for Fastify compatibility
 
 // Extend db schema for portfolios
 declare module '../db/database.ts' {
@@ -86,7 +84,18 @@ export async function portfolioRoutes(fastify: FastifyInstance) {
     schema: {
       description: 'Create a new portfolio (paper or live tracking)',
       tags: ['Portfolios'],
-      body: PortfolioCreateSchema,
+      body: {
+        type: 'object',
+        required: ['name'],
+        properties: {
+          name: { type: 'string', minLength: 3, maxLength: 100 },
+          description: { type: 'string', maxLength: 500 },
+          initial_balance: { type: 'number', default: 100000 },
+          currency: { type: 'string', enum: ['USD', 'EUR', 'GBP', 'BTC', 'ETH'], default: 'USD' },
+          is_paper: { type: 'boolean', default: true },
+          is_public: { type: 'boolean', default: true },
+        },
+      },
       response: {
         201: {
           type: 'object',
@@ -101,7 +110,7 @@ export async function portfolioRoutes(fastify: FastifyInstance) {
     const agent = await getAgentFromRequest(request, reply);
     if (!agent) return;
 
-    const body = PortfolioCreateSchema.parse(request.body);
+    const body = request.body as any;
     
     const portfolio: Portfolio = {
       id: uuidv4(),
@@ -273,7 +282,20 @@ export async function portfolioRoutes(fastify: FastifyInstance) {
     schema: {
       description: 'Open a new position in portfolio (paper trading)',
       tags: ['Portfolios'],
-      body: PositionOpenSchema,
+      body: {
+        type: 'object',
+        required: ['symbol', 'direction', 'quantity', 'entry_price'],
+        properties: {
+          symbol: { type: 'string', minLength: 1, maxLength: 20 },
+          direction: { type: 'string', enum: ['LONG', 'SHORT'] },
+          quantity: { type: 'number' },
+          entry_price: { type: 'number' },
+          stop_loss: { type: 'number' },
+          take_profit: { type: 'number' },
+          leverage: { type: 'number', default: 1 },
+          notes: { type: 'string', maxLength: 500 },
+        },
+      },
     },
   }, async (request, reply) => {
     const agent = await getAgentFromRequest(request, reply);
@@ -289,7 +311,7 @@ export async function portfolioRoutes(fastify: FastifyInstance) {
       return reply.code(403).send({ success: false, error: 'Not your portfolio' });
     }
     
-    const body = PositionOpenSchema.parse(request.body);
+    const body = request.body as any;
     
     // Calculate position cost
     const positionCost = body.entry_price * body.quantity / body.leverage;
@@ -381,7 +403,14 @@ export async function portfolioRoutes(fastify: FastifyInstance) {
     schema: {
       description: 'Update position stop loss or take profit',
       tags: ['Portfolios'],
-      body: PositionUpdateSchema,
+      body: {
+        type: 'object',
+        properties: {
+          stop_loss: { type: 'number' },
+          take_profit: { type: 'number' },
+          notes: { type: 'string', maxLength: 500 },
+        },
+      },
     },
   }, async (request, reply) => {
     const agent = await getAgentFromRequest(request, reply);
@@ -400,7 +429,7 @@ export async function portfolioRoutes(fastify: FastifyInstance) {
       return reply.code(400).send({ success: false, error: 'Position is not open' });
     }
     
-    const body = PositionUpdateSchema.parse(request.body);
+    const body = request.body as any;
     
     if (body.stop_loss !== undefined) position.stop_loss = body.stop_loss;
     if (body.take_profit !== undefined) position.take_profit = body.take_profit;
@@ -415,7 +444,14 @@ export async function portfolioRoutes(fastify: FastifyInstance) {
     schema: {
       description: 'Close a position',
       tags: ['Portfolios'],
-      body: PositionCloseSchema,
+      body: {
+        type: 'object',
+        required: ['exit_price'],
+        properties: {
+          exit_price: { type: 'number' },
+          notes: { type: 'string', maxLength: 500 },
+        },
+      },
     },
   }, async (request, reply) => {
     const agent = await getAgentFromRequest(request, reply);
@@ -435,7 +471,7 @@ export async function portfolioRoutes(fastify: FastifyInstance) {
       return reply.code(400).send({ success: false, error: 'Position is not open' });
     }
     
-    const body = PositionCloseSchema.parse(request.body);
+    const body = request.body as any;
     
     // Calculate P&L
     const priceDiff = body.exit_price - position.entry_price;
@@ -682,3 +718,4 @@ export async function portfolioRoutes(fastify: FastifyInstance) {
     return reply.send({ success: true, data: top });
   });
 }
+
