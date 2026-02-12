@@ -606,6 +606,54 @@ export async function connectionsRoutes(fastify: FastifyInstance) {
               await UserService.updateConnectionStatus(connection.id, result.success ? 'connected' : 'error');
               syncResult.success = result.success;
               syncResult.tradesFound = result.trades?.length || 0;
+
+              // Also update journal account balance and import trades (like :id/sync does)
+              if (result.success && connection.user_id) {
+                const accounts = await JournalService.getAccounts(connection.user_id);
+                let linkedAccount = accounts.find(a => 
+                  a.connection_id === connection.id || 
+                  a.broker?.toLowerCase().includes('binaryfaster') ||
+                  a.name?.toLowerCase().includes('binaryfaster')
+                );
+
+                // Update balance if we have an account
+                if (linkedAccount && result.balance) {
+                  await JournalService.updateAccountBalance(linkedAccount.id, result.balance.real);
+                  syncResult.balanceUpdated = result.balance.real;
+                  // Link connection_id if not already set
+                  if (!linkedAccount.connection_id) {
+                    await JournalService.linkAccountToConnection(linkedAccount.id, connection.id);
+                  }
+                }
+
+                // Import trades if we have them and have a linked account
+                let importedCount = 0;
+                if (linkedAccount && result.trades && result.trades.length > 0) {
+                  for (const trade of result.trades) {
+                    try {
+                      await JournalService.createEntry(connection.user_id, {
+                        account_id: linkedAccount.id,
+                        symbol: trade.symbol,
+                        direction: trade.direction?.toUpperCase() === 'LONG' ? 'LONG' : 'SHORT',
+                        entry_time: trade.entry_date,
+                        entry_price: trade.entry_price,
+                        exit_time: trade.entry_date,
+                        exit_price: trade.exit_price || trade.entry_price,
+                        quantity: trade.quantity,
+                        pnl: trade.pnl,
+                        status: 'closed',
+                        source: 'binaryfaster',
+                        notes: trade.notes,
+                        setup: trade.setup,
+                      });
+                      importedCount++;
+                    } catch (e) {
+                      // Skip duplicates or errors
+                    }
+                  }
+                  syncResult.tradesImported = importedCount;
+                }
+              }
               break;
             }
             case 'binance': {
