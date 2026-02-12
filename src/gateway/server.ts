@@ -36,6 +36,7 @@ import { ChatManager, createChatManager, ChatSendParams, ChatHistoryParams, Chat
 import { getToolEnabledChatHandler, ToolEnabledChatHandler } from './tool-enabled-chat';
 import { TelegramChannel, createTelegramChannel } from '../channels/telegram-channel';
 import { WhatsAppChannel, createWhatsAppChannel, hasWhatsAppCredentials } from '../channels/whatsapp-channel';
+import { DiscordChannel, createDiscordChannel, hasDiscordCredentials } from '../channels/discord-channel';
 import { getBinaryFasterState } from '../tools/binary-options-tools';
 import { HooksManager, initHooks, getHooksManager } from './hooks';
 import { loadConfig } from '../config';
@@ -126,6 +127,7 @@ export class GatewayServer extends EventEmitter {
   // Channels
   private telegramChannel: TelegramChannel | null = null;
   private whatsappChannel: WhatsAppChannel | null = null;
+  private discordChannel: DiscordChannel | null = null;
   
   // State
   private state: GatewayState;
@@ -487,6 +489,9 @@ export class GatewayServer extends EventEmitter {
     if (this.whatsappChannel) {
       this.whatsappChannel.stop();
     }
+    if (this.discordChannel) {
+      this.discordChannel.stop();
+    }
     
     // Flush sessions
     await this.sessions.flush();
@@ -605,6 +610,9 @@ export class GatewayServer extends EventEmitter {
 
     // Start WhatsApp channel if configured
     this.startWhatsAppChannel();
+
+    // Start Discord channel if configured
+    this.startDiscordChannel();
 
     // Initialize hooks system (OpenClaw-inspired)
     this.initHooksSystem();
@@ -736,6 +744,47 @@ export class GatewayServer extends EventEmitter {
       console.log('📱 WhatsApp channel active - listening for messages');
     } catch (error) {
       console.error('[WhatsApp] Failed to start:', error);
+    }
+  }
+
+  /**
+   * Start Discord channel for bidirectional messaging
+   */
+  private async startDiscordChannel(): Promise<void> {
+    try {
+      // Check if we have credentials
+      if (!hasDiscordCredentials()) {
+        console.log('[Discord] Not configured - add discord.token to config');
+        return;
+      }
+
+      this.discordChannel = createDiscordChannel();
+      
+      if (!this.discordChannel) {
+        return;
+      }
+
+      // Initialize tool chat handler for Discord
+      const toolChatHandler = getToolEnabledChatHandler();
+
+      await this.discordChannel.start(async (msg) => {
+        console.log(`[Discord] Message from ${msg.username}: ${msg.text}`);
+        
+        // Process message through AI with tools
+        const response = await toolChatHandler.processMessage(
+          `discord_${msg.channelId}`,
+          msg.text,
+          () => {}, // No streaming for Discord
+          () => {}, // No tool call display
+          () => {}  // No tool result display
+        );
+
+        return response;
+      });
+
+      console.log('🎮 Discord channel active - listening for messages');
+    } catch (error) {
+      console.error('[Discord] Failed to start:', error);
     }
   }
   
