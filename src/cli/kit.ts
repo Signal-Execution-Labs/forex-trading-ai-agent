@@ -1402,6 +1402,13 @@ async function main() {
   }
   
   try {
+    const { registerSessionsCommand } = await import('./commands/sessions');
+    registerSessionsCommand(program);
+  } catch {
+    // Sessions module not available
+  }
+  
+  try {
     const { createDiagnosticsCommand } = await import('./commands/diagnostics');
     program.addCommand(createDiagnosticsCommand());
   } catch {
