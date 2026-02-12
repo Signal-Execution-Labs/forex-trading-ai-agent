@@ -38,6 +38,7 @@ import { TelegramChannel, createTelegramChannel } from '../channels/telegram-cha
 import { WhatsAppChannel, createWhatsAppChannel, hasWhatsAppCredentials } from '../channels/whatsapp-channel';
 import { getBinaryFasterState } from '../tools/binary-options-tools';
 import { HooksManager, initHooks, getHooksManager } from './hooks';
+import { loadConfig } from '../config';
 
 // ============================================================================
 // Types
@@ -512,31 +513,87 @@ export class GatewayServer extends EventEmitter {
    * Start subsystems
    */
   private startSubsystems(): void {
-    // Start heartbeat
+    // Start heartbeat with AI integration
     if (this.config.heartbeat.enabled) {
+      const toolChatHandler = getToolEnabledChatHandler();
+      
       this.heartbeat.start(
         async (params) => {
-          // TODO: Integrate with LLM provider
-          return { response: 'HEARTBEAT_OK' };
+          // Run heartbeat through the AI with tools
+          try {
+            const response = await toolChatHandler.processMessage(
+              'heartbeat_session',
+              params.prompt,
+              () => {}, // No streaming for heartbeat
+              () => {},
+              () => {}
+            );
+            return { response };
+          } catch (error) {
+            console.error('[Heartbeat] AI error:', error);
+            return { response: 'HEARTBEAT_OK' }; // Fail silently
+          }
         },
         async (params) => {
-          // TODO: Integrate with channel delivery
+          // Deliver heartbeat message to configured channel
+          if (params.target === 'last' || params.target === 'telegram') {
+            if (this.telegramChannel) {
+              const config = loadConfig();
+              const chatId = config.channels?.telegram?.chatId;
+              if (chatId) {
+                await this.telegramChannel.sendMessage(chatId, params.message);
+                return true;
+              }
+            }
+          }
           console.log(`[Heartbeat] Would deliver to ${params.target}: ${params.message}`);
           return true;
         }
       );
     }
     
-    // Start cron
+    // Start cron with AI integration
     if (this.config.cron.enabled) {
+      const toolChatHandler = getToolEnabledChatHandler();
+      
       this.cron.start(
         async (job) => {
-          // TODO: Integrate with agent execution
-          console.log(`[Cron] Running job ${job.name}`);
-          return { response: 'Job completed' };
+          // Run cron job through the AI with tools
+          console.log(`[Cron] Running job: ${job.name}`);
+          try {
+            // Get prompt from payload based on kind
+            let prompt = `Execute cron job: ${job.name}`;
+            if (job.payload) {
+              if (job.payload.kind === 'systemEvent') {
+                prompt = job.payload.text;
+              } else if (job.payload.kind === 'agentTurn') {
+                prompt = job.payload.message;
+              }
+            }
+            
+            const response = await toolChatHandler.processMessage(
+              `cron_${job.id}`,
+              prompt,
+              () => {}, // No streaming for cron
+              () => {},
+              () => {}
+            );
+            return { response };
+          } catch (error) {
+            console.error(`[Cron] Job ${job.name} error:`, error);
+            return { response: 'Job failed' };
+          }
         },
         async (job, response) => {
-          // TODO: Integrate with channel delivery
+          // Deliver cron result to configured channel
+          if (this.telegramChannel) {
+            const config = loadConfig();
+            const chatId = config.channels?.telegram?.chatId;
+            if (chatId) {
+              await this.telegramChannel.sendMessage(chatId, `📋 **Cron: ${job.name}**\n\n${response}`);
+              return true;
+            }
+          }
           console.log(`[Cron] Would deliver for ${job.name}: ${response}`);
           return true;
         }
