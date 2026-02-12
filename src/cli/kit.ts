@@ -1444,6 +1444,13 @@ async function main() {
   }
   
   try {
+    const { registerUpdateCommand } = await import('./commands/update');
+    registerUpdateCommand(program);
+  } catch {
+    // Update module not available
+  }
+  
+  try {
     const { createDiagnosticsCommand } = await import('./commands/diagnostics');
     program.addCommand(createDiagnosticsCommand());
   } catch {
