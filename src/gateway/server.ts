@@ -578,8 +578,12 @@ export class GatewayServer extends EventEmitter {
 
   /**
    * Start Telegram channel for bidirectional messaging
+   * Includes retry logic for conflict resolution
    */
-  private async startTelegramChannel(): Promise<void> {
+  private async startTelegramChannel(retryCount = 0): Promise<void> {
+    const MAX_RETRIES = 3;
+    const RETRY_DELAYS = [10000, 30000, 60000]; // 10s, 30s, 60s
+    
     try {
       this.telegramChannel = createTelegramChannel();
       
@@ -619,8 +623,21 @@ export class GatewayServer extends EventEmitter {
       });
 
       console.log('📱 Telegram channel active - listening for messages');
-    } catch (error) {
-      console.error('[Telegram] Failed to start:', error);
+    } catch (error: any) {
+      const errorMsg = error?.message || String(error);
+      console.error('[Telegram] Failed to start:', errorMsg);
+      
+      // Retry on conflict errors
+      if (errorMsg.includes('Conflict') || errorMsg.includes('terminated by other')) {
+        if (retryCount < MAX_RETRIES) {
+          const delay = RETRY_DELAYS[retryCount] || 60000;
+          console.log(`[Telegram] Will retry in ${delay/1000}s (attempt ${retryCount + 1}/${MAX_RETRIES})...`);
+          setTimeout(() => this.startTelegramChannel(retryCount + 1), delay);
+        } else {
+          console.error('[Telegram] Max retries reached. Please stop other instances and restart K.I.T.');
+          console.log('[Telegram] Tip: Run "taskkill /F /IM node.exe" to stop all Node processes');
+        }
+      }
     }
   }
 

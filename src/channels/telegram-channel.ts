@@ -106,6 +106,27 @@ export class TelegramChannel extends EventEmitter {
   }
 
   /**
+   * Clear any existing polling connections
+   * This helps resolve conflicts when switching between instances
+   */
+  private async clearPollingConnection(): Promise<void> {
+    try {
+      // First, delete any webhook (just in case)
+      await fetch(`https://api.telegram.org/bot${this.config.token}/deleteWebhook?drop_pending_updates=false`);
+      
+      // Then make a quick getUpdates call to "steal" the connection
+      // Using timeout=1 to make it quick
+      const url = `https://api.telegram.org/bot${this.config.token}/getUpdates?timeout=1&offset=-1`;
+      await fetch(url);
+      
+      // Wait a moment for the connection to be fully released
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    } catch (e) {
+      // Ignore errors during cleanup
+    }
+  }
+
+  /**
    * Start listening for messages
    */
   async start(handler: (msg: TelegramMessage) => Promise<string>): Promise<void> {
@@ -117,6 +138,10 @@ export class TelegramChannel extends EventEmitter {
     this.messageHandler = handler;
     this.polling = true;
     console.log('[Telegram] Starting message polling...');
+
+    // Clear any existing connections first
+    console.log('[Telegram] Clearing existing connections...');
+    await this.clearPollingConnection();
 
     // Initial fetch to get latest update ID
     await this.getUpdates(true);
@@ -185,15 +210,28 @@ export class TelegramChannel extends EventEmitter {
   }
 
   /**
-   * Get updates from Telegram
+   * Get updates from Telegram with conflict retry
    */
-  private async getUpdates(skipProcess = false): Promise<TelegramMessage[]> {
+  private async getUpdates(skipProcess = false, retryCount = 0): Promise<TelegramMessage[]> {
+    const MAX_RETRIES = 5;
+    const BASE_DELAY = 5000; // 5 seconds base delay for conflict
+    
     const url = `https://api.telegram.org/bot${this.config.token}/getUpdates?offset=${this.lastUpdateId + 1}&timeout=10`;
     
     const response = await fetch(url);
     const data = await response.json() as any;
 
     if (!data.ok) {
+      // Handle conflict error (another instance is polling)
+      if (data.description?.includes('Conflict') || data.description?.includes('terminated by other')) {
+        if (retryCount < MAX_RETRIES) {
+          const delay = BASE_DELAY * Math.pow(2, retryCount); // Exponential backoff: 5s, 10s, 20s, 40s, 80s
+          console.log(`[Telegram] Conflict detected, waiting ${delay/1000}s before retry ${retryCount + 1}/${MAX_RETRIES}...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return this.getUpdates(skipProcess, retryCount + 1);
+        }
+        console.error('[Telegram] Max retries reached for conflict resolution. Another instance may be running.');
+      }
       throw new Error(`Telegram API error: ${data.description}`);
     }
 
