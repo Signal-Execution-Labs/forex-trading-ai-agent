@@ -195,6 +195,8 @@ export async function connectionsRoutes(fastify: FastifyInstance) {
           const creds = connection.credentials as { apiKey: string; apiSecret: string };
           const testnet = connection.account_type === 'demo';
           const result = await validateBinanceCredentials(creds.apiKey, creds.apiSecret, testnet);
+          // Update status in DB
+          await UserService.updateConnectionStatus(connection.id, result.valid ? 'connected' : 'disconnected');
           return {
             success: result.valid,
             platform: connection.platform,
@@ -207,6 +209,8 @@ export async function connectionsRoutes(fastify: FastifyInstance) {
         case 'binaryfaster': {
           const credsBF = connection.credentials as { email: string; password: string };
           const resultBF = await validateBinaryFasterCredentials(credsBF.email, credsBF.password);
+          // Update status in DB
+          await UserService.updateConnectionStatus(connection.id, resultBF.valid ? 'connected' : 'disconnected');
           return {
             success: resultBF.valid,
             platform: connection.platform,
@@ -520,6 +524,125 @@ export async function connectionsRoutes(fastify: FastifyInstance) {
       }
     } catch (err: any) {
       return reply.status(500).send({ error: err.message || 'Sync failed' });
+    }
+  });
+
+  /**
+   * PATCH /api/connections/:id
+   * Update connection settings (auto-sync, etc.)
+   */
+  fastify.patch('/:id', {
+    schema: {
+      description: 'Update connection settings',
+      tags: ['Connections'],
+      security: [{ bearerAuth: [] }],
+      body: {
+        type: 'object',
+        properties: {
+          auto_sync: { type: 'boolean' },
+          sync_interval_minutes: { type: 'number' },
+        },
+      },
+    },
+  }, async (request: FastifyRequest<{ 
+    Params: { id: string },
+    Body: { auto_sync?: boolean; sync_interval_minutes?: number }
+  }>, reply: FastifyReply) => {
+    try {
+      await request.jwtVerify();
+      const user = request.user as { userId?: string };
+      
+      if (!user.userId) {
+        return reply.status(401).send({ error: 'User ID not found in token' });
+      }
+
+      const { auto_sync, sync_interval_minutes } = request.body;
+
+      const success = await UserService.updateAutoSyncSettings(
+        request.params.id,
+        user.userId,
+        auto_sync ?? true,
+        sync_interval_minutes
+      );
+
+      if (!success) {
+        return reply.status(404).send({ error: 'Connection not found' });
+      }
+
+      return { success: true, message: 'Settings updated' };
+    } catch (err) {
+      return reply.status(401).send({ error: 'Invalid or expired token' });
+    }
+  });
+
+  /**
+   * POST /api/connections/sync-all
+   * Sync all connections with auto-sync enabled (for cron/scheduled sync)
+   */
+  fastify.post('/sync-all', {
+    schema: {
+      description: 'Sync all connections with auto-sync enabled',
+      tags: ['Connections'],
+    },
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const connections = await UserService.getConnectionsForAutoSync();
+      const results: any[] = [];
+
+      for (const connection of connections) {
+        try {
+          let syncResult: any = { id: connection.id, platform: connection.platform };
+
+          switch (connection.platform) {
+            case 'binaryfaster': {
+              const creds = connection.credentials as { email: string; password: string };
+              const result = await fetchBinaryFasterTrades(creds.email, creds.password);
+              await UserService.updateLastSync(connection.id);
+              await UserService.updateConnectionStatus(connection.id, result.success ? 'connected' : 'error');
+              syncResult.success = result.success;
+              syncResult.tradesFound = result.trades?.length || 0;
+              break;
+            }
+            case 'binance': {
+              const creds = connection.credentials as { apiKey: string; apiSecret: string };
+              const testnet = connection.account_type === 'demo';
+              const result = await fetchBinanceTrades(creds.apiKey, creds.apiSecret, testnet);
+              await UserService.updateLastSync(connection.id);
+              await UserService.updateConnectionStatus(connection.id, result.success ? 'connected' : 'error');
+              syncResult.success = result.success;
+              syncResult.tradesFound = result.trades?.length || 0;
+              break;
+            }
+            case 'bybit': {
+              const creds = connection.credentials as { apiKey: string; apiSecret: string };
+              const testnet = connection.account_type === 'demo';
+              const result = await fetchBybitTrades(creds.apiKey, creds.apiSecret, testnet);
+              await UserService.updateLastSync(connection.id);
+              await UserService.updateConnectionStatus(connection.id, result.success ? 'connected' : 'error');
+              syncResult.success = result.success;
+              syncResult.tradesFound = result.trades?.length || 0;
+              break;
+            }
+            default:
+              syncResult.success = false;
+              syncResult.message = 'Auto-sync not supported for this platform';
+          }
+
+          results.push(syncResult);
+        } catch (err: any) {
+          await UserService.updateConnectionStatus(connection.id, 'error');
+          results.push({ id: connection.id, platform: connection.platform, success: false, error: err.message });
+        }
+      }
+
+      return {
+        success: true,
+        synced: results.filter(r => r.success).length,
+        failed: results.filter(r => !r.success).length,
+        results,
+      };
+    } catch (err: any) {
+      return reply.status(500).send({ error: err.message || 'Sync-all failed' });
     }
   });
 }

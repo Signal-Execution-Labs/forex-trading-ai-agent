@@ -209,7 +209,59 @@ export class UserService {
   static async updateLastSync(connectionId: string): Promise<void> {
     await getSupabase()
       .from('platform_connections')
-      .update({ last_sync_at: new Date().toISOString() })
+      .update({ 
+        last_sync: new Date().toISOString(),
+        last_checked: new Date().toISOString(),
+      })
       .eq('id', connectionId);
+  }
+
+  /**
+   * Update connection status (connected/disconnected/error)
+   */
+  static async updateConnectionStatus(connectionId: string, status: 'connected' | 'disconnected' | 'error' | 'unknown'): Promise<void> {
+    await getSupabase()
+      .from('platform_connections')
+      .update({ 
+        status,
+        last_checked: new Date().toISOString(),
+      })
+      .eq('id', connectionId);
+  }
+
+  /**
+   * Update auto-sync settings
+   */
+  static async updateAutoSyncSettings(connectionId: string, userId: string, autoSync: boolean, intervalMinutes?: number): Promise<boolean> {
+    const updateData: any = { auto_sync: autoSync };
+    if (intervalMinutes) {
+      updateData.sync_interval_minutes = intervalMinutes;
+    }
+
+    const { error } = await getSupabase()
+      .from('platform_connections')
+      .update(updateData)
+      .eq('id', connectionId)
+      .eq('user_id', userId);
+
+    return !error;
+  }
+
+  /**
+   * Get all connections that need auto-sync (for cron job)
+   */
+  static async getConnectionsForAutoSync(): Promise<PlatformConnection[]> {
+    const { data, error } = await getSupabase()
+      .from('platform_connections')
+      .select('*')
+      .eq('auto_sync', true)
+      .or(`last_sync.is.null,last_sync.lt.${new Date(Date.now() - 15 * 60 * 1000).toISOString()}`);
+
+    if (error) {
+      console.error('Error fetching connections for auto-sync:', error);
+      return [];
+    }
+
+    return data || [];
   }
 }
