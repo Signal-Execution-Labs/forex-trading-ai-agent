@@ -80,7 +80,12 @@ export const TOOL_GROUPS: Record<string, string[]> = {
                     'mt5_connect', 'mt5_account_info', 'mt5_positions', 'mt5_market_order', 
                     'mt5_close_position', 'mt5_price', 'mt5_indicators', 'mt5_modify_sl',
                     // UNIFIED STRATEGY SYSTEM - use ONLY these:
-                    'trading_create', 'trading_start', 'trading_stop', 'trading_list', 'trading_status', 'trading_delete'],
+                    'trading_create', 'trading_start', 'trading_stop', 'trading_list', 'trading_status', 'trading_delete',
+                    // PROACTIVE AGENT TOOLS:
+                    'alert_create', 'alert_list', 'alert_delete',
+                    'passive_add', 'passive_list', 'passive_update', 'passive_remove',
+                    'market_scan', 'watchlist_add', 'watchlist_remove', 'watchlist_list',
+                    'agent_settings', 'daily_report', 'portfolio_summary'],
   'group:analysis': ['image_analyze', 'chart_analyze', 'screenshot_analyze', 'web_search', 'web_fetch'],
   'group:tts': ['tts_speak', 'tts_voices', 'tts_play'],
   'group:onboarding': ['onboarding_start', 'onboarding_continue', 'onboarding_status'],

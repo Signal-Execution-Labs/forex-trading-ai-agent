@@ -376,6 +376,22 @@ export class AgentRunner extends EventEmitter {
       console.log(`   Forum Tools: skipped (${err})`);
     }
 
+    // Register Proactive Agent Tools (autonomous features!)
+    try {
+      const { PROACTIVE_AGENT_TOOLS, handleProactiveAgentTool } = require('../tools/proactive-agent');
+      for (const tool of PROACTIVE_AGENT_TOOLS) {
+        const handler = async (args: any) => handleProactiveAgentTool(tool.name, args);
+        this.toolHandlers.set(tool.name, handler);
+        this.chatManager.registerTool(
+          { name: tool.name, description: tool.description, parameters: tool.parameters },
+          handler
+        );
+      }
+      console.log(`   🤖 Proactive Agent Tools: ${PROACTIVE_AGENT_TOOLS.length} loaded`);
+    } catch (err) {
+      console.log(`   Proactive Agent Tools: skipped (${err})`);
+    }
+
     console.log(`   Total Tools: ${this.toolHandlers.size} registered`);
     
     // List all registered tools for debugging

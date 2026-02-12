@@ -142,6 +142,13 @@ export {
   getSkillToolHandlers,
 } from './skill-tools';
 
+// Proactive Agent Tools - Autonomous financial agent features
+export {
+  PROACTIVE_AGENT_TOOLS,
+  handleProactiveAgentTool,
+  runProactiveHeartbeat,
+} from './proactive-agent';
+
 // Factory for creating all tools
 export interface ToolInstances {
   autoTrader: InstanceType<typeof import('./auto-trader').AutoTrader>;
