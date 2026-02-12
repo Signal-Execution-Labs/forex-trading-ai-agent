@@ -36,6 +36,8 @@ import { sentimentRoutes } from './routes/sentiment.ts';
 import { calendarRoutes } from './routes/calendar.ts';
 import { correlationRoutes } from './routes/correlations.ts';
 import { replayRoutes } from './routes/replay.ts';
+import { userJournalRoutes } from './routes/user-journal.ts';
+import { connectionsRoutes } from './routes/connections.ts';
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const HOST = process.env.HOST || '0.0.0.0';
@@ -197,6 +199,8 @@ async function main() {
   await fastify.register(calendarRoutes, { prefix: '/api/calendar' });
   await fastify.register(correlationRoutes, { prefix: '/api/correlations' });
   await fastify.register(replayRoutes, { prefix: '/api/replay' });
+  await fastify.register(userJournalRoutes, { prefix: '/api/user/journal' });
+  await fastify.register(connectionsRoutes, { prefix: '/api/connections' });
 
   // Register WebSocket route
   await fastify.register(signalWebSocket);
