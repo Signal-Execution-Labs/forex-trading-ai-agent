@@ -195,21 +195,20 @@ export class PostService {
       
       if (error) throw error;
       
-      // Update reply count
-      await getSupabase().rpc('increment', { 
-        table_name: 'posts', 
-        row_id: postId, 
-        column_name: 'reply_count' 
-      }).catch(() => {
-        // Fallback: manual increment
-        return getSupabase()
-          .from('posts')
-          .update({ 
-            reply_count: (await getSupabase().from('posts').select('reply_count').eq('id', postId).single()).data?.reply_count + 1 || 1,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', postId);
-      });
+      // Update reply count - simple increment
+      const { data: postData } = await getSupabase()
+        .from('posts')
+        .select('reply_count')
+        .eq('id', postId)
+        .single();
+      
+      await getSupabase()
+        .from('posts')
+        .update({ 
+          reply_count: (postData?.reply_count || 0) + 1,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', postId);
       
       return { ...reply, upvotes: reply.votes || 0, downvotes: 0 } as Reply;
     }
