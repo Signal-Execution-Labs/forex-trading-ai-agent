@@ -37,6 +37,7 @@ import { getToolEnabledChatHandler, ToolEnabledChatHandler } from './tool-enable
 import { TelegramChannel, createTelegramChannel } from '../channels/telegram-channel';
 import { WhatsAppChannel, createWhatsAppChannel, hasWhatsAppCredentials } from '../channels/whatsapp-channel';
 import { DiscordChannel, createDiscordChannel, hasDiscordCredentials } from '../channels/discord-channel';
+import { SlackChannel, createSlackChannel, hasSlackCredentials } from '../channels/slack-channel';
 import { getBinaryFasterState } from '../tools/binary-options-tools';
 import { HooksManager, initHooks, getHooksManager } from './hooks';
 import { loadConfig } from '../config';
@@ -128,6 +129,7 @@ export class GatewayServer extends EventEmitter {
   private telegramChannel: TelegramChannel | null = null;
   private whatsappChannel: WhatsAppChannel | null = null;
   private discordChannel: DiscordChannel | null = null;
+  private slackChannel: SlackChannel | null = null;
   
   // State
   private state: GatewayState;
@@ -492,6 +494,9 @@ export class GatewayServer extends EventEmitter {
     if (this.discordChannel) {
       this.discordChannel.stop();
     }
+    if (this.slackChannel) {
+      this.slackChannel.stop();
+    }
     
     // Flush sessions
     await this.sessions.flush();
@@ -613,6 +618,9 @@ export class GatewayServer extends EventEmitter {
 
     // Start Discord channel if configured
     this.startDiscordChannel();
+
+    // Start Slack channel if configured
+    this.startSlackChannel();
 
     // Initialize hooks system (OpenClaw-inspired)
     this.initHooksSystem();
@@ -785,6 +793,47 @@ export class GatewayServer extends EventEmitter {
       console.log('🎮 Discord channel active - listening for messages');
     } catch (error) {
       console.error('[Discord] Failed to start:', error);
+    }
+  }
+
+  /**
+   * Start Slack channel for bidirectional messaging
+   */
+  private async startSlackChannel(): Promise<void> {
+    try {
+      // Check if we have credentials
+      if (!hasSlackCredentials()) {
+        console.log('[Slack] Not configured - add slack.botToken and slack.appToken to config');
+        return;
+      }
+
+      this.slackChannel = createSlackChannel();
+      
+      if (!this.slackChannel) {
+        return;
+      }
+
+      // Initialize tool chat handler for Slack
+      const toolChatHandler = getToolEnabledChatHandler();
+
+      await this.slackChannel.start(async (msg) => {
+        console.log(`[Slack] Message from ${msg.username || msg.userId}: ${msg.text}`);
+        
+        // Process message through AI with tools
+        const response = await toolChatHandler.processMessage(
+          `slack_${msg.channelId}`,
+          msg.text,
+          () => {}, // No streaming for Slack
+          () => {}, // No tool call display
+          () => {}  // No tool result display
+        );
+
+        return response;
+      });
+
+      console.log('💼 Slack channel active - listening for messages');
+    } catch (error) {
+      console.error('[Slack] Failed to start:', error);
     }
   }
   
