@@ -1409,6 +1409,13 @@ async function main() {
   }
   
   try {
+    const { registerMemoryCommand } = await import('./commands/memory');
+    registerMemoryCommand(program);
+  } catch {
+    // Memory module not available
+  }
+  
+  try {
     const { createDiagnosticsCommand } = await import('./commands/diagnostics');
     program.addCommand(createDiagnosticsCommand());
   } catch {
