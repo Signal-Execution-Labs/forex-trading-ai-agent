@@ -1455,7 +1455,28 @@ Your personal AI financial agent is ready.
     sendToolResult: (name: string, result: any) => void
   ): Promise<string> {
     const apiKey = process.env.OPENAI_API_KEY;
-    const tools = this.getToolDefinitions();
+    // OpenAI has a 128 tool limit - prioritize important tools
+    const allTools = this.getToolDefinitions();
+    const OPENAI_TOOL_LIMIT = 128;
+    
+    // Prioritize certain tool categories
+    const priorityPrefixes = ['binary_', 'mt5_', 'trading_', 'memory_', 'read', 'write', 'exec', 'status', 'config_', 'telegram_', 'whatsapp_', 'onboarding_'];
+    const priorityTools = allTools.filter((t: any) => 
+      priorityPrefixes.some(prefix => t.function.name.startsWith(prefix))
+    );
+    const otherTools = allTools.filter((t: any) => 
+      !priorityPrefixes.some(prefix => t.function.name.startsWith(prefix))
+    );
+    
+    // Combine priority tools first, then fill remaining slots with other tools
+    const tools = [
+      ...priorityTools,
+      ...otherTools.slice(0, Math.max(0, OPENAI_TOOL_LIMIT - priorityTools.length))
+    ].slice(0, OPENAI_TOOL_LIMIT);
+    
+    if (allTools.length > OPENAI_TOOL_LIMIT) {
+      console.log(`[OpenAI] Limited tools from ${allTools.length} to ${tools.length} (max 128)`);
+    }
 
     // Format messages for OpenAI
     const openaiMessages: any[] = [
