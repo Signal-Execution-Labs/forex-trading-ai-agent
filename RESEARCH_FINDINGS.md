@@ -448,7 +448,38 @@ High demand for importing TradingView scripts:
 
 ## 🎉 MILESTONE: 100+ SKILLS REACHED! 🎉
 
-## Total K.I.T. Skills: 106
+### Additional Skills Added (15:20 CET)
+
+| # | Skill | Inspired By | Description |
+|---|-------|-------------|-------------|
+| 107 | Net Worth Tracker | Personal Capital | Complete financial picture |
+| 108 | Popular Investor | eToro | Become a signal provider, earn from copiers |
+| 109 | Multi-Copy Manager | eToro | Copy up to 100 traders simultaneously |
+| 110 | Smart Terminal | 3Commas | Professional trading interface with advanced orders |
+
+### Key Features Implemented
+
+#### Popular Investor (#108)
+- 4-tier program (Cadet → Elite)
+- Earnings based on AUM (0.5% - 1.5%)
+- Copier protection settings
+- Social feed & profile
+
+#### Multi-Copy Manager (#109)
+- Copy up to 100 traders at once
+- Allocation strategies (equal, performance, risk parity)
+- Correlation filtering
+- Auto-rebalance & auto-remove rules
+
+#### Smart Terminal (#110)
+- Trailing TP/SL
+- Multiple take profits
+- Scaled entries (DCA)
+- OCO orders
+- Hotkeys & one-click trading
+- Multi-exchange support
+
+## Total K.I.T. Skills: 110
 
 ### K.I.T. vs TradingView Feature Parity
 
@@ -480,4 +511,4 @@ Ideas for #100:
 
 ---
 
-*Last updated: February 12, 2026 15:05 CET*
+*Last updated: February 12, 2026 15:20 CET*
