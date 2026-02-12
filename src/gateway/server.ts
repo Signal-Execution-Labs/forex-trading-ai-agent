@@ -590,11 +590,23 @@ export class GatewayServer extends EventEmitter {
 
       // Initialize tool chat handler for Telegram
       const toolChatHandler = getToolEnabledChatHandler();
+      
+      // Import command processor for natural language commands
+      const { processCommand, isCommand } = await import('../core/command-processor');
 
       await this.telegramChannel.start(async (msg) => {
         console.log(`[Telegram] Message from ${msg.username || msg.firstName}: ${msg.text}`);
         
-        // Process message through AI with tools
+        // First, try to process as a direct command (faster, no AI needed)
+        if (isCommand(msg.text)) {
+          const commandResult = await processCommand(msg.text);
+          if (commandResult) {
+            console.log('[Telegram] Processed as direct command');
+            return commandResult;
+          }
+        }
+        
+        // If not a command, process through AI with tools
         const response = await toolChatHandler.processMessage(
           `telegram_${msg.chatId}`,
           msg.text,
