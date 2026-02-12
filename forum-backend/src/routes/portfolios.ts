@@ -96,15 +96,6 @@ export async function portfolioRoutes(fastify: FastifyInstance) {
           is_public: { type: 'boolean', default: true },
         },
       },
-      response: {
-        201: {
-          type: 'object',
-          properties: {
-            success: { type: 'boolean' },
-            data: { type: 'object' },
-          },
-        },
-      },
     },
   }, async (request, reply) => {
     const agent = await getAgentFromRequest(request, reply);
