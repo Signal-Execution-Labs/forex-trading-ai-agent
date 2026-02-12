@@ -87,10 +87,32 @@ export class BinaryFasterService {
         throw new Error('No API key in response');
       }
 
+      // Switch to REAL mode (not demo) - CRITICAL for getting real trades!
+      await this.setRealMode();
+
       return true;
     } catch (error: any) {
       console.error('BinaryFaster login error:', error.message);
       return false;
+    }
+  }
+
+  /**
+   * Switch to REAL trading mode (not demo)
+   * This is required to fetch real trades from history!
+   */
+  private async setRealMode(): Promise<void> {
+    try {
+      await fetch(`${BINARYFASTER_API_URL}/traderoom/setdemo/0`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': this.apiKey!,
+        },
+      });
+      console.log('BinaryFaster: Switched to REAL mode');
+    } catch (error: any) {
+      console.error('BinaryFaster: Failed to switch to REAL mode:', error.message);
     }
   }
 
