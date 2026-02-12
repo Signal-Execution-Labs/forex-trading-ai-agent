@@ -1458,6 +1458,13 @@ async function main() {
   }
   
   try {
+    const { registerAgentCommand } = await import('./commands/agent');
+    registerAgentCommand(program);
+  } catch {
+    // Agent module not available
+  }
+  
+  try {
     const { createDiagnosticsCommand } = await import('./commands/diagnostics');
     program.addCommand(createDiagnosticsCommand());
   } catch {
