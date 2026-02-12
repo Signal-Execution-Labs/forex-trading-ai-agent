@@ -174,6 +174,48 @@ function generateMEMORY(state: OnboardingState): string {
 `;
 }
 
+function generateHEARTBEAT(state: OnboardingState): string {
+  const markets = state.data.markets || ['crypto', 'forex'];
+  const style = state.data.tradingStyle || 'balanced';
+  
+  return `# K.I.T. Heartbeat Tasks
+
+## Trading Checks (During Market Hours)
+${markets.includes('forex') ? '- Check Forex market conditions (EUR/USD, GBP/USD)' : ''}
+${markets.includes('crypto') ? '- Monitor crypto portfolio and major pairs' : ''}
+${markets.includes('stocks') ? '- Review stock watchlist for opportunities' : ''}
+${markets.includes('defi') ? '- Check DeFi positions (yields, IL, liquidation risks)' : ''}
+- Review open positions and adjust SL/TP if needed
+- Log significant price movements to memory
+
+## Risk Management
+- Verify daily loss limit not exceeded (${state.data.maxPositionSize || '5'}% max)
+- Check position sizes are within limits
+- Monitor correlation across positions
+${style === 'aggressive' ? '- Review high-volatility opportunities' : ''}
+${style === 'conservative' ? '- Ensure capital preservation targets met' : ''}
+
+## Portfolio Tasks (2-4x Daily)
+- Update equity curve snapshot
+- Check for rebalancing needs
+- Log daily P&L at market close
+
+## Proactive Actions (Without Asking)
+- Update memory with market observations
+- Organize trade logs
+- Generate performance summaries
+
+## Silent Mode (HEARTBEAT_OK)
+- Late night (23:00-08:00 ${state.data.timezone || 'UTC'})
+- Human is clearly busy
+- No significant market events
+- Last check < 30 minutes ago
+
+---
+*Generated for ${state.data.userName || 'Trader'} | Style: ${style}*
+`;
+}
+
 // ============================================================================
 // Onboarding Steps
 // ============================================================================
@@ -739,6 +781,7 @@ Select (1-3):
       fs.writeFileSync(path.join(WORKSPACE_DIR, 'USER.md'), generateUSER(state));
       fs.writeFileSync(path.join(WORKSPACE_DIR, 'AGENTS.md'), generateAGENTS(state));
       fs.writeFileSync(path.join(WORKSPACE_DIR, 'MEMORY.md'), generateMEMORY(state));
+      fs.writeFileSync(path.join(WORKSPACE_DIR, 'HEARTBEAT.md'), generateHEARTBEAT(state));
       
       // Save user config
       config.user = {
@@ -791,6 +834,7 @@ Select (1-3):
 • USER.md - Your profile
 • AGENTS.md - Operating instructions
 • MEMORY.md - Long-term memory
+• HEARTBEAT.md - Periodic task checklist
 
 **Next Steps:**
 1. Run \`kit start\` to launch the gateway
