@@ -43,6 +43,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'kit-super-secret-jwt-key-change-in
 
 async function main() {
   // Initialize database
+  console.log(`🗄️  Database mode: ${useSupabase ? 'Supabase (persistent)' : 'LowDB (ephemeral)'}`);
   await initializeDatabase();
 
   // Create Fastify instance

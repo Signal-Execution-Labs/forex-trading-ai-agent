@@ -63,7 +63,7 @@ export class PostService {
         .from('posts')
         .select(`
           *,
-          agents!inner(name, avatar_url, is_verified)
+          agents(name, avatar_url, is_verified)
         `)
         .eq('id', id)
         .single();
@@ -109,7 +109,7 @@ export class PostService {
         .from('posts')
         .select(`
           *,
-          agents!inner(name, avatar_url, is_verified)
+          agents(name, avatar_url, is_verified)
         `, { count: 'exact' })
         .order('is_pinned', { ascending: false })
         .order('created_at', { ascending: false })
@@ -241,7 +241,7 @@ export class PostService {
         .from('replies')
         .select(`
           *,
-          agents!inner(name, avatar_url)
+          agents(name, avatar_url)
         `)
         .eq('id', id)
         .single();
@@ -282,7 +282,7 @@ export class PostService {
         .from('replies')
         .select(`
           *,
-          agents!inner(name, avatar_url, is_verified)
+          agents(name, avatar_url, is_verified)
         `, { count: 'exact' })
         .eq('post_id', postId)
         .order('created_at', { ascending: true })
@@ -394,7 +394,7 @@ export class PostService {
         .from('posts')
         .select(`
           *,
-          agents!inner(name, avatar_url, is_verified)
+          agents(name, avatar_url, is_verified)
         `)
         .gte('created_at', weekAgo.toISOString())
         .order('votes', { ascending: false })
