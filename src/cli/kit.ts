@@ -1451,6 +1451,13 @@ async function main() {
   }
   
   try {
+    const { registerPortfolioCommand } = await import('./commands/portfolio');
+    registerPortfolioCommand(program);
+  } catch {
+    // Portfolio module not available
+  }
+  
+  try {
     const { createDiagnosticsCommand } = await import('./commands/diagnostics');
     program.addCommand(createDiagnosticsCommand());
   } catch {
