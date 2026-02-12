@@ -98,6 +98,9 @@ program
   .option('-h, --host <host>', 'Host to bind to', '127.0.0.1')
   .option('-d, --detach', 'Run in background')
   .option('-t, --token <token>', 'Gateway auth token')
+  .option('--autonomous', 'Start in autonomous mode (24/7 monitoring)')
+  .option('--telegram', 'Enable Telegram notifications')
+  .option('--no-dashboard', 'Do not open dashboard in browser')
   .action(async (options) => {
     const { createGatewayServer } = await import('../gateway/server');
     const { loadConfig, DEFAULT_CONFIG } = await import('../config');
@@ -163,9 +166,50 @@ program
     
     await gateway.start();
     
+    // Start autonomous agent if requested
+    let autonomousAgent: any = null;
+    if (options.autonomous) {
+      console.log('\n🤖 Starting Autonomous Agent...');
+      const { getAutonomousAgent } = await import('../core/autonomous-agent');
+      autonomousAgent = getAutonomousAgent();
+      
+      // Configure Telegram if enabled
+      if (options.telegram || process.env.TELEGRAM_BOT_TOKEN) {
+        const token = process.env.TELEGRAM_BOT_TOKEN;
+        const chatId = process.env.TELEGRAM_CHAT_ID;
+        if (token && chatId) {
+          autonomousAgent.updateSettings({ telegramChatId: chatId });
+          console.log('✅ Telegram notifications enabled');
+          
+          // Set up notification handler
+          autonomousAgent.on('notification', async (message: string) => {
+            try {
+              await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  chat_id: chatId,
+                  text: message,
+                  parse_mode: 'Markdown',
+                }),
+              });
+            } catch (e) {
+              console.error('Failed to send Telegram notification:', e);
+            }
+          });
+        }
+      }
+      
+      const result = await autonomousAgent.start();
+      console.log(result);
+    }
+    
     // Graceful shutdown
     const shutdown = async () => {
       console.log('\n👋 Shutting down K.I.T. Gateway...');
+      if (autonomousAgent) {
+        await autonomousAgent.stop();
+      }
       await gateway.stop();
       process.exit(0);
     };
