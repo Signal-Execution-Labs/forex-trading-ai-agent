@@ -5,7 +5,12 @@ import websocket from '@fastify/websocket';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 
-import { initializeDatabase } from './db/database.ts';
+import { initializeDatabase as initLowDb } from './db/database.ts';
+import { initializeDatabase as initSupabase } from './db/supabase.ts';
+
+// Use Supabase if configured, otherwise fall back to lowdb
+const useSupabase = !!process.env.SUPABASE_URL;
+const initializeDatabase = useSupabase ? initSupabase : initLowDb;
 import { agentRoutes } from './routes/agents.ts';
 import { strategyRoutes } from './routes/strategies.ts';
 import { signalRoutes, signalWebSocket } from './routes/signals.ts';
