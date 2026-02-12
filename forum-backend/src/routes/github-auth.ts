@@ -5,6 +5,7 @@
 
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { GitHubAuthService } from '../services/github-auth.service.ts';
+import { UserService } from '../services/user.service.ts';
 
 export async function githubAuthRoutes(fastify: FastifyInstance) {
   /**
@@ -73,41 +74,6 @@ export async function githubAuthRoutes(fastify: FastifyInstance) {
           source: { type: 'string', description: 'Source app (kitbot or kithub)' },
         },
       },
-      response: {
-        200: {
-          type: 'object',
-          properties: {
-            success: { type: 'boolean' },
-            user: {
-              type: 'object',
-              properties: {
-                id: { type: 'number' },
-                login: { type: 'string' },
-                name: { type: 'string' },
-                avatar_url: { type: 'string' },
-                accountAgeDays: { type: 'number' },
-              },
-            },
-            token: { type: 'string', description: 'JWT token for KitHub' },
-          },
-        },
-        400: {
-          type: 'object',
-          properties: {
-            error: { type: 'string' },
-            message: { type: 'string' },
-          },
-        },
-        403: {
-          type: 'object',
-          properties: {
-            error: { type: 'string' },
-            message: { type: 'string' },
-            accountAge: { type: 'number' },
-            requiredAge: { type: 'number' },
-          },
-        },
-      },
     },
   }, async (request: FastifyRequest<{ Body: { code: string; state?: string; source?: string } }>, reply: FastifyReply) => {
     const { code, state, source } = request.body;
@@ -151,8 +117,20 @@ export async function githubAuthRoutes(fastify: FastifyInstance) {
       });
     }
 
-    // Generate JWT token for KitHub
+    // Find or create user in database
+    const dbUser = await UserService.findOrCreateByGitHub({
+      id: githubUser.id,
+      login: githubUser.login,
+      email: githubUser.email,
+      name: githubUser.name,
+      avatar_url: githubUser.avatar_url,
+    });
+
+    console.log('GitHub login - dbUser:', dbUser ? `created/found with ID ${dbUser.id}` : 'FAILED to create');
+
+    // Generate JWT token with userId for authenticated routes
     const jwtToken = fastify.jwt.sign({
+      userId: dbUser?.id,  // Supabase UUID for journal routes
       githubId: githubUser.id,
       login: githubUser.login,
       name: githubUser.name,
@@ -162,9 +140,11 @@ export async function githubAuthRoutes(fastify: FastifyInstance) {
     return {
       success: true,
       user: {
-        id: githubUser.id,
+        id: dbUser?.id || `github_${githubUser.id}`,  // Use DB UUID if available
+        githubId: githubUser.id,
         login: githubUser.login,
         name: githubUser.name,
+        email: githubUser.email,
         avatar_url: githubUser.avatar_url,
         accountAgeDays,
       },
@@ -181,23 +161,6 @@ export async function githubAuthRoutes(fastify: FastifyInstance) {
       description: 'Get current authenticated user',
       tags: ['Auth'],
       security: [{ bearerAuth: [] }],
-      response: {
-        200: {
-          type: 'object',
-          properties: {
-            githubId: { type: 'number' },
-            login: { type: 'string' },
-            name: { type: 'string' },
-            avatar: { type: 'string' },
-          },
-        },
-        401: {
-          type: 'object',
-          properties: {
-            error: { type: 'string' },
-          },
-        },
-      },
     },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
