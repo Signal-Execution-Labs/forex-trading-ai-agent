@@ -478,15 +478,34 @@ K.I.T. is now monitoring markets 24/7.`;
     const now = new Date();
     this.state.lastHeartbeat = now.toISOString();
     
+    // Check active hours (skip during quiet time)
+    const hour = now.getHours();
+    const quietHoursStart = 23;
+    const quietHoursEnd = 7;
+    const isQuietHours = hour >= quietHoursStart || hour < quietHoursEnd;
+    
     try {
-      // 1. Check price alerts
+      // Load HEARTBEAT.md checklist (like OpenClaw)
+      let heartbeatChecklist: string | null = null;
+      try {
+        const { getHeartbeatChecklist, appendToMemory } = require('./workspace-loader');
+        heartbeatChecklist = getHeartbeatChecklist();
+      } catch (e) {
+        // Workspace loader not available, continue with defaults
+      }
+      
+      // 1. Check price alerts (always)
       await this.checkPriceAlerts();
       
-      // 2. Scan for opportunities
-      await this.scanOpportunities();
+      // 2. Scan for opportunities (skip during quiet hours unless urgent)
+      if (!isQuietHours) {
+        await this.scanOpportunities();
+      }
       
-      // 3. Check if rebalance needed
-      await this.checkRebalance();
+      // 3. Check if rebalance needed (skip during quiet hours)
+      if (!isQuietHours) {
+        await this.checkRebalance();
+      }
       
       // 4. Check passive income (claims, compounds)
       await this.checkPassiveIncome();
@@ -498,6 +517,12 @@ K.I.T. is now monitoring markets 24/7.`;
       if (now.getHours() === 0 && now.getMinutes() === 0) {
         this.state.tradesToday = 0;
         this.state.currentDailyPnL = 0;
+        
+        // Log to daily memory
+        try {
+          const { appendToMemory } = require('./workspace-loader');
+          appendToMemory('Daily counters reset. New trading day started.');
+        } catch (e) {}
       }
       
       saveState(this.state);

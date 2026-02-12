@@ -439,9 +439,20 @@ export class ToolEnabledChatHandler {
     const mt5Tools = tools.filter((t: { definition: { name: string } }) => t.definition.name.startsWith('mt5_'));
     console.log(`   MT5 Tools available: ${mt5Tools.length > 0 ? mt5Tools.map((t: { definition: { name: string } }) => t.definition.name).join(', ') : 'NONE'}`);
     
+    // Load workspace context (like OpenClaw)
+    let workspaceContext = '';
+    try {
+      const { buildWorkspacePrompt, ensureWorkspace } = require('../core/workspace-loader');
+      ensureWorkspace();
+      workspaceContext = buildWorkspacePrompt(true);
+      console.log('   ✅ Workspace context loaded');
+    } catch (e) {
+      console.log('   ⚠️ Workspace loader not available:', e);
+    }
+    
     this.config = {
       model: config?.model || 'gpt-4o-mini',
-      systemPrompt: config?.systemPrompt || DEFAULT_SYSTEM_PROMPT,
+      systemPrompt: (config?.systemPrompt || DEFAULT_SYSTEM_PROMPT) + workspaceContext,
       maxTokens: config?.maxTokens || 4096,
       temperature: config?.temperature || 0.7,
     };
