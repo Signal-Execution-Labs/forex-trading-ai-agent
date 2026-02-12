@@ -91,7 +91,7 @@ export class LLMClient extends EventEmitter {
   constructor(config: LLMClientConfig = {}) {
     super();
     this.config = {
-      defaultProvider: config.defaultProvider || 'anthropic',
+      defaultProvider: config.defaultProvider || 'openai',  // Default to OpenAI (matches K.I.T. config)
       defaultModel: config.defaultModel || 'gpt-4o-mini',
       timeout: config.timeout || 60000,
       ...config,

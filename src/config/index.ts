@@ -35,8 +35,10 @@ export interface MemoryConfig {
 }
 
 export interface AIConfig {
-  defaultProvider?: string;
-  defaultModel?: string;
+  provider?: string;       // Short form (from config.json)
+  model?: string;          // Short form (from config.json)
+  defaultProvider?: string;  // Long form
+  defaultModel?: string;     // Long form
   apiKey?: string;  // Top-level API key (convenience)
   providers?: Record<string, { apiKey?: string; enabled?: boolean; model?: string }>;
 }

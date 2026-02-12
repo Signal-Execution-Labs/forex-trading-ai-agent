@@ -177,12 +177,15 @@ export class AgentRunner extends EventEmitter {
     const kitConfig = loadConfig();
     
     // Determine model: CLI arg > config.ai > hardcoded default
+    // Support both 'provider'/'model' and 'defaultProvider'/'defaultModel' in config
     let effectiveModel = config.model;
-    if (!effectiveModel && kitConfig.ai?.defaultProvider && kitConfig.ai?.defaultModel) {
-      effectiveModel = `${kitConfig.ai.defaultProvider}/${kitConfig.ai.defaultModel}`;
+    const cfgProvider = kitConfig.ai?.provider || kitConfig.ai?.defaultProvider;
+    const cfgModel = kitConfig.ai?.model || kitConfig.ai?.defaultModel;
+    if (!effectiveModel && cfgProvider && cfgModel) {
+      effectiveModel = `${cfgProvider}/${cfgModel}`;
     }
     if (!effectiveModel) {
-      effectiveModel = 'openai/gpt-4o-mini'; // New default: OpenAI instead of Anthropic
+      effectiveModel = 'openai/gpt-4o-mini'; // Default: OpenAI
     }
     
     // Update config with effective model
@@ -444,7 +447,7 @@ export class AgentRunner extends EventEmitter {
   private extractProvider(modelRef?: string): string {
     if (!modelRef) return 'openai';
     const parts = modelRef.split('/');
-    return parts.length > 1 ? parts[0] : 'anthropic';
+    return parts.length > 1 ? parts[0] : 'openai';  // Default to OpenAI
   }
 
   private extractModel(modelRef?: string): string {
