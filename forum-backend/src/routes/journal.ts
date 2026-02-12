@@ -688,6 +688,212 @@ export async function journalRoutes(fastify: FastifyInstance) {
       return reply.code(400).send({ success: false, error: error.message });
     }
   });
+  
+  // -------------------------------------------------------------------------
+  // MT5 / BROKER SYNC (Auto-import from K.I.T.)
+  // -------------------------------------------------------------------------
+  
+  // Sync trades from MT5 (called by K.I.T. bot)
+  fastify.post('/sync/mt5', async (request: FastifyRequest, reply: FastifyReply) => {
+    ensureJournalCollections();
+    const body = request.body as any;
+    const { accountId, trades: incomingTrades, syncKey } = body;
+    
+    if (!accountId || !incomingTrades) {
+      return reply.code(400).send({ success: false, error: 'Missing accountId or trades' });
+    }
+    
+    const data = db.data as any;
+    const account = data.tradingAccounts.find((a: TradingAccount) => a.id === accountId);
+    
+    if (!account) {
+      return reply.code(404).send({ success: false, error: 'Account not found' });
+    }
+    
+    // Verify sync key if set
+    if (account.syncKey && account.syncKey !== syncKey) {
+      return reply.code(401).send({ success: false, error: 'Invalid sync key' });
+    }
+    
+    let imported = 0;
+    let updated = 0;
+    let skipped = 0;
+    
+    for (const trade of incomingTrades) {
+      // Check if trade already exists by MT5 ticket/order ID
+      const existingIndex = data.journalEntries.findIndex((t: JournalEntry) => 
+        t.accountId === accountId && t.externalId === trade.ticket?.toString()
+      );
+      
+      const direction = trade.type === 0 || trade.type === 'BUY' ? 'LONG' : 'SHORT';
+      const entryPrice = trade.price_open || trade.entryPrice;
+      const exitPrice = trade.price_current || trade.exitPrice;
+      const quantity = trade.volume || trade.quantity || trade.lots;
+      const pnl = trade.profit || trade.pnl || 0;
+      const commission = trade.commission || 0;
+      const swap = trade.swap || 0;
+      const netPnl = pnl + commission + swap;
+      
+      if (existingIndex >= 0) {
+        // Update existing trade
+        const existing = data.journalEntries[existingIndex];
+        data.journalEntries[existingIndex] = {
+          ...existing,
+          exitPrice: exitPrice || existing.exitPrice,
+          exitTime: trade.time_close || trade.exitTime || existing.exitTime,
+          pnl: netPnl,
+          pnlPercent: entryPrice ? ((exitPrice - entryPrice) / entryPrice) * 100 * (direction === 'LONG' ? 1 : -1) : 0,
+          isWin: netPnl > 0,
+          commission,
+          swap,
+          status: trade.time_close || trade.exitTime ? 'closed' : 'open',
+          updatedAt: new Date().toISOString(),
+        };
+        updated++;
+      } else if (trade.ticket || trade.order) {
+        // Insert new trade
+        const newTrade: JournalEntry = {
+          id: uuidv4(),
+          userId: account.userId,
+          accountId,
+          externalId: (trade.ticket || trade.order)?.toString(),
+          symbol: trade.symbol,
+          direction: direction as 'LONG' | 'SHORT',
+          entryPrice,
+          exitPrice: exitPrice || undefined,
+          quantity,
+          stopLoss: trade.sl,
+          takeProfit: trade.tp,
+          entryTime: trade.time_setup || trade.time_open || trade.entryTime || new Date().toISOString(),
+          exitTime: trade.time_close || trade.exitTime,
+          pnl: netPnl,
+          pnlPercent: entryPrice && exitPrice ? ((exitPrice - entryPrice) / entryPrice) * 100 * (direction === 'LONG' ? 1 : -1) : 0,
+          isWin: netPnl > 0,
+          commission,
+          swap,
+          magic: trade.magic,
+          comment: trade.comment,
+          status: trade.time_close || trade.exitTime ? 'closed' : 'open',
+          source: 'mt5',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        data.journalEntries.push(newTrade);
+        imported++;
+      } else {
+        skipped++;
+      }
+    }
+    
+    // Update account connection status
+    const accountIndex = data.tradingAccounts.findIndex((a: TradingAccount) => a.id === accountId);
+    if (accountIndex >= 0) {
+      data.tradingAccounts[accountIndex].isConnected = true;
+      data.tradingAccounts[accountIndex].lastSyncAt = new Date().toISOString();
+    }
+    
+    await updateAccountStats(accountId);
+    await db.write();
+    
+    return { 
+      success: true, 
+      imported, 
+      updated, 
+      skipped,
+      total: imported + updated,
+      message: `Synced ${imported + updated} trades (${imported} new, ${updated} updated, ${skipped} skipped)` 
+    };
+  });
+  
+  // Connect MT5 account (store credentials for K.I.T. to use)
+  fastify.post('/:id/connect/mt5', async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+    ensureJournalCollections();
+    const { id } = request.params;
+    const body = request.body as any;
+    const data = db.data as any;
+    
+    const index = data.tradingAccounts.findIndex((a: TradingAccount) => a.id === id);
+    if (index === -1) return reply.code(404).send({ success: false, error: 'Account not found' });
+    
+    // Generate sync key for secure syncing
+    const syncKey = uuidv4();
+    
+    data.tradingAccounts[index] = {
+      ...data.tradingAccounts[index],
+      connectionType: 'mt5',
+      mt5Server: body.server,
+      mt5Login: body.login,
+      // Note: Password should be stored encrypted in production!
+      mt5Password: body.password,
+      broker: body.broker || 'RoboForex',
+      syncKey,
+      updatedAt: new Date().toISOString(),
+    };
+    
+    await db.write();
+    
+    return { 
+      success: true, 
+      message: 'MT5 credentials saved. Use K.I.T. to sync trades.',
+      syncKey,
+      account: {
+        ...data.tradingAccounts[index],
+        mt5Password: '***hidden***',
+      },
+    };
+  });
+  
+  // Disconnect MT5
+  fastify.delete('/:id/connect/mt5', async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+    ensureJournalCollections();
+    const { id } = request.params;
+    const data = db.data as any;
+    
+    const index = data.tradingAccounts.findIndex((a: TradingAccount) => a.id === id);
+    if (index === -1) return reply.code(404).send({ success: false, error: 'Account not found' });
+    
+    data.tradingAccounts[index] = {
+      ...data.tradingAccounts[index],
+      connectionType: 'manual',
+      mt5Server: undefined,
+      mt5Login: undefined,
+      mt5Password: undefined,
+      syncKey: undefined,
+      isConnected: false,
+      updatedAt: new Date().toISOString(),
+    };
+    
+    await db.write();
+    return { success: true, message: 'MT5 disconnected' };
+  });
+  
+  // Get sync status
+  fastify.get('/:id/sync/status', async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+    ensureJournalCollections();
+    const { id } = request.params;
+    const data = db.data as any;
+    
+    const account = data.tradingAccounts.find((a: TradingAccount) => a.id === id);
+    if (!account) return reply.code(404).send({ success: false, error: 'Account not found' });
+    
+    const trades = data.journalEntries.filter((t: JournalEntry) => t.accountId === id);
+    const mt5Trades = trades.filter((t: JournalEntry) => t.source === 'mt5');
+    
+    return { 
+      success: true, 
+      status: {
+        connectionType: account.connectionType,
+        isConnected: account.isConnected,
+        broker: account.broker,
+        mt5Server: account.mt5Server,
+        mt5Login: account.mt5Login,
+        lastSyncAt: account.lastSyncAt,
+        totalTrades: trades.length,
+        mt5Trades: mt5Trades.length,
+        manualTrades: trades.length - mt5Trades.length,
+      },
+    };
+  });
 }
 
 export default journalRoutes;

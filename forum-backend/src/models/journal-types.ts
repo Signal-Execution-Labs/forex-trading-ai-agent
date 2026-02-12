@@ -47,10 +47,15 @@ export interface TradingAccount {
   currentDrawdown?: number;
   challengePhase?: 'evaluation' | 'verification' | 'funded';
   // Connection
-  connectionType?: 'manual' | 'mt5_investor' | 'mt5_ea' | 'api';
+  connectionType?: 'manual' | 'mt5' | 'mt5_investor' | 'mt5_ea' | 'api';
   connectionConfig?: string; // JSON
   isConnected: boolean;
   lastSyncAt?: string;
+  // MT5 Connection (for auto-sync)
+  mt5Server?: string;
+  mt5Login?: string;
+  mt5Password?: string; // Should be encrypted!
+  syncKey?: string; // For secure syncing
   // Stats
   totalTrades: number;
   winningTrades: number;
@@ -108,6 +113,7 @@ export interface JournalEntry {
   id: string;
   accountId: string;
   userId: string;
+  externalId?: string; // MT5 ticket/order number
   // Trade basics
   symbol: string;
   direction: 'LONG' | 'SHORT';
@@ -115,6 +121,12 @@ export interface JournalEntry {
   exitPrice?: number;
   quantity: number;
   fees?: number;
+  commission?: number;
+  swap?: number;
+  // MT5 specific
+  magic?: number;
+  comment?: string;
+  source?: 'manual' | 'mt5' | 'api';
   // Calculated
   pnl?: number;
   pnlPercent?: number;
