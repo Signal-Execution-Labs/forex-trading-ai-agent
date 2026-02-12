@@ -7,12 +7,15 @@ import { Command } from 'commander';
 import { createGatewayServer } from '../../gateway/server';
 import { loadConfig } from '../config';
 import chalk from 'chalk';
+import { getAutonomousAgent } from '../../core/autonomous-agent';
 
 export const startCommand = new Command('start')
   .description('Start the K.I.T. Gateway server')
   .option('-p, --port <port>', 'Port to listen on', '18799')
   .option('-c, --config <path>', 'Path to config file')
   .option('--no-dashboard', 'Do not open dashboard')
+  .option('--autonomous', 'Start in autonomous mode (24/7 monitoring)')
+  .option('--telegram', 'Enable Telegram notifications')
   .action(async (options) => {
     console.log(chalk.cyan(`
     ╔═══════════════════════════════════════╗
@@ -60,11 +63,51 @@ export const startCommand = new Command('start')
         }
       }
 
+      // Start autonomous agent if requested
+      if (options.autonomous) {
+        console.log(chalk.cyan('\n🤖 Starting Autonomous Agent...'));
+        const agent = getAutonomousAgent();
+        
+        // Configure Telegram if enabled
+        if (options.telegram || process.env.TELEGRAM_BOT_TOKEN) {
+          const token = process.env.TELEGRAM_BOT_TOKEN;
+          const chatId = process.env.TELEGRAM_CHAT_ID;
+          if (token && chatId) {
+            agent.updateSettings({ telegramChatId: chatId });
+            console.log(chalk.green('✓ Telegram notifications enabled'));
+            
+            // Set up notification handler
+            agent.on('notification', async (message: string) => {
+              try {
+                await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    chat_id: chatId,
+                    text: message,
+                    parse_mode: 'Markdown',
+                  }),
+                });
+              } catch (e) {
+                console.error('Failed to send Telegram notification:', e);
+              }
+            });
+          }
+        }
+        
+        const result = await agent.start();
+        console.log(chalk.green(result));
+      }
+
       console.log(chalk.yellow('\nPress Ctrl+C to stop\n'));
 
       // Handle shutdown
       process.on('SIGINT', async () => {
         console.log(chalk.gray('\nShutting down...'));
+        if (options.autonomous) {
+          const agent = getAutonomousAgent();
+          await agent.stop();
+        }
         process.exit(0);
       });
 
