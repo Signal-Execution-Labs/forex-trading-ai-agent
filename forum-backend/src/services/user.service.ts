@@ -2,7 +2,7 @@
  * User Service - Manages GitHub users in Supabase
  */
 
-import { getSupabase } from '../db/getSupabase().ts';
+import { getSupabase } from '../db/supabase.ts';
 
 export interface User {
   id: string;
@@ -41,7 +41,7 @@ export class UserService {
   }): Promise<User | null> {
     try {
       // First try to find existing user
-      const { data: existing, error: findError } = await supabase
+      const { data: existing, error: findError } = await getSupabase()
         .from('users')
         .select('*')
         .eq('github_id', githubUser.id)
@@ -49,7 +49,7 @@ export class UserService {
 
       if (existing && !findError) {
         // Update user info (name, avatar might have changed)
-        const { data: updated, error: updateError } = await supabase
+        const { data: updated, error: updateError } = await getSupabase()
           .from('users')
           .update({
             username: githubUser.login,
@@ -66,7 +66,7 @@ export class UserService {
       }
 
       // Create new user
-      const { data: newUser, error: createError } = await supabase
+      const { data: newUser, error: createError } = await getSupabase()
         .from('users')
         .insert({
           github_id: githubUser.id,
@@ -94,7 +94,7 @@ export class UserService {
    * Get user by ID
    */
   static async getById(id: string): Promise<User | null> {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('users')
       .select('*')
       .eq('id', id)
@@ -108,7 +108,7 @@ export class UserService {
    * Get user by GitHub ID
    */
   static async getByGitHubId(githubId: number): Promise<User | null> {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('users')
       .select('*')
       .eq('github_id', githubId)
@@ -132,7 +132,7 @@ export class UserService {
     broker?: string;
     account_type?: string;
   }): Promise<PlatformConnection | null> {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('platform_connections')
       .insert({
         user_id: userId,
@@ -157,7 +157,7 @@ export class UserService {
    * Get all connections for a user
    */
   static async getConnections(userId: string): Promise<PlatformConnection[]> {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('platform_connections')
       .select('*')
       .eq('user_id', userId)
@@ -179,7 +179,7 @@ export class UserService {
    * Get a single connection with full credentials (for syncing)
    */
   static async getConnectionWithCredentials(connectionId: string, userId: string): Promise<PlatformConnection | null> {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('platform_connections')
       .select('*')
       .eq('id', connectionId)
@@ -194,7 +194,7 @@ export class UserService {
    * Delete a connection
    */
   static async deleteConnection(connectionId: string, userId: string): Promise<boolean> {
-    const { error } = await supabase
+    const { error } = await getSupabase()
       .from('platform_connections')
       .delete()
       .eq('id', connectionId)
@@ -207,7 +207,7 @@ export class UserService {
    * Update last sync time
    */
   static async updateLastSync(connectionId: string): Promise<void> {
-    await supabase
+    await getSupabase()
       .from('platform_connections')
       .update({ last_sync_at: new Date().toISOString() })
       .eq('id', connectionId);
