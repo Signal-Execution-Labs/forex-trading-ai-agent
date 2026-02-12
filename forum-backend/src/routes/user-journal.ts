@@ -63,6 +63,24 @@ export async function userJournalRoutes(fastify: FastifyInstance) {
     return reply.status(201).send({ success: true, account });
   });
 
+  /**
+   * DELETE /api/user/journal/accounts/:id
+   * Delete an account and all its entries
+   */
+  fastify.delete('/accounts/:id', async (request: FastifyRequest<{
+    Params: { id: string }
+  }>, reply) => {
+    const userId = await getUserId(request);
+    if (!userId) return reply.status(401).send({ error: 'Unauthorized' });
+
+    const success = await JournalService.deleteAccount(request.params.id, userId);
+    if (!success) {
+      return reply.status(404).send({ error: 'Account not found' });
+    }
+
+    return { success: true };
+  });
+
   // ========================================
   // ENTRIES (TRADES)
   // ========================================
