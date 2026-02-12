@@ -259,6 +259,15 @@ export class JournalService {
     return !error;
   }
 
+  static async linkAccountToConnection(accountId: string, connectionId: string): Promise<boolean> {
+    const { error } = await getSupabase()
+      .from('journal_accounts')
+      .update({ connection_id: connectionId, is_connected: true })
+      .eq('id', accountId);
+
+    return !error;
+  }
+
   // ============================================
   // ENTRIES (TRADES)
   // ============================================

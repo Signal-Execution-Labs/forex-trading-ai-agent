@@ -356,42 +356,47 @@ export async function connectionsRoutes(fastify: FastifyInstance) {
             return reply.status(400).send({ error: resultBF.error });
           }
 
-          // Find linked journal account and import trades
+          // Find or create linked journal account
+          const accounts = await JournalService.getAccounts(user.userId!);
+          let linkedAccount = accounts.find(a => 
+            a.connection_id === connection.id || 
+            a.broker?.toLowerCase().includes('binaryfaster') ||
+            a.name?.toLowerCase().includes('binaryfaster')
+          );
+          
+          // Always update balance if we have an account - even without trades
+          if (linkedAccount && resultBF.balance) {
+            await JournalService.updateAccountBalance(linkedAccount.id, resultBF.balance.real);
+            // Link connection_id if not already set
+            if (!linkedAccount.connection_id) {
+              await JournalService.linkAccountToConnection(linkedAccount.id, connection.id);
+            }
+          }
+
+          // Import trades if we have them and have a linked account
           let importedCount = 0;
-          if (resultBF.trades && resultBF.trades.length > 0) {
-            // Get journal accounts for this user that have this connection
-            const accounts = await JournalService.getAccounts(user.userId!);
-            const linkedAccount = accounts.find(a => a.connection_id === connection.id || a.broker?.toLowerCase().includes('binaryfaster'));
-            
-            if (linkedAccount) {
-              // Import each trade into journal entries
-              for (const trade of resultBF.trades) {
-                try {
-                  await JournalService.createEntry(user.userId!, {
-                    account_id: linkedAccount.id,
-                    symbol: trade.symbol,
-                    direction: trade.direction,
-                    entry_time: trade.entry_date,
-                    entry_price: trade.entry_price,
-                    exit_time: trade.entry_date, // Binary options close immediately
-                    exit_price: trade.exit_price || trade.entry_price,
-                    quantity: trade.quantity,
-                    pnl: trade.pnl,
-                    status: 'closed',
-                    source: 'binaryfaster',
-                    notes: trade.notes,
-                    setup: trade.setup,
-                  });
-                  importedCount++;
-                } catch (e) {
-                  // Skip duplicates or errors
-                  console.log('Skip trade import:', e);
-                }
-              }
-              
-              // Update account balance
-              if (resultBF.balance) {
-                await JournalService.updateAccountBalance(linkedAccount.id, resultBF.balance.real);
+          if (linkedAccount && resultBF.trades && resultBF.trades.length > 0) {
+            for (const trade of resultBF.trades) {
+              try {
+                await JournalService.createEntry(user.userId!, {
+                  account_id: linkedAccount.id,
+                  symbol: trade.symbol,
+                  direction: trade.direction,
+                  entry_time: trade.entry_date,
+                  entry_price: trade.entry_price,
+                  exit_time: trade.entry_date, // Binary options close immediately
+                  exit_price: trade.exit_price || trade.entry_price,
+                  quantity: trade.quantity,
+                  pnl: trade.pnl,
+                  status: 'closed',
+                  source: 'binaryfaster',
+                  notes: trade.notes,
+                  setup: trade.setup,
+                });
+                importedCount++;
+              } catch (e) {
+                // Skip duplicates or errors
+                console.log('Skip trade import:', e);
               }
             }
           }
