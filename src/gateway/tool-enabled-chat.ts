@@ -1292,6 +1292,7 @@ Your personal AI financial agent is ready.
 
   /**
    * Call LLM with tool support
+   * Respects config provider setting, not just API key presence
    */
   private async callLLMWithTools(
     messages: ChatMessage[],
@@ -1299,18 +1300,40 @@ Your personal AI financial agent is ready.
     sendToolCall: (name: string, args: any) => void,
     sendToolResult: (name: string, result: any) => void
   ): Promise<string> {
-    const anthropicKey = process.env.ANTHROPIC_API_KEY;
+    // Load config to check configured provider
+    let configuredProvider = 'openai'; // Default to OpenAI
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      const os = require('os');
+      const configPath = path.join(os.homedir(), '.kit', 'config.json');
+      if (fs.existsSync(configPath)) {
+        const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        configuredProvider = config.ai?.provider || 'openai';
+      }
+    } catch (e) {
+      // Use default
+    }
+
+    // Use configured provider first
+    if (configuredProvider === 'openai' && process.env.OPENAI_API_KEY) {
+      return this.callOpenAI(messages, sendChunk, sendToolCall, sendToolResult);
+    }
     
-    if (anthropicKey) {
+    if (configuredProvider === 'anthropic' && process.env.ANTHROPIC_API_KEY) {
       return this.callAnthropic(messages, sendChunk, sendToolCall, sendToolResult);
     }
 
-    const openaiKey = process.env.OPENAI_API_KEY;
-    if (openaiKey) {
+    // Fallback: check any available API key
+    if (process.env.OPENAI_API_KEY) {
       return this.callOpenAI(messages, sendChunk, sendToolCall, sendToolResult);
     }
+    
+    if (process.env.ANTHROPIC_API_KEY) {
+      return this.callAnthropic(messages, sendChunk, sendToolCall, sendToolResult);
+    }
 
-    throw new Error('No AI API key configured');
+    throw new Error('No AI API key configured. Set OPENAI_API_KEY or ANTHROPIC_API_KEY');
   }
 
   /**
