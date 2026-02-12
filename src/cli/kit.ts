@@ -93,13 +93,13 @@ program
 program
   .command('start')
   .alias('gateway')
-  .description('Start the K.I.T. gateway')
+  .description('Start the K.I.T. gateway (autonomous mode + all channels)')
   .option('-p, --port <port>', 'Port to listen on', '18799')
   .option('-h, --host <host>', 'Host to bind to', '127.0.0.1')
   .option('-d, --detach', 'Run in background')
   .option('-t, --token <token>', 'Gateway auth token')
-  .option('--autonomous', 'Start in autonomous mode (24/7 monitoring)')
-  .option('--telegram', 'Enable Telegram notifications')
+  .option('--no-autonomous', 'Disable autonomous mode')
+  .option('--no-telegram', 'Disable Telegram channel')
   .option('--no-dashboard', 'Do not open dashboard in browser')
   .action(async (options) => {
     const { createGatewayServer } = await import('../gateway/server');
@@ -166,38 +166,37 @@ program
     
     await gateway.start();
     
-    // Start autonomous agent if requested
+    // Start autonomous agent (DEFAULT: ON - use --no-autonomous to disable)
     let autonomousAgent: any = null;
-    if (options.autonomous) {
+    if (options.autonomous !== false) {
       console.log('\n🤖 Starting Autonomous Agent...');
       const { getAutonomousAgent } = await import('../core/autonomous-agent');
       autonomousAgent = getAutonomousAgent();
       
-      // Configure Telegram if enabled
-      if (options.telegram || process.env.TELEGRAM_BOT_TOKEN) {
-        const token = process.env.TELEGRAM_BOT_TOKEN;
-        const chatId = process.env.TELEGRAM_CHAT_ID;
-        if (token && chatId) {
-          autonomousAgent.updateSettings({ telegramChatId: chatId });
-          console.log('✅ Telegram notifications enabled');
-          
-          // Set up notification handler
-          autonomousAgent.on('notification', async (message: string) => {
-            try {
-              await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  chat_id: chatId,
-                  text: message,
-                  parse_mode: 'Markdown',
-                }),
-              });
-            } catch (e) {
-              console.error('Failed to send Telegram notification:', e);
-            }
-          });
-        }
+      // Configure Telegram from config or env (DEFAULT: ON if configured)
+      const telegramToken = process.env.TELEGRAM_BOT_TOKEN || config.channels?.telegram?.token;
+      const telegramChatId = process.env.TELEGRAM_CHAT_ID || config.channels?.telegram?.chatId;
+      
+      if (options.telegram !== false && telegramToken && telegramChatId) {
+        autonomousAgent.updateSettings({ telegramChatId: telegramChatId });
+        console.log('✅ Telegram notifications enabled');
+        
+        // Set up notification handler
+        autonomousAgent.on('notification', async (message: string) => {
+          try {
+            await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                chat_id: telegramChatId,
+                text: message,
+                parse_mode: 'Markdown',
+              }),
+            });
+          } catch (e) {
+            console.error('Failed to send Telegram notification:', e);
+          }
+        });
       }
       
       const result = await autonomousAgent.start();
