@@ -194,6 +194,24 @@ export class JournalService {
     return !error;
   }
 
+  static async updateAccountBalance(accountId: string, balance: number): Promise<boolean> {
+    const { error } = await getSupabase()
+      .from('journal_accounts')
+      .update({ current_balance: balance })
+      .eq('id', accountId);
+
+    return !error;
+  }
+
+  static async updateAccountBroker(accountId: string, broker: string): Promise<boolean> {
+    const { error } = await getSupabase()
+      .from('journal_accounts')
+      .update({ broker })
+      .eq('id', accountId);
+
+    return !error;
+  }
+
   // ============================================
   // ENTRIES (TRADES)
   // ============================================
