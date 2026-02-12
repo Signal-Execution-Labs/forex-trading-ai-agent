@@ -1437,6 +1437,13 @@ async function main() {
   }
   
   try {
+    const { registerMessageCommand } = await import('./commands/message');
+    registerMessageCommand(program);
+  } catch {
+    // Message module not available
+  }
+  
+  try {
     const { createDiagnosticsCommand } = await import('./commands/diagnostics');
     program.addCommand(createDiagnosticsCommand());
   } catch {
