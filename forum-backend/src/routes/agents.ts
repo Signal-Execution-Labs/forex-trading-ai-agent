@@ -26,7 +26,7 @@ export async function agentRoutes(fastify: FastifyInstance) {
       const parsed = AgentRegisterSchema.parse(request.body);
       
       // Check if name already exists
-      const existing = AgentService.getByName(parsed.name);
+      const existing = await AgentService.getByNameAsync(parsed.name);
       if (existing) {
         return reply.code(409).send({
           success: false,
@@ -79,7 +79,7 @@ export async function agentRoutes(fastify: FastifyInstance) {
     },
   }, async (request: FastifyRequest<{ Querystring: { page?: number; limit?: number; search?: string } }>, reply: FastifyReply) => {
     const { page, limit, search } = request.query;
-    const { agents, total } = AgentService.list({ page, limit, search });
+    const { agents, total } = await AgentService.list({ page, limit, search });
     
     return {
       success: true,
@@ -107,7 +107,7 @@ export async function agentRoutes(fastify: FastifyInstance) {
       },
     },
   }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
-    const agent = AgentService.getById(request.params.id);
+    const agent = await AgentService.getById(request.params.id);
     
     if (!agent) {
       return reply.code(404).send({
@@ -206,3 +206,4 @@ export async function agentRoutes(fastify: FastifyInstance) {
     };
   });
 }
+

@@ -65,7 +65,7 @@ export async function postRoutes(fastify: FastifyInstance) {
     },
   }, async (request: FastifyRequest<{ Querystring: { page?: number; limit?: number; category?: string; agent_id?: string; search?: string } }>, reply: FastifyReply) => {
     const { page, limit, category, agent_id, search } = request.query;
-    const { posts, total } = PostService.list({ page, limit, category, agent_id, search });
+    const { posts, total } = await PostService.list({ page, limit, category, agent_id, search });
     
     // Parse tags for each post
     const postsWithTags = posts.map(post => ({
@@ -107,7 +107,7 @@ export async function postRoutes(fastify: FastifyInstance) {
       },
     },
   }, async (request: FastifyRequest<{ Params: { id: string }; Querystring: { include_replies?: boolean; replies_page?: number; replies_limit?: number } }>, reply: FastifyReply) => {
-    const post = PostService.getById(request.params.id);
+    const post = await PostService.getById(request.params.id);
     
     if (!post) {
       return reply.code(404).send({
@@ -122,7 +122,7 @@ export async function postRoutes(fastify: FastifyInstance) {
     };
 
     if (request.query.include_replies !== false) {
-      const { replies, total } = PostService.getReplies(request.params.id, {
+      const { replies, total } = await PostService.getReplies(request.params.id, {
         page: request.query.replies_page,
         limit: request.query.replies_limit,
       });
@@ -163,7 +163,7 @@ export async function postRoutes(fastify: FastifyInstance) {
       },
     },
   }, async (request: FastifyRequest<{ Params: { id: string }; Body: { content: string } }>, reply: FastifyReply) => {
-    const post = PostService.getById(request.params.id);
+    const post = await PostService.getById(request.params.id);
     
     if (!post) {
       return reply.code(404).send({
@@ -230,7 +230,7 @@ export async function postRoutes(fastify: FastifyInstance) {
       tags: ['Forum'],
     },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
-    const categories = PostService.getCategories();
+    const categories = await PostService.getCategories();
     
     return {
       success: true,
@@ -251,7 +251,7 @@ export async function postRoutes(fastify: FastifyInstance) {
       },
     },
   }, async (request: FastifyRequest<{ Querystring: { limit?: number } }>, reply: FastifyReply) => {
-    const trending = PostService.getTrending(request.query.limit || 10);
+    const trending = await PostService.getTrending(request.query.limit || 10);
     
     const postsWithTags = trending.map(post => ({
       ...post,
@@ -264,3 +264,4 @@ export async function postRoutes(fastify: FastifyInstance) {
     };
   });
 }
+
