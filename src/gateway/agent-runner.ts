@@ -392,6 +392,22 @@ export class AgentRunner extends EventEmitter {
       console.log(`   Proactive Agent Tools: skipped (${err})`);
     }
 
+    // Register AUTONOMOUS Agent Tools (full autonomous system!)
+    try {
+      const { AUTONOMOUS_TOOLS, handleAutonomousTool } = require('../tools/autonomous-tools');
+      for (const tool of AUTONOMOUS_TOOLS) {
+        const handler = async (args: any) => handleAutonomousTool(tool.name, args);
+        this.toolHandlers.set(tool.name, handler);
+        this.chatManager.registerTool(
+          { name: tool.name, description: tool.description, parameters: tool.parameters },
+          handler
+        );
+      }
+      console.log(`   🚀 Autonomous Agent Tools: ${AUTONOMOUS_TOOLS.length} loaded`);
+    } catch (err) {
+      console.log(`   Autonomous Agent Tools: skipped (${err})`);
+    }
+
     console.log(`   Total Tools: ${this.toolHandlers.size} registered`);
     
     // List all registered tools for debugging
