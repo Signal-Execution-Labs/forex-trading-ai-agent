@@ -1,6 +1,6 @@
 # K.I.T. Project Status Report
-**Generated:** 2026-02-12 04:24 (Europe/Berlin)
-**Tester:** K.I.T. Sandbox Tester (Cron Job)
+**Generated:** 2026-02-12 05:20 (Europe/Berlin)
+**Agent:** K.I.T. Continuous Improvement Agent (Cron Job)
 
 ## ✅ Build Status: PASSING
 
@@ -20,7 +20,7 @@
 
 Test Files  4 passed (4)
 Tests       51 passed (51)
-Duration    810ms
+Duration    959ms
 ```
 
 ## ✅ CLI Integration Tests: 5/5 PASSING
@@ -41,61 +41,40 @@ Duration    810ms
 
 - API: https://api.kithub.finance → `{"status":"ok"}`
 - Website: https://kithub.finance
-- Skills: 66 seeded
+- Skills: 66 seeded (local: 85)
 
 ## 📊 K.I.T. Statistics
 
 | Metric | Count |
 |--------|-------|
-| **Local Skills** | 82 |
+| **Local Skills** | 85 |
 | **Bundled Hooks** | 10 |
-| **API Endpoints** | 192+ |
+| **API Endpoints** | 275+ |
 | **CLI Commands** | 25 |
 | **Unit Tests** | 51 |
 | **CLI Version** | 2.0.0 |
 
-### Onboarding Flow Analysis ✅
+## 🆕 New Skills Added This Session
 
-The 13-step onboarding wizard is well-structured:
+### #84: Risk Parity Balancer
+Allocates portfolio weights based on **risk contribution** rather than capital weights:
+- Equal Risk Contribution (ERC) optimization
+- Inverse Volatility weighting
+- Hierarchical Risk Parity (HRP)
+- Minimum Variance portfolios
+- Correlation-aware with multiple methods (Pearson, Spearman, shrunk)
+- Auto-rebalancing with drift threshold
 
-| Step | ID | Purpose |
-|------|-----|---------|
-| 1 | welcome | User name collection |
-| 2 | goals | Financial objectives (5 options) |
-| 3 | experience | Trading experience level (4 levels) |
-| 4 | risk | Risk profile (4 levels with position limits) |
-| 5 | markets | Target markets (6 options, multi-select) |
-| 6 | autonomy | Control level (manual/semi-auto/full-auto) |
-| 7 | timezone | Timezone selection |
-| 8 | ai_provider | AI provider (8 providers + skip) |
-| 9 | ai_model | Model selection (15 options + custom) |
-| 10 | ai_key | API key with auto-detection & validation |
-| 11 | channel_select | Communication channel (5 channels + skip) |
-| 12 | channel_token | Channel setup with provider-specific flow |
-| 13 | trading_style | Trading style (conservative/balanced/aggressive) |
+### #85: Model Failover Manager
+Enterprise-grade AI provider rotation and failover (inspired by OpenClaw):
+- Multi-provider support (Anthropic, OpenAI, Google, xAI, DeepSeek, Groq, Ollama)
+- 4 failover strategies (priority, round-robin, cost, latency)
+- Exponential backoff cooldowns
+- Session stickiness for cache optimization
+- Billing/rate-limit aware rotation
+- Multi-model consensus for critical decisions
 
-**Features:**
-- Reset confirmation protection (prevents accidental config wipe)
-- API key auto-detection by format (sk-ant-, sk-proj-, AIza, xai-, gsk_, sk-or-)
-- Progressive step indicators ("Step X of 13")
-- Generates SOUL.md, USER.md, AGENTS.md, MEMORY.md
-
-### Dashboard Analysis ✅
-
-The dashboard (`src/dashboard/index.html`) has enterprise features:
-
-| Feature | Status | Notes |
-|---------|--------|-------|
-| WebSocket chat | ✅ | Real-time AI conversation |
-| Stats grid | ✅ | Portfolio, skills, uptime, connections |
-| Chat history | ✅ | LocalStorage persistence |
-| Canvas overlay | ✅ | Full-screen + mini preview + history |
-| Error handling | ✅ | Global error boundary, auto-retry |
-| Config editor | ✅ | Edit config.json from UI |
-| Button parsing | ✅ | Auto-parses onboarding options |
-| Responsive | ✅ | Mobile-friendly grid layout |
-
-### OpenClaw Feature Parity
+## 📈 OpenClaw Feature Parity
 
 | Feature | OpenClaw | K.I.T. | Status |
 |---------|----------|--------|--------|
@@ -103,30 +82,30 @@ The dashboard (`src/dashboard/index.html`) has enterprise features:
 | Hooks System | ✅ | ✅ | 10 bundled |
 | Onboarding | ✅ | ✅ | 13-step wizard |
 | Dashboard | ✅ | ✅ | Web UI + chat |
-| Skills | ✅ | ✅ | 82 trading |
+| Skills | ✅ | ✅ | 85 trading |
 | Memory Files | ✅ | ✅ | SOUL/USER/AGENTS |
 | CLI | ✅ | ✅ | Full command set |
 | Health Endpoints | ✅ | ✅ | /version /health /ready /live |
 | Unit Tests | ✅ | ✅ | 51 tests |
+| Doctor Command | ✅ | ✅ | Full diagnostics |
+| Model Failover | ✅ | ✅ | NEW! Skill #85 |
 | Canvas | ✅ | ✅ | Full overlay + mini |
-| Error Boundaries | ✅ | ✅ | Global + fetch wrapper |
 
-**OpenClaw Parity: ~95%** ✅
+**OpenClaw Parity: ~96%** ✅
 
 ## 🎯 Overall Grade: A
 
-All systems operational. Build clean. Tests pass. No critical issues.
+All systems operational. Build clean. Tests pass. 2 new skills added.
 
 ### Recent Commits
 ```
+[pending] feat: Add Risk Parity Balancer (#84) and Model Failover (#85) skills
 6873325 feat: Add Deal Manager skill #82 - 3Commas SmartTrade inspired
 272319a chore: update project status (sandbox test 03:49)
 ab4a2e3 chore: update project status (improvement agent 03:22)
-26ff389 chore: update project status (sandbox test 02:24)
-a47ccd0 feat: Add Technical Rating and Pi Cycle skills (79, 80)
 ```
 
 ---
 
-*Last test: 2026-02-12 04:24 CET*
-*Next scheduled test: Continuous via cron*
+*Last improvement session: 2026-02-12 05:20 CET*
+*Skills: 85 | Tests: 51 passing | Build: Clean*

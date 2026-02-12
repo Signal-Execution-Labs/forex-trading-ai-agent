@@ -1,0 +1,71 @@
+{
+  "id": "risk-parity-balancer",
+  "name": "Risk Parity Balancer",
+  "version": "1.0.0",
+  "description": "Allocates portfolio weights based on risk contribution. Each asset contributes equally to total portfolio risk.",
+  "author": "K.I.T.",
+  "license": "MIT",
+  "category": "portfolio",
+  "tags": ["risk", "portfolio", "allocation", "rebalancing", "diversification"],
+  "markets": ["crypto", "stocks", "forex", "commodities", "multi-asset"],
+  "commands": ["balance", "rebalance", "analyze"],
+  "parameters": {
+    "mode": {
+      "type": "string",
+      "enum": ["inverse-vol", "erc", "hrp", "min-var"],
+      "default": "erc",
+      "description": "Risk parity calculation method"
+    },
+    "lookback": {
+      "type": "string",
+      "default": "60d",
+      "description": "Historical period for volatility/correlation"
+    },
+    "targetVol": {
+      "type": "number",
+      "description": "Target annual volatility (enables leverage)"
+    },
+    "maxLeverage": {
+      "type": "number",
+      "default": 3.0,
+      "description": "Maximum leverage allowed"
+    },
+    "minWeight": {
+      "type": "number",
+      "default": 0.02,
+      "description": "Minimum weight per asset"
+    },
+    "maxWeight": {
+      "type": "number",
+      "default": 0.40,
+      "description": "Maximum weight per asset"
+    },
+    "correlation": {
+      "type": "string",
+      "enum": ["pearson", "spearman", "shrunk"],
+      "default": "pearson",
+      "description": "Correlation calculation method"
+    },
+    "rebalance": {
+      "type": "string",
+      "enum": ["manual", "daily", "weekly", "monthly"],
+      "default": "manual",
+      "description": "Auto-rebalance frequency"
+    },
+    "threshold": {
+      "type": "number",
+      "default": 0.05,
+      "description": "Drift threshold before rebalancing (5% default)"
+    }
+  },
+  "outputs": {
+    "weights": "New portfolio weights",
+    "riskContributions": "Risk contribution per asset",
+    "portfolioVol": "Total portfolio volatility",
+    "sharpe": "Expected Sharpe ratio",
+    "orders": "Rebalance orders to execute"
+  },
+  "hooks": ["risk-parity-rebalance"],
+  "dependencies": [],
+  "skillNumber": 84
+}

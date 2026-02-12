@@ -1,0 +1,52 @@
+{
+  "id": "model-failover",
+  "name": "Model Failover Manager",
+  "version": "1.0.0",
+  "description": "Enterprise-grade AI provider rotation, cooldowns, and automatic failover for 24/7 trading uptime.",
+  "author": "K.I.T.",
+  "license": "MIT",
+  "category": "infrastructure",
+  "tags": ["ai", "failover", "providers", "reliability", "uptime"],
+  "markets": ["all"],
+  "commands": ["status", "failover", "cooldown", "priority", "metrics"],
+  "parameters": {
+    "strategy": {
+      "type": "string",
+      "enum": ["round-robin", "priority", "cost", "latency"],
+      "default": "priority",
+      "description": "Failover strategy"
+    },
+    "fallbacks": {
+      "type": "array",
+      "description": "Ordered list of fallback models"
+    },
+    "sessionSticky": {
+      "type": "boolean",
+      "default": true,
+      "description": "Pin provider per session"
+    },
+    "cooldowns": {
+      "type": "object",
+      "description": "Cooldown durations by error type"
+    },
+    "costOptimize": {
+      "type": "boolean",
+      "default": false,
+      "description": "Route to cheapest provider when possible"
+    },
+    "consensusThreshold": {
+      "type": "number",
+      "default": 0.67,
+      "description": "Agreement threshold for multi-model consensus"
+    }
+  },
+  "outputs": {
+    "status": "Provider health status",
+    "metrics": "Usage and cost metrics",
+    "activeProvider": "Currently pinned provider",
+    "cooldowns": "Active cooldowns"
+  },
+  "hooks": ["provider-health-check", "failover-alert"],
+  "dependencies": [],
+  "skillNumber": 85
+}
