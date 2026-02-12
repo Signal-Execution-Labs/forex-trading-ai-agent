@@ -215,6 +215,12 @@ program
     
     process.on('SIGINT', shutdown);
     process.on('SIGTERM', shutdown);
+    
+    // Keep the process alive - K.I.T. runs indefinitely
+    console.log('\n🚗 K.I.T. is running. Press Ctrl+C to stop.\n');
+    
+    // Prevent process from exiting
+    process.stdin.resume();
   });
 
 // ═══════════════════════════════════════════════════════════════
