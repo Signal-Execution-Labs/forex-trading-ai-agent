@@ -1,0 +1,12 @@
+{
+  "name": "@kit/drawing-alerts",
+  "version": "1.0.0",
+  "description": "Create alerts from chart drawings - trendlines, zones, fibs",
+  "kit": {
+    "skill": true,
+    "category": "alerts",
+    "tags": ["alerts", "drawings", "trendlines", "zones", "fibonacci"],
+    "difficulty": "intermediate"
+  },
+  "keywords": ["alerts", "drawings", "technical-analysis", "trendlines"]
+}

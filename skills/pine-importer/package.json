@@ -1,0 +1,12 @@
+{
+  "name": "@kit/pine-importer",
+  "version": "1.0.0",
+  "description": "Import TradingView Pine Script indicators into K.I.T.",
+  "kit": {
+    "skill": true,
+    "category": "tools",
+    "tags": ["pine-script", "tradingview", "import", "conversion"],
+    "difficulty": "advanced"
+  },
+  "keywords": ["pine-script", "tradingview", "converter", "import"]
+}

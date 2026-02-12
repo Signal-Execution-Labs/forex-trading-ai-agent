@@ -311,4 +311,105 @@ Based on research, added 5 new skills:
 
 ---
 
-*Last updated: February 12, 2026 09:15 CET*
+---
+
+## Research Session: February 12, 2026 (13:08 CET)
+
+### Sources Analyzed
+- TradingView Features Page (2025/2026)
+- TradingView Pine v6 Release Notes
+- TradingView Community Scripts (Wyckoff Schematic)
+
+### Key Findings
+
+#### 1. Wyckoff Schematic (TradingView Community Hit)
+Professional tool that automatically detects Wyckoff Method patterns:
+- **Accumulation Phases:** PS, SC, AR, ST, Spring, LPS, SOS
+- **Distribution Phases:** PSY, BC, AR, ST, UTAD, SOW
+- Phase transitions and smart money movements
+- Multi-timeframe support
+- Volume spread analysis at each phase
+
+#### 2. Drawing Alerts (Premium Feature)
+Alerts from visual chart drawings:
+- Trendline touches, breaks, retests
+- Rectangle zone entry/exit
+- Fibonacci level alerts
+- Channel boundary alerts
+
+#### 3. Pine Script Import Demand
+High demand for importing TradingView scripts:
+- 100,000+ community indicators
+- Many traders have custom Pine scripts
+- Need conversion to run in K.I.T.
+
+### New Skills Implemented (13:08 CET)
+
+| # | Skill | Inspired By |
+|---|-------|-------------|
+| 97 | Wyckoff Schematic | TradingView "Wyckoff Schematic" by Kingshuk Ghosh |
+| 98 | Drawing Alerts | TradingView Premium drawing alerts |
+| 99 | Pine Script Importer | Community demand for TV script import |
+
+### Implementation Details
+
+#### Wyckoff Schematic (#97)
+- Automatic accumulation/distribution detection
+- Phase labels (PS, SC, AR, ST, Spring, UTAD, SOW)
+- Volume spread analysis
+- Trading range boundaries
+- Creek/ice levels identification
+- Event alerts (Spring, UTAD)
+- Probability scoring (0-100%)
+
+#### Drawing Alerts (#98)
+- Trendline alerts (touch, break, retest)
+- Rectangle zone alerts (enter, exit)
+- Fibonacci level alerts (38.2%, 50%, 61.8%)
+- Channel boundary alerts
+- Auto-extend drawings into future
+- Multi-touch strength tracking
+- False breakout filtering
+
+#### Pine Script Importer (#99)
+- Pine v4/v5/v6 parsing
+- AST analysis and function mapping
+- TypeScript output generation
+- Auto-validation against sample data
+- Skill packaging
+
+---
+
+## Total K.I.T. Skills: 99 🎯
+
+### K.I.T. vs TradingView Feature Parity
+
+| Feature | TradingView | K.I.T. |
+|---------|-------------|--------|
+| Volume Footprint | ✅ Premium | ✅ #86 |
+| TPO/Market Profile | ✅ Premium | ✅ #91 |
+| Market Replay | ✅ Essential+ | ✅ #92 |
+| Seasonality | ✅ Premium | ✅ #93 |
+| Trading Competition | ✅ The Leap | ✅ #94 |
+| Options Builder | ✅ Premium | ✅ #95 |
+| Economic Dashboard | ✅ All | ✅ #96 |
+| Wyckoff Detection | ✅ Community | ✅ #97 |
+| Drawing Alerts | ✅ Premium | ✅ #98 |
+| Pine Import | ❌ | ✅ #99 |
+| Multi-Condition Alerts | ✅ Premium | ✅ #90 |
+| Pattern Recognition | ✅ Auto Patterns | ✅ #89 |
+| Heat Maps | ✅ All | ✅ #88 |
+
+### Approaching 100 Skills! 🚀
+
+Next milestone: **Skill #100**
+
+Ideas for #100:
+- [ ] AI Portfolio Manager - Fully autonomous rebalancing
+- [ ] Universal Signal Aggregator - Combine all signals into one score
+- [ ] Cross-Exchange Arbitrage - Real-time spread detection
+- [ ] Risk Parity Engine - Modern portfolio theory automation
+
+---
+
+*Last updated: February 12, 2026 13:08 CET*

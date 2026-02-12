@@ -1,0 +1,12 @@
+{
+  "name": "@kit/wyckoff-schematic",
+  "version": "1.0.0",
+  "description": "Automatically detect Wyckoff accumulation/distribution patterns",
+  "kit": {
+    "skill": true,
+    "category": "analysis",
+    "tags": ["wyckoff", "smart-money", "accumulation", "distribution", "volume"],
+    "difficulty": "advanced"
+  },
+  "keywords": ["wyckoff", "trading", "technical-analysis", "smart-money"]
+}
