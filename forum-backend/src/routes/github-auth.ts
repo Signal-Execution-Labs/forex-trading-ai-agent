@@ -70,6 +70,7 @@ export async function githubAuthRoutes(fastify: FastifyInstance) {
         properties: {
           code: { type: 'string', description: 'Authorization code from GitHub' },
           state: { type: 'string', description: 'State for CSRF protection' },
+          source: { type: 'string', description: 'Source app (kitbot or kithub)' },
         },
       },
       response: {
@@ -108,8 +109,8 @@ export async function githubAuthRoutes(fastify: FastifyInstance) {
         },
       },
     },
-  }, async (request: FastifyRequest<{ Body: { code: string; state?: string } }>, reply: FastifyReply) => {
-    const { code, state } = request.body;
+  }, async (request: FastifyRequest<{ Body: { code: string; state?: string; source?: string } }>, reply: FastifyReply) => {
+    const { code, state, source } = request.body;
 
     if (!GitHubAuthService.isConfigured()) {
       return reply.status(503).send({
@@ -119,7 +120,7 @@ export async function githubAuthRoutes(fastify: FastifyInstance) {
     }
 
     // Exchange code for access token
-    const tokenData = await GitHubAuthService.exchangeCode(code);
+    const tokenData = await GitHubAuthService.exchangeCode(code, source);
     if (!tokenData) {
       return reply.status(400).send({
         error: 'invalid_code',

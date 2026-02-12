@@ -4,9 +4,10 @@
  */
 
 // GitHub OAuth credentials - loaded from environment
-const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID || '';
-const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET || '';
+const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID || 'Ov23liMssoN5YuZE72Q1';
+const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET || '14081930cc8accb183b97277c355e1dc70d082c9';
 const KITHUB_REDIRECT_URI = process.env.KITHUB_REDIRECT_URI || 'https://kithub.finance/auth/callback.html';
+const KITBOT_REDIRECT_URI = 'https://kitbot.finance/kitview/auth/callback.html';
 
 interface GitHubUser {
   id: number;
@@ -42,7 +43,10 @@ export class GitHubAuthService {
   /**
    * Exchange authorization code for access token
    */
-  static async exchangeCode(code: string): Promise<GitHubAccessToken | null> {
+  static async exchangeCode(code: string, source?: string): Promise<GitHubAccessToken | null> {
+    // Use correct redirect URI based on source
+    const redirectUri = source === 'kitbot' ? KITBOT_REDIRECT_URI : KITHUB_REDIRECT_URI;
+    
     try {
       const response = await fetch('https://github.com/login/oauth/access_token', {
         method: 'POST',
@@ -54,7 +58,7 @@ export class GitHubAuthService {
           client_id: GITHUB_CLIENT_ID,
           client_secret: GITHUB_CLIENT_SECRET,
           code,
-          redirect_uri: KITHUB_REDIRECT_URI,
+          redirect_uri: redirectUri,
         }),
       });
 
