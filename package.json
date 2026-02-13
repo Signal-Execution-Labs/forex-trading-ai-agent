@@ -33,7 +33,8 @@
   "scripts": {
     "postinstall": "node scripts/setup.js || true",
     "setup": "node scripts/setup.js",
-    "build": "tsc",
+    "build": "tsc && npm run copy-hooks",
+    "copy-hooks": "node -e \"const fs=require('fs');const path=require('path');const src='src/hooks/bundled';const dst='dist/src/hooks/bundled';if(fs.existsSync(src)){fs.readdirSync(src).forEach(d=>{const hookMd=path.join(src,d,'HOOK.md');const dstMd=path.join(dst,d,'HOOK.md');if(fs.existsSync(hookMd)){fs.mkdirSync(path.dirname(dstMd),{recursive:true});fs.copyFileSync(hookMd,dstMd);}});}\"",
     "dev": "ts-node src/index.ts",
     "start": "node dist/src/index.js",
     "cli": "node dist/cli/kit.js",
