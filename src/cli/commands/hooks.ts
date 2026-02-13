@@ -47,7 +47,11 @@ async function discoverHooks(): Promise<Map<string, HookMetadata>> {
   // Check managed hooks
   const managedHooks = HOOKS_DIR;
   
-  const dirs = [workspaceHooks, managedHooks];
+  // Check bundled hooks (in source directory - HOOK.md files aren't compiled)
+  // Go from dist/src/cli/commands to src/hooks/bundled
+  const bundledHooks = path.join(__dirname, '..', '..', '..', '..', 'src', 'hooks', 'bundled');
+  
+  const dirs = [workspaceHooks, managedHooks, bundledHooks];
   
   for (const dir of dirs) {
     if (!fs.existsSync(dir)) continue;
