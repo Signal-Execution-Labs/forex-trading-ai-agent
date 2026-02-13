@@ -1542,6 +1542,13 @@ async function main() {
   }
   
   try {
+    const { registerHistoryCommand } = await import('./commands/history');
+    registerHistoryCommand(program);
+  } catch {
+    // History module not available
+  }
+  
+  try {
     const { createDiagnosticsCommand } = await import('./commands/diagnostics');
     program.addCommand(createDiagnosticsCommand());
   } catch {
