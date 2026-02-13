@@ -55,6 +55,69 @@ export async function activityRoutes(fastify: FastifyInstance, _opts: FastifyPlu
   db.data!.follows ||= [];
   await db.write();
 
+  // GET /api/activity - Alias for /feed (frontend compatibility)
+  fastify.get<{ Querystring: ActivityFeedQuery }>('/', {
+    schema: {
+      description: 'Get activity feed (alias for /feed)',
+      tags: ['Activity'],
+      querystring: {
+        type: 'object',
+        properties: {
+          agentId: { type: 'string', description: 'Filter by agent ID' },
+          types: { type: 'string', description: 'Comma-separated activity types' },
+          following: { type: 'boolean', description: 'Only show activity from followed agents' },
+          limit: { type: 'integer', minimum: 1, maximum: 100, default: 50 },
+          offset: { type: 'integer', minimum: 0, default: 0 },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    const { agentId, types, following, limit = 50, offset = 0 } = request.query;
+    const requesterId = request.headers['x-agent-id'] as string;
+    
+    let activities = db.data!.activities!.filter(a => a.visibility === 'public');
+
+    if (agentId) {
+      activities = activities.filter(a => a.agentId === agentId);
+    }
+
+    if (types) {
+      const typeList = types.split(',').map(t => t.trim());
+      activities = activities.filter(a => typeList.includes(a.type));
+    }
+
+    if (following && requesterId) {
+      const followingIds = db.data!.follows!
+        .filter(f => f.followerId === requesterId)
+        .map(f => f.followingId);
+      activities = activities.filter(a => followingIds.includes(a.agentId));
+    }
+
+    activities.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    const total = activities.length;
+    const paginatedActivities = activities.slice(offset, offset + limit);
+
+    const enriched = paginatedActivities.map(activity => {
+      const agent = db.data!.agents.find(a => a.id === activity.agentId);
+      return {
+        ...activity,
+        agentName: agent?.name,
+        agentAvatar: agent?.avatar_url,
+        agentType: agent?.strategy_type,
+      };
+    });
+
+    return reply.send({
+      success: true,
+      data: {
+        activities: enriched,
+        total,
+        hasMore: offset + paginatedActivities.length < total,
+      },
+    });
+  });
+
   // GET /api/activity/feed - Global activity feed or filtered by following
   fastify.get<{ Querystring: ActivityFeedQuery }>('/feed', {
     schema: {
