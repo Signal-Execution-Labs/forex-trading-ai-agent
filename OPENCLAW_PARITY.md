@@ -156,14 +156,18 @@ Features:
 - Auto-termination on completion
 - Result reporting to main agent
 
-**K.I.T.:** ✅ Implemented
-- `subagent_spawn` tool to create task-specific agents
-- `subagent_status` to check progress
-- `subagent_wait` to wait for completion
-- Isolated sessions (`subagent:<id>`)
-- Result capture and delivery
+**K.I.T.:** ✅ Fully Implemented
+- `session_spawn` tool to create task-specific sub-agents
+- `session_status` to check progress and get results
+- `session_list` to list all sub-agents
+- `session_send` to communicate with running sub-agents
+- `session_cancel` to stop a sub-agent
+- Isolated sessions (`subagent:<uuid>`)
+- Concurrent limit with queue management
+- Result capture and delivery to parent
+- Timeout handling
 
-**Implementation:** `src/gateway/subagent-manager.ts`, `src/tools/system/subagent-tools.ts`
+**Implementation:** `src/core/session-spawner.ts`, `src/tools/system/session-tools.ts`
 
 ---
 
