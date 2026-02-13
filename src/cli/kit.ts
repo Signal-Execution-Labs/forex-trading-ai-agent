@@ -1507,6 +1507,13 @@ async function main() {
   }
   
   try {
+    const { registerCompletionCommand } = await import('./commands/completion');
+    registerCompletionCommand(program);
+  } catch {
+    // Completion module not available
+  }
+  
+  try {
     const { createDiagnosticsCommand } = await import('./commands/diagnostics');
     program.addCommand(createDiagnosticsCommand());
   } catch {
