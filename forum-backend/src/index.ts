@@ -169,8 +169,33 @@ async function main() {
         posts: '/api/posts',
         leaderboard: '/api/leaderboard',
         websocket: '/ws/signals',
+        syncAll: '/api/sync-all',
       },
     };
+  });
+
+  // Alias for /api/connections/sync-all (for frontend compatibility)
+  fastify.all('/api/sync-all', {
+    schema: {
+      description: 'Alias for /api/connections/sync-all - Sync all connections with auto-sync enabled',
+      tags: ['System'],
+      querystring: {
+        type: 'object',
+        properties: {
+          force: { type: 'boolean', description: 'Force sync regardless of time window' },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    // Forward to connections sync-all by injecting a request
+    const url = `/api/connections/sync-all${request.url.includes('?') ? request.url.substring(request.url.indexOf('?')) : ''}`;
+    const response = await fastify.inject({
+      method: 'POST',
+      url,
+      headers: request.headers as any,
+      payload: request.body || {},
+    });
+    reply.code(response.statusCode).headers(response.headers).send(response.payload);
   });
 
   // Register API routes
