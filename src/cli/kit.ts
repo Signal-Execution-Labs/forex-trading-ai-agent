@@ -1465,6 +1465,13 @@ async function main() {
   }
   
   try {
+    const { registerAlertsCommand } = await import('./commands/alerts');
+    registerAlertsCommand(program);
+  } catch {
+    // Alerts module not available
+  }
+  
+  try {
     const { createDiagnosticsCommand } = await import('./commands/diagnostics');
     program.addCommand(createDiagnosticsCommand());
   } catch {
