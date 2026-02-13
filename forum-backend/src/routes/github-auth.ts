@@ -9,9 +9,17 @@ import { UserService } from '../services/user.service.ts';
 
 export async function githubAuthRoutes(fastify: FastifyInstance) {
   /**
-   * GET /api/auth/github/status
+   * GET /api/auth/github/status (alias: /check)
    * Check if GitHub OAuth is configured
    */
+  const statusHandler = async (request: FastifyRequest, reply: FastifyReply) => {
+    const configured = GitHubAuthService.isConfigured();
+    return {
+      configured,
+      authUrl: configured ? GitHubAuthService.getAuthUrl() : null,
+    };
+  };
+
   fastify.get('/status', {
     schema: {
       description: 'Check GitHub OAuth configuration status',
@@ -26,13 +34,15 @@ export async function githubAuthRoutes(fastify: FastifyInstance) {
         },
       },
     },
-  }, async (request: FastifyRequest, reply: FastifyReply) => {
-    const configured = GitHubAuthService.isConfigured();
-    return {
-      configured,
-      authUrl: configured ? GitHubAuthService.getAuthUrl() : null,
-    };
-  });
+  }, statusHandler);
+
+  // Alias for backwards compatibility
+  fastify.get('/check', {
+    schema: {
+      description: 'Alias for /status - Check GitHub OAuth configuration',
+      tags: ['Auth'],
+    },
+  }, statusHandler);
 
   /**
    * GET /api/auth/github/login

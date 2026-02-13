@@ -126,9 +126,16 @@ export async function screenerRoutes(fastify: FastifyInstance, _opts: FastifyPlu
     return reply.send({ success: true, data: FILTER_OPERATORS });
   });
 
-  // GET /api/screener/quick
+  // GET /api/screener/quick (alias: /quick-screens)
   fastify.get('/quick', {
     schema: { description: 'List available quick screens', tags: ['Screener'] },
+  }, async (_request, reply) => {
+    return reply.send({ success: true, data: QUICK_SCREENS });
+  });
+
+  // Alias for backwards compatibility
+  fastify.get('/quick-screens', {
+    schema: { description: 'Alias for /quick - List available quick screens', tags: ['Screener'] },
   }, async (_request, reply) => {
     return reply.send({ success: true, data: QUICK_SCREENS });
   });
