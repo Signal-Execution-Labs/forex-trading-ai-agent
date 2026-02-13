@@ -70,18 +70,23 @@ export class BinaryFasterService {
    */
   private async login(): Promise<boolean> {
     try {
+      console.log('[BinaryFaster] Attempting login for:', this.email);
       const response = await fetch(`${BINARYFASTER_API_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: this.email, password: this.password }),
       });
 
+      console.log('[BinaryFaster] Login response status:', response.status);
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[BinaryFaster] Login failed:', errorText);
         throw new Error(`Login failed: ${response.statusText}`);
       }
 
       const data = await response.json();
       this.apiKey = data.api_key;
+      console.log('[BinaryFaster] Got API key:', this.apiKey ? 'YES' : 'NO');
       
       if (!this.apiKey) {
         throw new Error('No API key in response');
@@ -92,7 +97,7 @@ export class BinaryFasterService {
 
       return true;
     } catch (error: any) {
-      console.error('BinaryFaster login error:', error.message);
+      console.error('[BinaryFaster] Login error:', error.message);
       return false;
     }
   }
@@ -201,9 +206,15 @@ export class BinaryFasterService {
    * Get trade history
    */
   async getTradeHistory(limit: number = 100): Promise<BinaryFasterTrade[]> {
+    console.log('[BinaryFaster] Fetching trade history...');
     const data = await this.authRequest('/trades/history');
+    console.log('[BinaryFaster] Raw response type:', typeof data);
+    console.log('[BinaryFaster] Is array:', Array.isArray(data));
+    console.log('[BinaryFaster] Data keys:', data ? Object.keys(data) : 'null');
+    console.log('[BinaryFaster] First item:', Array.isArray(data) && data.length > 0 ? JSON.stringify(data[0]) : 'none');
     // API might return array directly or { trades: [...] }
     const trades = Array.isArray(data) ? data : (data.trades || data.history || []);
+    console.log('[BinaryFaster] Parsed trades count:', trades.length);
     return trades.slice(0, limit);
   }
 

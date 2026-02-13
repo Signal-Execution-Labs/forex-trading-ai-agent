@@ -1,0 +1,30 @@
+{
+  "Autonomous EURUSD GBPUSD XAUUSD Trading": {
+    "name": "Autonomous EURUSD GBPUSD XAUUSD Trading",
+    "asset": "EURUSD,GBPUSD,XAUUSD",
+    "strategy": "Analyze every 5 minutes and trade based on market conditions. Max 3 open trades at any time.",
+    "platform": "mt5",
+    "timeframe": "M5",
+    "mode": "ai",
+    "entry_long": [],
+    "entry_short": [],
+    "risk_percent": 1,
+    "sl_atr": 1.5,
+    "tp_atr": 3,
+    "trailing_stop": true,
+    "trailing_atr": 1.5,
+    "max_spread": 50,
+    "max_positions": 3,
+    "max_daily_trades": 10,
+    "check_minutes": 5,
+    "status": "running",
+    "created": "2026-02-13T08:18:30.427Z",
+    "trades_today": 0,
+    "total_trades": 0,
+    "wins": 0,
+    "losses": 0,
+    "profit": 0,
+    "trades": [],
+    "last_check": "2026-02-13T09:28:31.982Z"
+  }
+}
