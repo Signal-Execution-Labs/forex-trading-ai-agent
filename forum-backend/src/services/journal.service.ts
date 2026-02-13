@@ -402,8 +402,9 @@ export class JournalService {
       .single();
 
     if (error) {
-      console.error('Error creating entry:', error);
-      return null;
+      console.error('[JournalService] Error creating entry:', error.message, error.details, error.hint);
+      // Throw error so caller can see what went wrong
+      throw new Error(`DB insert failed: ${error.message} (${error.code})`);
     }
 
     // Update account stats
