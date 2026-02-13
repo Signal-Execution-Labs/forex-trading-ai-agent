@@ -103,22 +103,30 @@ export class BinaryFasterService {
   }
 
   /**
-   * Switch to REAL trading mode (not demo)
-   * This is required to fetch real trades from history!
+   * Switch trading mode (demo or real)
+   * @param demo - true for demo mode, false for real mode
    */
-  private async setRealMode(): Promise<void> {
+  async setMode(demo: boolean): Promise<void> {
     try {
-      await fetch(`${BINARYFASTER_API_URL}/traderoom/setdemo/0`, {
+      await fetch(`${BINARYFASTER_API_URL}/traderoom/setdemo/${demo ? '1' : '0'}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': this.apiKey!,
         },
       });
-      console.log('BinaryFaster: Switched to REAL mode');
+      console.log(`[BinaryFaster] Switched to ${demo ? 'DEMO' : 'REAL'} mode`);
     } catch (error: any) {
-      console.error('BinaryFaster: Failed to switch to REAL mode:', error.message);
+      console.error(`[BinaryFaster] Failed to switch to ${demo ? 'DEMO' : 'REAL'} mode:`, error.message);
     }
+  }
+  
+  /**
+   * Switch to REAL trading mode (not demo)
+   * This is required to fetch real trades from history!
+   */
+  private async setRealMode(): Promise<void> {
+    await this.setMode(false);
   }
 
   /**
@@ -324,12 +332,16 @@ export async function validateBinaryFasterCredentials(email: string, password: s
 
 /**
  * Fetch trades from BinaryFaster for syncing to Journal
+ * @param email - BinaryFaster account email
+ * @param password - BinaryFaster account password
+ * @param mode - 'demo' or 'live' (default: 'live')
  */
-export async function fetchBinaryFasterTrades(email: string, password: string): Promise<{
+export async function fetchBinaryFasterTrades(email: string, password: string, mode: 'demo' | 'live' = 'live'): Promise<{
   success: boolean;
   trades?: any[];
   balance?: { real: number; demo: number };
   error?: string;
+  mode?: string;
 }> {
   try {
     const service = new BinaryFasterService({ email, password });
@@ -339,6 +351,11 @@ export async function fetchBinaryFasterTrades(email: string, password: string): 
     if (!test.success) {
       return { success: false, error: test.error };
     }
+
+    // Set the correct mode before fetching trades
+    const isDemo = mode === 'demo';
+    await service.setMode(isDemo);
+    console.log(`[BinaryFaster] Fetching ${mode.toUpperCase()} trades...`);
 
     // Get balance
     const balance = await service.getBalance();
@@ -351,6 +368,7 @@ export async function fetchBinaryFasterTrades(email: string, password: string): 
       success: true,
       trades: journalEntries,
       balance,
+      mode,
     };
   } catch (error: any) {
     return {

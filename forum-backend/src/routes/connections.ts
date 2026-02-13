@@ -350,7 +350,9 @@ export async function connectionsRoutes(fastify: FastifyInstance) {
 
         case 'binaryfaster': {
           const credsBF = connection.credentials as { email: string; password: string };
-          const resultBF = await fetchBinaryFasterTrades(credsBF.email, credsBF.password);
+          const bfMode = (connection.account_type === 'demo' ? 'demo' : 'live') as 'demo' | 'live';
+          console.log(`[BinaryFaster Sync] Using ${bfMode} mode for connection ${connection.name}`);
+          const resultBF = await fetchBinaryFasterTrades(credsBF.email, credsBF.password, bfMode);
           
           if (!resultBF.success) {
             return reply.status(400).send({ error: resultBF.error });
@@ -546,6 +548,64 @@ export async function connectionsRoutes(fastify: FastifyInstance) {
       }
     } catch (err: any) {
       return reply.status(500).send({ error: err.message || 'Sync failed' });
+    }
+  });
+
+  /**
+   * POST /api/connections/:id/toggle-mode
+   * Toggle between Demo and Real mode (BinaryFaster specific)
+   */
+  fastify.post('/:id/toggle-mode', {
+    schema: {
+      description: 'Toggle between Demo and Real trading mode (BinaryFaster)',
+      tags: ['Connections'],
+      security: [{ bearerAuth: [] }],
+      body: {
+        type: 'object',
+        properties: {
+          mode: { type: 'string', enum: ['demo', 'live'] },
+        },
+        required: ['mode'],
+      },
+    },
+  }, async (request: FastifyRequest<{ 
+    Params: { id: string },
+    Body: { mode: 'demo' | 'live' }
+  }>, reply: FastifyReply) => {
+    try {
+      await request.jwtVerify();
+      const user = request.user as { userId?: string };
+      
+      if (!user.userId) {
+        return reply.status(401).send({ error: 'User ID not found in token' });
+      }
+
+      const connection = await UserService.getConnectionWithCredentials(request.params.id, user.userId);
+      
+      if (!connection) {
+        return reply.status(404).send({ error: 'Connection not found' });
+      }
+
+      if (connection.platform !== 'binaryfaster') {
+        return reply.status(400).send({ error: 'Mode toggle only supported for BinaryFaster' });
+      }
+
+      const { mode } = request.body;
+
+      // Update connection account_type
+      const success = await UserService.updateConnectionMode(request.params.id, user.userId, mode);
+
+      if (!success) {
+        return reply.status(500).send({ error: 'Failed to update mode' });
+      }
+
+      return { 
+        success: true, 
+        mode,
+        message: `Switched to ${mode.toUpperCase()} mode. Sync to fetch trades.`
+      };
+    } catch (err) {
+      return reply.status(401).send({ error: 'Invalid or expired token' });
     }
   });
 

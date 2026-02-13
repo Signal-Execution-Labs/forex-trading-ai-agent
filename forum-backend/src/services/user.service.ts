@@ -264,6 +264,19 @@ export class UserService {
   }
 
   /**
+   * Update connection trading mode (demo/live) - BinaryFaster specific
+   */
+  static async updateConnectionMode(connectionId: string, userId: string, mode: 'demo' | 'live'): Promise<boolean> {
+    const { error } = await getSupabase()
+      .from('platform_connections')
+      .update({ account_type: mode })
+      .eq('id', connectionId)
+      .eq('user_id', userId);
+
+    return !error;
+  }
+
+  /**
    * Get all connections that need auto-sync (for cron job)
    */
   static async getConnectionsForAutoSync(force: boolean = false): Promise<(PlatformConnection & { user_id?: string })[]> {
