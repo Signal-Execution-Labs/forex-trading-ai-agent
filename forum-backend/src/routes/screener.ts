@@ -157,24 +157,9 @@ export async function screenerRoutes(fastify: FastifyInstance, _opts: FastifyPlu
     return reply.send({ success: true, data: { screen: screen.name, results: results.slice(0, limit), total: results.length } });
   });
 
-  // POST /api/screener - Custom screen
-  fastify.post<{ Body: { filters: any[]; assetTypes?: string[]; sort?: string; order?: string; limit?: number } }>('/', {
-    schema: {
-      description: 'Run a custom screener with filters',
-      tags: ['Screener'],
-      body: {
-        type: 'object',
-        properties: {
-          filters: { type: 'array' },
-          assetTypes: { type: 'array', items: { type: 'string' } },
-          sort: { type: 'string' },
-          order: { type: 'string', enum: ['asc', 'desc'], default: 'desc' },
-          limit: { type: 'integer', minimum: 1, maximum: 500, default: 100 },
-        },
-      },
-    },
-  }, async (request, reply) => {
-    const { filters = [], assetTypes, sort, order = 'desc', limit = 100 } = request.body;
+  // Screener handler function (shared by / and /scan)
+  const runScreener = async (request: any, reply: any) => {
+    const { filters = [], assetTypes, sort, order = 'desc', limit = 100 } = request.body || {};
 
     let results = [...MOCK_ASSETS];
     if (assetTypes?.length) results = results.filter(a => assetTypes.includes(a.type));
@@ -207,7 +192,43 @@ export async function screenerRoutes(fastify: FastifyInstance, _opts: FastifyPlu
     }
 
     return reply.send({ success: true, data: { results: results.slice(0, limit), total: results.length, filtersApplied: filters.length } });
-  });
+  };
+
+  // POST /api/screener/scan - Alias for POST /api/screener (frontend compatibility)
+  fastify.post<{ Body: { filters: any[]; assetTypes?: string[]; sort?: string; order?: string; limit?: number } }>('/scan', {
+    schema: {
+      description: 'Run a custom screener with filters (alias for POST /)',
+      tags: ['Screener'],
+      body: {
+        type: 'object',
+        properties: {
+          filters: { type: 'array' },
+          assetTypes: { type: 'array', items: { type: 'string' } },
+          sort: { type: 'string' },
+          order: { type: 'string', enum: ['asc', 'desc'], default: 'desc' },
+          limit: { type: 'integer', minimum: 1, maximum: 500, default: 100 },
+        },
+      },
+    },
+  }, runScreener);
+
+  // POST /api/screener - Custom screen
+  fastify.post<{ Body: { filters: any[]; assetTypes?: string[]; sort?: string; order?: string; limit?: number } }>('/', {
+    schema: {
+      description: 'Run a custom screener with filters',
+      tags: ['Screener'],
+      body: {
+        type: 'object',
+        properties: {
+          filters: { type: 'array' },
+          assetTypes: { type: 'array', items: { type: 'string' } },
+          sort: { type: 'string' },
+          order: { type: 'string', enum: ['asc', 'desc'], default: 'desc' },
+          limit: { type: 'integer', minimum: 1, maximum: 500, default: 100 },
+        },
+      },
+    },
+  }, runScreener);
 
   // GET /api/screener/presets
   fastify.get<{ Querystring: { agentId?: string; publicOnly?: boolean } }>('/presets', {
