@@ -1500,6 +1500,13 @@ async function main() {
   }
   
   try {
+    const { registerPriceCommand } = await import('./commands/price');
+    registerPriceCommand(program);
+  } catch {
+    // Price module not available
+  }
+  
+  try {
     const { createDiagnosticsCommand } = await import('./commands/diagnostics');
     program.addCommand(createDiagnosticsCommand());
   } catch {
