@@ -1479,6 +1479,13 @@ async function main() {
   }
   
   try {
+    const { registerBacktestCommand } = await import('./commands/backtest');
+    registerBacktestCommand(program);
+  } catch {
+    // Backtest module not available
+  }
+  
+  try {
     const { createDiagnosticsCommand } = await import('./commands/diagnostics');
     program.addCommand(createDiagnosticsCommand());
   } catch {
