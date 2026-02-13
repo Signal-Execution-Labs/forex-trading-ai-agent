@@ -1528,6 +1528,13 @@ async function main() {
   }
   
   try {
+    const { registerRiskCommand } = await import('./commands/risk');
+    registerRiskCommand(program);
+  } catch {
+    // Risk module not available
+  }
+  
+  try {
     const { createDiagnosticsCommand } = await import('./commands/diagnostics');
     program.addCommand(createDiagnosticsCommand());
   } catch {
