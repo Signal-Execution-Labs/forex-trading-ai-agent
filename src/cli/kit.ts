@@ -1521,6 +1521,13 @@ async function main() {
   }
   
   try {
+    const { registerAnalyzeCommand } = await import('./commands/analyze');
+    registerAnalyzeCommand(program);
+  } catch {
+    // Analyze module not available
+  }
+  
+  try {
     const { createDiagnosticsCommand } = await import('./commands/diagnostics');
     program.addCommand(createDiagnosticsCommand());
   } catch {
