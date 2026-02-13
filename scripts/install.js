@@ -1,51 +1,83 @@
 #!/usr/bin/env node
 /**
- * K.I.T. One-Line Installer
+ * K.I.T. - Knight Industries Trading
+ * One-Line Installer (OpenClaw-style)
  * 
- * Usage: npx kit-trading
- * Or: node scripts/install.js
+ * Usage: 
+ *   npx kit-trading
+ *   npm install -g kit-trading && kit onboard
  */
 
 const { execSync, spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const readline = require('readline');
 
 const isWindows = os.platform() === 'win32';
+const isMac = os.platform() === 'darwin';
 
-// Colors for console
-const colors = {
+// ANSI Colors
+const c = {
   reset: '\x1b[0m',
-  bright: '\x1b[1m',
+  bold: '\x1b[1m',
+  dim: '\x1b[2m',
   red: '\x1b[31m',
   green: '\x1b[32m',
   yellow: '\x1b[33m',
   blue: '\x1b[34m',
+  magenta: '\x1b[35m',
   cyan: '\x1b[36m',
+  white: '\x1b[37m',
+  bgCyan: '\x1b[46m',
+  bgBlack: '\x1b[40m',
 };
 
-function log(msg, color = 'reset') {
-  console.log(`${colors[color]}${msg}${colors.reset}`);
+// K.I.T. Taglines (like OpenClaw's random taglines)
+const taglines = [
+  "Your wealth is my mission.",
+  "One AI. All your finances. Fully autonomous.",
+  "Knight Industries Trading at your service.",
+  "I don't sleep, I trade.",
+  "Making your money work while you rest.",
+  "Precision trading, powered by AI.",
+  "Your autonomous financial agent.",
+  "From Wall Street to DeFi, I've got you covered.",
+];
+
+function getTagline() {
+  return taglines[Math.floor(Math.random() * taglines.length)];
 }
 
-function logStep(step, msg) {
-  console.log(`\n${colors.cyan}[${step}]${colors.reset} ${colors.bright}${msg}${colors.reset}`);
+function log(msg, color = 'reset') {
+  console.log(`${c[color]}${msg}${c.reset}`);
+}
+
+function logStep(step, total, msg) {
+  console.log(`\n${c.cyan}[${step}/${total}]${c.reset} ${c.bold}${msg}${c.reset}`);
 }
 
 function logSuccess(msg) {
-  console.log(`${colors.green}✓${colors.reset} ${msg}`);
+  console.log(`${c.green}  ✓${c.reset} ${msg}`);
+}
+
+function logWarn(msg) {
+  console.log(`${c.yellow}  ⚠${c.reset} ${msg}`);
 }
 
 function logError(msg) {
-  console.log(`${colors.red}✗${colors.reset} ${msg}`);
+  console.log(`${c.red}  ✗${c.reset} ${msg}`);
+}
+
+function logInfo(msg) {
+  console.log(`${c.dim}  ${msg}${c.reset}`);
 }
 
 function run(cmd, options = {}) {
   try {
-    execSync(cmd, { stdio: 'inherit', ...options });
-    return true;
+    return execSync(cmd, { stdio: 'pipe', encoding: 'utf8', ...options });
   } catch (e) {
-    return false;
+    return null;
   }
 }
 
@@ -58,132 +90,295 @@ function checkCommand(cmd) {
   }
 }
 
-async function main() {
+function printBanner() {
   console.log(`
-${colors.cyan}
+${c.cyan}${c.bold}
     ██╗  ██╗    ██╗   ████████╗
     ██║ ██╔╝    ██║   ╚══██╔══╝
     █████╔╝     ██║      ██║   
     ██╔═██╗     ██║      ██║   
     ██║  ██╗ ██╗██║ ██╗  ██║   
     ╚═╝  ╚═╝ ╚═╝╚═╝ ╚═╝  ╚═╝   
-${colors.reset}
-${colors.bright}    Knight Industries Trading${colors.reset}
-    Your Autonomous AI Financial Agent
-  `);
+${c.reset}
+    ${c.bold}Knight Industries Trading${c.reset}
+    ${c.dim}${getTagline()}${c.reset}
+`);
+}
+
+function printWelcome() {
+  console.log(`${c.cyan}╭───────────────────────────────────────────────────────────────╮${c.reset}`);
+  console.log(`${c.cyan}│${c.reset}                                                               ${c.cyan}│${c.reset}`);
+  console.log(`${c.cyan}│${c.reset}   ${c.bold}Welcome to K.I.T. Setup${c.reset}                                     ${c.cyan}│${c.reset}`);
+  console.log(`${c.cyan}│${c.reset}   ${c.dim}Your Autonomous AI Financial Agent${c.reset}                         ${c.cyan}│${c.reset}`);
+  console.log(`${c.cyan}│${c.reset}                                                               ${c.cyan}│${c.reset}`);
+  console.log(`${c.cyan}│${c.reset}   K.I.T. will help you:                                       ${c.cyan}│${c.reset}`);
+  console.log(`${c.cyan}│${c.reset}   ${c.green}•${c.reset} Trade crypto, forex, stocks autonomously                  ${c.cyan}│${c.reset}`);
+  console.log(`${c.cyan}│${c.reset}   ${c.green}•${c.reset} Connect to MT5, Binance, BinaryFaster & more              ${c.cyan}│${c.reset}`);
+  console.log(`${c.cyan}│${c.reset}   ${c.green}•${c.reset} Track your portfolio across all platforms                 ${c.cyan}│${c.reset}`);
+  console.log(`${c.cyan}│${c.reset}   ${c.green}•${c.reset} Get AI-powered market analysis & signals                  ${c.cyan}│${c.reset}`);
+  console.log(`${c.cyan}│${c.reset}                                                               ${c.cyan}│${c.reset}`);
+  console.log(`${c.cyan}╰───────────────────────────────────────────────────────────────╯${c.reset}`);
+}
+
+async function main() {
+  const TOTAL_STEPS = 6;
+  
+  printBanner();
+  printWelcome();
+  
+  console.log(`\n${c.yellow}⚠ Security Notice:${c.reset}`);
+  console.log(`${c.dim}  K.I.T. is a powerful AI agent with access to trading APIs.${c.reset}`);
+  console.log(`${c.dim}  Only use API keys with appropriate permissions.${c.reset}`);
+  console.log(`${c.dim}  Start with paper trading to test strategies.${c.reset}\n`);
 
   // Step 1: Check prerequisites
-  logStep('1/5', 'Checking prerequisites...');
+  logStep(1, TOTAL_STEPS, 'Checking prerequisites...');
   
-  let hasErrors = false;
+  let errors = [];
+  let warnings = [];
 
+  // Node.js
   if (checkCommand('node')) {
-    const nodeVersion = execSync('node --version', { encoding: 'utf8' }).trim();
-    logSuccess(`Node.js ${nodeVersion}`);
+    const nodeVersion = run('node --version')?.trim() || 'unknown';
+    const major = parseInt(nodeVersion.slice(1).split('.')[0], 10);
+    if (major >= 18) {
+      logSuccess(`Node.js ${nodeVersion}`);
+    } else {
+      logWarn(`Node.js ${nodeVersion} (recommend v18+)`);
+      warnings.push('Node.js version may be too old');
+    }
   } else {
-    logError('Node.js not found! Install from: https://nodejs.org');
-    hasErrors = true;
+    logError('Node.js not found!');
+    errors.push('Install Node.js from https://nodejs.org');
   }
 
-  if (checkCommand('python')) {
-    const pyVersion = execSync('python --version', { encoding: 'utf8' }).trim();
+  // npm
+  if (checkCommand('npm')) {
+    const npmVersion = run('npm --version')?.trim() || 'unknown';
+    logSuccess(`npm v${npmVersion}`);
+  }
+
+  // Python (optional but recommended)
+  const pythonCmd = checkCommand('python') ? 'python' : (checkCommand('python3') ? 'python3' : null);
+  if (pythonCmd) {
+    const pyVersion = run(`${pythonCmd} --version`)?.trim() || 'unknown';
     logSuccess(`${pyVersion}`);
-  } else if (checkCommand('python3')) {
-    const pyVersion = execSync('python3 --version', { encoding: 'utf8' }).trim();
-    logSuccess(`${pyVersion}`);
+    
+    // Check for Python 3.12 specifically (needed for MT5)
+    if (isWindows && checkCommand('py')) {
+      const py312 = run('py -3.12 --version');
+      if (py312) {
+        logSuccess(`Python 3.12 available (for MT5)`);
+      } else {
+        logWarn('Python 3.12 not found - needed for MT5');
+        logInfo('Install with: winget install Python.Python.3.12');
+      }
+    }
   } else {
-    logError('Python not found! Install from: https://python.org');
-    hasErrors = true;
+    logWarn('Python not found (optional, needed for MT5)');
+    warnings.push('Python not installed - MT5 integration unavailable');
   }
 
-  if (hasErrors) {
-    log('\nPlease install missing prerequisites and run again.', 'red');
+  // Git (optional)
+  if (checkCommand('git')) {
+    const gitVersion = run('git --version')?.trim() || 'unknown';
+    logSuccess(`${gitVersion}`);
+  } else {
+    logInfo('Git not found (optional)');
+  }
+
+  if (errors.length > 0) {
+    console.log(`\n${c.red}Please fix these issues and try again:${c.reset}`);
+    errors.forEach(e => console.log(`  ${c.red}•${c.reset} ${e}`));
     process.exit(1);
   }
 
-  // Step 2: Install Node dependencies
-  logStep('2/5', 'Installing Node.js dependencies...');
-  if (!run('npm install --legacy-peer-deps --silent')) {
-    logError('npm install failed');
-    process.exit(1);
-  }
-  logSuccess('Node dependencies installed');
-
-  // Step 3: Install Python dependencies
-  logStep('3/5', 'Installing Python dependencies...');
-  const pythonCmd = checkCommand('python') ? 'python' : 'python3';
-  const pipCmd = isWindows ? 'pip' : 'pip3';
-  
-  run(`${pipCmd} install MetaTrader5 pandas numpy psutil requests flask --quiet 2>${isWindows ? 'nul' : '/dev/null'}`);
-  logSuccess('Python dependencies installed');
-
-  // Step 4: Build TypeScript
-  logStep('4/5', 'Building K.I.T...');
-  if (!run('npm run build --silent')) {
-    logError('Build failed');
-    process.exit(1);
-  }
-  logSuccess('Build complete');
-
-  // Step 5: Create default config
-  logStep('5/5', 'Setting up workspace...');
+  // Step 2: Create directories
+  logStep(2, TOTAL_STEPS, 'Creating K.I.T. directories...');
   
   const kitDir = path.join(os.homedir(), '.kit');
   const workspaceDir = path.join(kitDir, 'workspace');
+  const memoryDir = path.join(workspaceDir, 'memory');
+  const credentialsDir = path.join(kitDir, 'credentials');
+  const agentsDir = path.join(kitDir, 'agents');
   
-  if (!fs.existsSync(kitDir)) {
-    fs.mkdirSync(kitDir, { recursive: true });
-  }
-  if (!fs.existsSync(workspaceDir)) {
-    fs.mkdirSync(workspaceDir, { recursive: true });
-  }
+  [kitDir, workspaceDir, memoryDir, credentialsDir, agentsDir].forEach(dir => {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+  });
+  
+  logSuccess(`Created ~/.kit/`);
+  logSuccess(`Created ~/.kit/workspace/`);
+  logSuccess(`Created ~/.kit/credentials/`);
 
-  // Copy workspace templates if they exist
+  // Step 3: Copy workspace templates
+  logStep(3, TOTAL_STEPS, 'Setting up workspace files...');
+  
   const templatesDir = path.join(__dirname, '..', 'workspace-templates');
+  const templates = [
+    { file: 'SOUL.md', desc: 'Agent personality' },
+    { file: 'USER.md', desc: 'User profile' },
+    { file: 'AGENTS.md', desc: 'Agent configuration' },
+    { file: 'TOOLS.md', desc: 'Tool notes' },
+    { file: 'MEMORY.md', desc: 'Long-term memory' },
+    { file: 'HEARTBEAT.md', desc: 'Heartbeat tasks' },
+    { file: 'BOOT.md', desc: 'Startup tasks' },
+    { file: 'IDENTITY.md', desc: 'Agent identity' },
+  ];
+  
   if (fs.existsSync(templatesDir)) {
-    const templates = ['SOUL.md', 'AGENTS.md', 'USER.md', 'TOOLS.md', 'HEARTBEAT.md'];
-    templates.forEach(file => {
+    templates.forEach(({ file, desc }) => {
       const src = path.join(templatesDir, file);
       const dest = path.join(workspaceDir, file);
-      if (fs.existsSync(src) && !fs.existsSync(dest)) {
-        fs.copyFileSync(src, dest);
+      if (fs.existsSync(src)) {
+        if (!fs.existsSync(dest)) {
+          fs.copyFileSync(src, dest);
+          logSuccess(`${file} - ${desc}`);
+        } else {
+          logInfo(`${file} already exists (skipped)`);
+        }
+      }
+    });
+  } else {
+    logWarn('Templates not found - creating defaults');
+    // Create minimal defaults
+    const defaults = {
+      'SOUL.md': '# K.I.T. Soul\n\nI am K.I.T., your autonomous AI financial agent.\nYour wealth is my mission.\n',
+      'USER.md': '# User Profile\n\n- Name: Trader\n- Risk Tolerance: Moderate\n- Goals: Wealth building\n',
+      'AGENTS.md': '# K.I.T. Workspace\n\nThis is your K.I.T. workspace.\n',
+      'MEMORY.md': '# K.I.T. Memory\n\n## Recent Events\n\n',
+    };
+    Object.entries(defaults).forEach(([file, content]) => {
+      const dest = path.join(workspaceDir, file);
+      if (!fs.existsSync(dest)) {
+        fs.writeFileSync(dest, content);
+        logSuccess(`Created ${file}`);
       }
     });
   }
-  logSuccess('Workspace ready');
 
-  // Done!
+  // Step 4: Install dependencies (if running from source)
+  const packageJsonPath = path.join(__dirname, '..', 'package.json');
+  if (fs.existsSync(packageJsonPath)) {
+    logStep(4, TOTAL_STEPS, 'Installing dependencies...');
+    
+    const installResult = run('npm install --legacy-peer-deps 2>&1', {
+      cwd: path.join(__dirname, '..'),
+      maxBuffer: 10 * 1024 * 1024,
+    });
+    
+    if (installResult !== null) {
+      logSuccess('Node.js dependencies installed');
+    } else {
+      logWarn('npm install had issues (may still work)');
+    }
+
+    // Python deps (optional)
+    if (pythonCmd) {
+      const pipCmd = isWindows ? 'pip' : 'pip3';
+      run(`${pipCmd} install MetaTrader5 pandas numpy requests --quiet 2>${isWindows ? 'nul' : '/dev/null'}`);
+      logSuccess('Python dependencies installed');
+    }
+  } else {
+    logStep(4, TOTAL_STEPS, 'Dependencies...');
+    logInfo('Running from npm package - dependencies already installed');
+  }
+
+  // Step 5: Build (if from source)
+  const srcDir = path.join(__dirname, '..', 'src');
+  if (fs.existsSync(srcDir)) {
+    logStep(5, TOTAL_STEPS, 'Building K.I.T...');
+    
+    const buildResult = run('npm run build 2>&1', {
+      cwd: path.join(__dirname, '..'),
+      maxBuffer: 10 * 1024 * 1024,
+    });
+    
+    if (buildResult !== null) {
+      logSuccess('TypeScript build complete');
+    } else {
+      logError('Build failed');
+      process.exit(1);
+    }
+  } else {
+    logStep(5, TOTAL_STEPS, 'Build...');
+    logInfo('Pre-built package - skipping build');
+  }
+
+  // Step 6: Setup complete
+  logStep(6, TOTAL_STEPS, 'Finalizing setup...');
+  
+  // Check if global install
+  const isGlobal = __dirname.includes('node_modules');
+  const kitCmd = isGlobal ? 'kit' : 'npx kit';
+  
+  logSuccess('K.I.T. installation complete!');
+
+  // Print success banner
   console.log(`
-${colors.green}
-╔════════════════════════════════════════════════════════════╗
-║                                                            ║
-║   ${colors.bright}K.I.T. INSTALLATION COMPLETE!${colors.green}                         ║
-║                                                            ║
-╚════════════════════════════════════════════════════════════╝
-${colors.reset}
-${colors.bright}Starting Dashboard...${colors.reset}
+${c.green}╭───────────────────────────────────────────────────────────────╮${c.reset}
+${c.green}│${c.reset}                                                               ${c.green}│${c.reset}
+${c.green}│${c.reset}   ${c.bold}${c.green}✓ K.I.T. INSTALLATION COMPLETE${c.reset}                            ${c.green}│${c.reset}
+${c.green}│${c.reset}                                                               ${c.green}│${c.reset}
+${c.green}╰───────────────────────────────────────────────────────────────╯${c.reset}
+
+${c.bold}Next Steps:${c.reset}
+
+  ${c.cyan}1.${c.reset} Run the setup wizard:
+     ${c.dim}$${c.reset} ${c.bold}${kitCmd} onboard${c.reset}
+
+  ${c.cyan}2.${c.reset} Or start K.I.T. directly:
+     ${c.dim}$${c.reset} ${c.bold}${kitCmd} start${c.reset}
+
+  ${c.cyan}3.${c.reset} Open the dashboard:
+     ${c.dim}$${c.reset} ${c.bold}${kitCmd} dashboard${c.reset}
+
+${c.bold}Quick Commands:${c.reset}
+
+  ${c.dim}${kitCmd} status${c.reset}      Check system status
+  ${c.dim}${kitCmd} doctor${c.reset}      Diagnose issues
+  ${c.dim}${kitCmd} market${c.reset}      Live market data
+  ${c.dim}${kitCmd} price BTC${c.reset}   Get crypto prices
+
+${c.bold}Documentation:${c.reset}
+  ${c.blue}https://github.com/kayzaa/k.i.t.-bot${c.reset}
+
+${c.dim}Your wealth is my mission. Let's trade! 🚗${c.reset}
 `);
 
-  // Start the dashboard
-  const dashboardPort = 3000;
-  const gatewayPort = 18799;
+  // Ask if user wants to run onboarding now
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
 
-  // Open browser after a short delay
-  setTimeout(() => {
-    const url = `http://localhost:${dashboardPort}`;
-    const openCmd = isWindows ? `start ${url}` : (os.platform() === 'darwin' ? `open ${url}` : `xdg-open ${url}`);
-    try {
-      execSync(openCmd, { stdio: 'pipe' });
-    } catch (e) {
-      log(`Open in browser: ${url}`, 'cyan');
+  rl.question(`\n${c.cyan}?${c.reset} Would you like to run the setup wizard now? ${c.dim}(Y/n)${c.reset} `, (answer) => {
+    rl.close();
+    
+    if (answer.toLowerCase() !== 'n') {
+      console.log(`\n${c.cyan}Starting K.I.T. Onboarding...${c.reset}\n`);
+      
+      // Run onboarding
+      const onboardPath = path.join(__dirname, '..', 'dist', 'src', 'cli', 'kit.js');
+      if (fs.existsSync(onboardPath)) {
+        spawn('node', [onboardPath, 'onboard'], { stdio: 'inherit' });
+      } else {
+        spawn(kitCmd.split(' ')[0], ['onboard'], { stdio: 'inherit', shell: true });
+      }
+    } else {
+      console.log(`\n${c.dim}Run '${kitCmd} onboard' when you're ready.${c.reset}\n`);
+      process.exit(0);
     }
-  }, 3000);
-
-  // Start gateway
-  require('../dist/src/index.js');
+  });
 }
 
-main().catch(err => {
-  logError(err.message);
-  process.exit(1);
-});
+// Handle direct run
+if (require.main === module) {
+  main().catch(err => {
+    logError(err.message);
+    process.exit(1);
+  });
+}
+
+module.exports = { main };
