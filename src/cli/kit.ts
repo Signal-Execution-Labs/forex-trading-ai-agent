@@ -1493,6 +1493,13 @@ async function main() {
   }
   
   try {
+    const { registerNewsCommand } = await import('./commands/news');
+    registerNewsCommand(program);
+  } catch {
+    // News module not available
+  }
+  
+  try {
     const { createDiagnosticsCommand } = await import('./commands/diagnostics');
     program.addCommand(createDiagnosticsCommand());
   } catch {
