@@ -1472,6 +1472,13 @@ async function main() {
   }
   
   try {
+    const { registerWatchlistCommand } = await import('./commands/watchlist');
+    registerWatchlistCommand(program);
+  } catch {
+    // Watchlist module not available
+  }
+  
+  try {
     const { createDiagnosticsCommand } = await import('./commands/diagnostics');
     program.addCommand(createDiagnosticsCommand());
   } catch {
