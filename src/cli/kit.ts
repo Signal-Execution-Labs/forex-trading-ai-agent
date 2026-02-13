@@ -1535,6 +1535,13 @@ async function main() {
   }
   
   try {
+    const { registerBackupCommand } = await import('./commands/backup');
+    registerBackupCommand(program);
+  } catch {
+    // Backup module not available
+  }
+  
+  try {
     const { createDiagnosticsCommand } = await import('./commands/diagnostics');
     program.addCommand(createDiagnosticsCommand());
   } catch {
