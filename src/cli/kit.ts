@@ -1514,6 +1514,13 @@ async function main() {
   }
   
   try {
+    const { registerMarketCommand } = await import('./commands/market');
+    registerMarketCommand(program);
+  } catch {
+    // Market module not available
+  }
+  
+  try {
     const { createDiagnosticsCommand } = await import('./commands/diagnostics');
     program.addCommand(createDiagnosticsCommand());
   } catch {
