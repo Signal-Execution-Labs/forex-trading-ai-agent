@@ -181,6 +181,23 @@ export const MT5_TOOLS: ChatToolDef[] = [
 // ============================================================================
 
 /**
+ * Get the Python command for MT5
+ * MT5 requires Python 3.11 or 3.12 - Python 3.14 is too new!
+ */
+function getPythonCommand(): string {
+  const isWindows = process.platform === 'win32';
+  
+  if (isWindows) {
+    // On Windows, use py launcher to specify Python 3.12
+    // This works even if python.exe points to 3.14
+    return 'py -3.12';
+  }
+  
+  // On Linux/Mac, try python3.12 first, then python3
+  return 'python3.12 || python3';
+}
+
+/**
  * Execute Python MT5 script and return JSON result
  */
 function execMT5Python(command: string): any {
@@ -198,19 +215,28 @@ function execMT5Python(command: string): any {
     return { success: false, error: 'MT5 script not found. Please ensure skills/metatrader is installed.' };
   }
   
+  const pythonCmd = getPythonCommand();
+  
   try {
-    const result = execSync(`python "${scriptPath}" ${command}`, {
+    const result = execSync(`${pythonCmd} "${scriptPath}" ${command}`, {
       encoding: 'utf-8',
       timeout: 30000,
       windowsHide: true,
     });
     return JSON.parse(result.trim());
   } catch (error: any) {
+    // Check if Python 3.12 is available
+    if (error.message?.includes('Python was not found') || error.message?.includes('No Python at')) {
+      return { 
+        success: false, 
+        error: 'Python 3.12 not found. MT5 requires Python 3.11 or 3.12. Install with: winget install Python.Python.3.12' 
+      };
+    }
     // Check if MT5 module is installed
     if (error.message?.includes('ModuleNotFoundError') || error.message?.includes('MetaTrader5')) {
       return { 
         success: false, 
-        error: 'MetaTrader5 Python module not installed. Run: pip install MetaTrader5' 
+        error: 'MetaTrader5 Python module not installed. Run: py -3.12 -m pip install MetaTrader5' 
       };
     }
     // Check if MT5 terminal is running
