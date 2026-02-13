@@ -386,7 +386,9 @@ export class JournalService {
         mistake: entry.mistake || null,
         screenshot_entry: entry.screenshot_entry || null,
         screenshot_exit: entry.screenshot_exit || null,
+        entry_date: entry.entry_time,  // DB column is entry_date, not entry_time
         entry_time: entry.entry_time,
+        exit_date: entry.exit_time || null,   // DB column is exit_date
         exit_time: entry.exit_time || null,
         notes: entry.notes || null,
         rating: entry.rating || null,
