@@ -375,13 +375,19 @@ export async function connectionsRoutes(fastify: FastifyInstance) {
 
           // Import trades if we have them and have a linked account
           let importedCount = 0;
+          let importErrors: string[] = [];
+          console.log('[BinaryFaster Sync] Starting import for account:', linkedAccount?.id);
+          console.log('[BinaryFaster Sync] Trades to import:', resultBF.trades?.length || 0);
+          
           if (linkedAccount && resultBF.trades && resultBF.trades.length > 0) {
             for (const trade of resultBF.trades) {
               try {
                 // Normalize direction to UPPERCASE (DB expects 'LONG' | 'SHORT')
                 const normalizedDirection = (trade.direction || 'long').toUpperCase() as 'LONG' | 'SHORT';
                 
-                await JournalService.createEntry(user.userId!, {
+                console.log('[BinaryFaster Sync] Importing trade:', trade.symbol, normalizedDirection, trade.entry_price);
+                
+                const entryResult = await JournalService.createEntry(user.userId!, {
                   account_id: linkedAccount.id,
                   symbol: trade.symbol,
                   direction: normalizedDirection,
@@ -396,10 +402,17 @@ export async function connectionsRoutes(fastify: FastifyInstance) {
                   notes: trade.notes,
                   setup: trade.setup,
                 });
-                importedCount++;
-              } catch (e) {
+                if (entryResult) {
+                  importedCount++;
+                  console.log('[BinaryFaster Sync] Trade imported successfully:', entryResult.id);
+                } else {
+                  console.error('[BinaryFaster Sync] createEntry returned null for trade:', trade.symbol);
+                  importErrors.push(`Failed to import ${trade.symbol}: createEntry returned null`);
+                }
+              } catch (e: any) {
                 // Skip duplicates or errors
-                console.log('Skip trade import:', e);
+                console.error('[BinaryFaster Sync] Error importing trade:', e.message || e);
+                importErrors.push(`${trade.symbol}: ${e.message || String(e)}`);
               }
             }
           }
@@ -411,6 +424,7 @@ export async function connectionsRoutes(fastify: FastifyInstance) {
             platform: 'binaryfaster',
             tradesFound: resultBF.trades?.length || 0,
             tradesImported: importedCount,
+            importErrors: importErrors.slice(0, 10), // Return first 10 errors
             trades: resultBF.trades,
             balance: resultBF.balance,
             message: `Found ${resultBF.trades?.length || 0} trades, imported ${importedCount} from BinaryFaster`,

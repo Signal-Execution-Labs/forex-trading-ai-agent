@@ -327,16 +327,21 @@ export class JournalService {
     // Normalize direction to uppercase
     const normalizedDirection = (entry.direction || 'LONG').toUpperCase() as 'LONG' | 'SHORT';
     
-    // Calculate P&L if exit price provided
-    let pnl: number | null = null;
+    // Use provided P&L or calculate from prices
+    let pnl: number | null = entry.pnl ?? null;
     let pnlPercent: number | null = null;
     let isWin: boolean | null = null;
     let duration: number | null = null;
 
-    if (entry.exit_price && entry.entry_price && entry.quantity) {
+    // Calculate P&L from prices only if not already provided
+    if (pnl === null && entry.exit_price && entry.entry_price && entry.quantity) {
       const direction = normalizedDirection === 'LONG' ? 1 : -1;
       pnl = (entry.exit_price - entry.entry_price) * entry.quantity * direction;
       pnlPercent = ((entry.exit_price - entry.entry_price) / entry.entry_price) * 100 * direction;
+    }
+    
+    // Determine win/loss from P&L
+    if (pnl !== null) {
       isWin = pnl > 0;
     }
 
@@ -346,6 +351,15 @@ export class JournalService {
       );
     }
 
+    console.log('[JournalService] Creating entry:', { 
+      userId, 
+      account_id: entry.account_id, 
+      symbol: entry.symbol, 
+      direction: normalizedDirection,
+      pnl,
+      entry_time: entry.entry_time
+    });
+    
     const { data, error } = await getSupabase()
       .from('journal_entries')
       .insert({
