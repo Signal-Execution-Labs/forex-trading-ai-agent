@@ -1486,6 +1486,13 @@ async function main() {
   }
   
   try {
+    const { registerSignalsCommand } = await import('./commands/signals');
+    registerSignalsCommand(program);
+  } catch {
+    // Signals module not available
+  }
+  
+  try {
     const { createDiagnosticsCommand } = await import('./commands/diagnostics');
     program.addCommand(createDiagnosticsCommand());
   } catch {
