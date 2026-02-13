@@ -52,6 +52,23 @@ function getInterpretation(corr: number, s1: string, s2: string): string {
 
 export async function correlationRoutes(fastify: FastifyInstance, _opts: FastifyPluginOptions) {
 
+  // GET /api/correlations - Get default correlation matrix
+  fastify.get('/', {
+    schema: { description: 'Get default correlation matrix for common assets', tags: ['Correlations'] },
+  }, async (_request, reply) => {
+    const symbols = ['BTC/USD', 'ETH/USD', 'EUR/USD', 'XAU/USD', 'SPY', 'QQQ', 'NVDA'];
+    const matrix: number[][] = [];
+    for (let i = 0; i < symbols.length; i++) {
+      const row: number[] = [];
+      for (let j = 0; j < symbols.length; j++) {
+        const corr = getCorrelation(symbols[i], symbols[j]);
+        row.push(corr !== null ? Math.round(corr * 100) / 100 : 0);
+      }
+      matrix.push(row);
+    }
+    return reply.send({ symbols, matrix, period: '1y', generatedAt: new Date().toISOString() });
+  });
+
   // GET /api/correlations/matrix
   fastify.get<{ Querystring: { symbols?: string; period?: string } }>('/matrix', {
     schema: { description: 'Get full correlation matrix', tags: ['Correlations'] },

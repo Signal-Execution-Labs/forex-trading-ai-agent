@@ -227,49 +227,82 @@ export function createDoctorCommand(): Command {
           results.push({ name: 'AI Config', status: 'fail', message: 'No AI configuration found' });
           console.log('   ❌ No AI configuration found');
         } else {
-          const defaultProvider = config.ai.defaultProvider;
+          // Support both config formats: simple (provider/model) and advanced (defaultProvider/providers)
+          const defaultProvider = config.ai.defaultProvider || config.ai.provider;
+          const defaultModel = config.ai.defaultModel || config.ai.model;
           const providers = config.ai.providers || {};
           
           console.log(`   Default: ${defaultProvider || 'none'}`);
-          console.log(`   Model: ${config.ai.defaultModel || 'default'}\n`);
+          console.log(`   Model: ${defaultModel || 'default'}\n`);
           
-          // Check each configured provider
-          for (const [name, providerConfig] of Object.entries(providers) as [string, any][]) {
-            const hasKey = !!providerConfig?.apiKey;
-            const keyPreview = hasKey ? `${providerConfig.apiKey.substring(0, 8)}...` : 'not set';
-            
-            if (hasKey) {
-              results.push({ name: `AI: ${name}`, status: 'pass', message: `API key configured` });
-              console.log(`   ✅ ${name}: API key configured (${keyPreview})`);
-              
-              // Validate key format
-              const key = providerConfig.apiKey;
-              let keyValid = true;
-              let keyFormat = '';
-              
-              if (name === 'anthropic' && !key.startsWith('sk-ant-')) {
-                keyValid = false;
-                keyFormat = 'Expected: sk-ant-...';
-              } else if (name === 'openai' && !key.startsWith('sk-')) {
-                keyValid = false;
-                keyFormat = 'Expected: sk-...';
-              } else if (name === 'google' && !key.startsWith('AIza')) {
-                keyValid = false;
-                keyFormat = 'Expected: AIza...';
-              }
-              
-              if (!keyValid && options.verbose) {
-                console.log(`      ⚠️  Key format looks unusual. ${keyFormat}`);
-              }
+          // Check environment variables for API keys
+          const envKeys: Record<string, string | undefined> = {
+            openai: process.env.OPENAI_API_KEY,
+            anthropic: process.env.ANTHROPIC_API_KEY,
+            google: process.env.GOOGLE_API_KEY,
+            openrouter: process.env.OPENROUTER_API_KEY,
+            groq: process.env.GROQ_API_KEY,
+            xai: process.env.XAI_API_KEY,
+            mistral: process.env.MISTRAL_API_KEY,
+            deepseek: process.env.DEEPSEEK_API_KEY,
+          };
+          
+          // If using simple config format, check env var for that provider
+          if (defaultProvider && !Object.keys(providers).length) {
+            const envKey = envKeys[defaultProvider];
+            if (envKey) {
+              results.push({ name: `AI: ${defaultProvider}`, status: 'pass', message: 'API key from environment' });
+              console.log(`   ✅ ${defaultProvider}: API key configured (from ENV)`);
             } else {
-              results.push({ name: `AI: ${name}`, status: 'warn', message: 'No API key' });
-              console.log(`   ⚠️  ${name}: No API key configured`);
+              results.push({ name: `AI: ${defaultProvider}`, status: 'warn', message: 'No API key found', fix: `Set ${defaultProvider.toUpperCase()}_API_KEY environment variable` });
+              console.log(`   ⚠️  ${defaultProvider}: No API key (set ${defaultProvider.toUpperCase()}_API_KEY)`);
+            }
+          } else {
+            // Check each configured provider
+            for (const [name, providerConfig] of Object.entries(providers) as [string, any][]) {
+              const configKey = providerConfig?.apiKey;
+              const envKey = envKeys[name];
+              const hasKey = !!(configKey || envKey);
+              const keySource = configKey ? 'config' : (envKey ? 'ENV' : 'none');
+              const keyPreview = configKey ? `${configKey.substring(0, 8)}...` : (envKey ? `${envKey.substring(0, 8)}...` : 'not set');
+              
+              if (hasKey) {
+                results.push({ name: `AI: ${name}`, status: 'pass', message: `API key from ${keySource}` });
+                console.log(`   ✅ ${name}: API key configured (${keyPreview} from ${keySource})`);
+                
+                // Validate key format
+                const key = configKey || envKey || '';
+                let keyValid = true;
+                let keyFormat = '';
+                
+                if (name === 'anthropic' && !key.startsWith('sk-ant-')) {
+                  keyValid = false;
+                  keyFormat = 'Expected: sk-ant-...';
+                } else if (name === 'openai' && !key.startsWith('sk-')) {
+                  keyValid = false;
+                  keyFormat = 'Expected: sk-...';
+                } else if (name === 'google' && !key.startsWith('AIza')) {
+                  keyValid = false;
+                  keyFormat = 'Expected: AIza...';
+                }
+                
+                if (!keyValid && options.verbose) {
+                  console.log(`      ⚠️  Key format looks unusual. ${keyFormat}`);
+                }
+              } else {
+                results.push({ name: `AI: ${name}`, status: 'warn', message: 'No API key' });
+                console.log(`   ⚠️  ${name}: No API key configured`);
+              }
             }
           }
           
-          // Check if default provider is configured
-          if (defaultProvider && !providers[defaultProvider]?.apiKey) {
-            console.log(`\n   ⚠️  Default provider "${defaultProvider}" has no API key!`);
+          // Check if default provider has API key (from config or env)
+          if (defaultProvider) {
+            const providerKey = providers[defaultProvider]?.apiKey || envKeys[defaultProvider];
+            if (!providerKey) {
+              console.log(`\n   ⚠️  Default provider "${defaultProvider}" has no API key!`);
+              console.log(`      Set ${defaultProvider.toUpperCase()}_API_KEY environment variable`);
+            }
           }
         }
         

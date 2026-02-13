@@ -66,6 +66,39 @@ function generateHistoricalData(symbol: string, startDate: Date, endDate: Date):
 
 export async function replayRoutes(fastify: FastifyInstance, _opts: FastifyPluginOptions) {
 
+  // GET /api/replay - Get replay system info and available scenarios
+  fastify.get('/', {
+    schema: { description: 'Get replay system overview', tags: ['Replay'] },
+  }, async () => ({
+    name: 'K.I.T. Market Replay',
+    description: 'Practice trading on historical data without risk',
+    features: ['Historical market scenarios', 'Paper trading simulation', 'Performance tracking', 'Learning mode'],
+    activeSessions: replaySessions.size,
+    endpoints: {
+      scenarios: '/api/replay/scenarios',
+      start: 'POST /api/replay/start',
+      leaderboard: '/api/replay/leaderboard',
+    },
+  }));
+
+  // GET /api/replay/sessions - List active sessions
+  fastify.get('/sessions', {
+    schema: { description: 'List all active replay sessions', tags: ['Replay'] },
+  }, async () => {
+    const sessions = Array.from(replaySessions.values()).map(s => ({
+      id: s.id,
+      agentId: s.agentId,
+      symbol: s.symbol,
+      status: s.status,
+      mode: s.mode,
+      currentDate: s.currentDate,
+      balance: s.balance,
+      equity: s.equity,
+      tradesCount: s.trades.length,
+    }));
+    return { sessions, total: sessions.length };
+  });
+
   // GET /api/replay/scenarios
   fastify.get('/scenarios', {
     schema: { description: 'Get available replay scenarios', tags: ['Replay'] },

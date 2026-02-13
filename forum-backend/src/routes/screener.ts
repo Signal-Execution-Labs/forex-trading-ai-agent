@@ -84,6 +84,25 @@ export async function screenerRoutes(fastify: FastifyInstance, _opts: FastifyPlu
   db.data!.screenerPresets ||= [];
   await db.write();
 
+  // GET /api/screener - Default screener view (top gainers)
+  fastify.get('/', {
+    schema: { description: 'Get screener assets with default filters (top gainers)', tags: ['Screener'] },
+  }, async (_request, reply) => {
+    // Return top gainers by default
+    const sorted = [...MOCK_ASSETS].sort((a, b) => b.change_24h - a.change_24h);
+    return reply.send({
+      success: true,
+      data: {
+        assets: sorted,
+        screen: 'gainers',
+        filters: [],
+        sort: 'change_24h',
+        order: 'desc',
+      },
+      meta: { total: sorted.length, availableMetrics: Object.keys(SCREENING_METRICS).length },
+    });
+  });
+
   // GET /api/screener/metrics
   fastify.get('/metrics', {
     schema: { description: 'List all available screening metrics', tags: ['Screener'] },

@@ -1,7 +1,23 @@
 /**
  * User Service - Manages GitHub users in Supabase
+ * Falls back gracefully when Supabase is not configured
  */
 
+// Safely get Supabase client - returns null if not configured
+function getSafeSupabase() {
+  try {
+    const url = process.env.SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY;
+    if (!url || !key) return null;
+    
+    const { getSupabase } = require('../db/supabase.ts');
+    return getSupabase();
+  } catch {
+    return null;
+  }
+}
+
+// Legacy import for backwards compatibility
 import { getSupabase } from '../db/supabase.ts';
 
 export interface User {
@@ -250,8 +266,14 @@ export class UserService {
   /**
    * Get all connections that need auto-sync (for cron job)
    */
-  static async getConnectionsForAutoSync(force: boolean = false): Promise<PlatformConnection[]> {
-    let query = getSupabase()
+  static async getConnectionsForAutoSync(force: boolean = false): Promise<(PlatformConnection & { user_id?: string })[]> {
+    const supabase = getSafeSupabase();
+    if (!supabase) {
+      console.log('Supabase not configured - no connections to sync');
+      return [];
+    }
+
+    let query = supabase
       .from('platform_connections')
       .select('*')
       .eq('auto_sync', true);

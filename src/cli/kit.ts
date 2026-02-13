@@ -1122,21 +1122,36 @@ program
         const { loadConfig } = await import('../config');
         const config = loadConfig();
         
-        if (config.ai?.defaultProvider) {
-          const provider = config.ai.defaultProvider;
-          const providerConfig = config.ai.providers?.[provider];
+        // Support both config formats
+        const provider = config.ai?.defaultProvider || config.ai?.provider;
+        const model = config.ai?.defaultModel || config.ai?.model;
+        
+        if (provider) {
+          // Check for API key in config or environment
+          const envKeys: Record<string, string | undefined> = {
+            openai: process.env.OPENAI_API_KEY,
+            anthropic: process.env.ANTHROPIC_API_KEY,
+            google: process.env.GOOGLE_API_KEY,
+            openrouter: process.env.OPENROUTER_API_KEY,
+            groq: process.env.GROQ_API_KEY,
+          };
           
-          if (providerConfig?.apiKey) {
+          const configKey = config.ai?.providers?.[provider]?.apiKey;
+          const envKey = envKeys[provider];
+          const apiKey = configKey || envKey;
+          
+          if (apiKey) {
             console.log(`\n🧠 Testing AI provider (${provider})...`);
-            console.log(`✅ ${provider} API key configured`);
+            console.log(`✅ ${provider} API key configured (from ${configKey ? 'config' : 'ENV'})`);
             passed++;
             
             if (options.verbose) {
-              console.log(`   Model: ${config.ai.defaultModel || 'default'}`);
-              console.log(`   Key: ${providerConfig.apiKey.substring(0, 10)}...`);
+              console.log(`   Model: ${model || 'default'}`);
+              console.log(`   Key: ${apiKey.substring(0, 10)}...`);
             }
           } else {
             console.log(`⚠️  ${provider} API key not configured`);
+            console.log(`   Set ${provider.toUpperCase()}_API_KEY environment variable`);
           }
         } else {
           console.log('⚠️  No AI provider configured');

@@ -67,11 +67,23 @@ export async function postRoutes(fastify: FastifyInstance) {
     const { page, limit, category, agent_id, search } = request.query;
     const { posts, total } = await PostService.list({ page, limit, category, agent_id, search });
     
-    // Parse tags for each post
-    const postsWithTags = posts.map(post => ({
-      ...post,
-      tags: post.tags ? JSON.parse(post.tags) : [],
-    }));
+    // Parse tags for each post (handle both array and string formats)
+    const postsWithTags = posts.map(post => {
+      let parsedTags: string[] = [];
+      if (post.tags) {
+        if (Array.isArray(post.tags)) {
+          parsedTags = post.tags;
+        } else if (typeof post.tags === 'string') {
+          try {
+            parsedTags = JSON.parse(post.tags);
+          } catch {
+            // If JSON parse fails, try comma-separated
+            parsedTags = post.tags.split(',').map((t: string) => t.trim()).filter(Boolean);
+          }
+        }
+      }
+      return { ...post, tags: parsedTags };
+    });
     
     return {
       success: true,
