@@ -2,6 +2,90 @@
 
 > Continuous research into professional finance apps to improve K.I.T.
 
+## Research Session: February 14, 2026 (17:38 CET)
+
+### Sources Analyzed
+- TradingView 2025 Features & Charting Library
+- eToro CopyTrader & AI Tools (October 2025 launch)
+- eToro Public APIs & Social Trading Platform
+
+### Key Findings
+
+#### 1. TradingView 2025 Updates
+- **Wyckoff Schematic Indicator:** Auto-detects accumulation/distribution patterns, smart money movements
+- **Pine Script v6:** Custom indicators and strategy automation
+- **HLC Charts:** High-Low-Close focused analysis (open price ignored)
+- **Relative Price Baseline:** Compare price movements against any baseline
+- **Automatic Technical Rating System:** AI-generated ratings for assets
+
+#### 2. eToro CopyTrader (US Launch October 2025)
+- **Copy Up to 100 Traders:** Simultaneously mirror multiple investors
+- **Filter by Performance:** ROI, sector, strategy type matching
+- **Instant Portfolio Replication:** Real-time trade mirroring
+- **Social Network Integration:** Share trades on Facebook/Twitter
+- **AI Tools for Popular Investors:** Build custom AI trading tools
+
+#### 3. eToro Public APIs (New 2025)
+- **Free Real-Time Market Data:** Open API access
+- **Portfolio Analytics API:** Third-party integration
+- **Social Features API:** Access to follower/following data
+- **15 Years of Social Investing:** Proven platform
+
+### New Skills Implemented
+
+Based on research, added 5 new skills:
+
+| # | Skill | Inspired By |
+|---|-------|-------------|
+| 118 | CopyTrader Pro | eToro CopyTrader™ |
+| 119 | Popular Investor | eToro Popular Investor Program |
+| 120 | AI Trading Studio | eToro AI Tools |
+| 121 | Public API Gateway | eToro Open APIs |
+| 122 | Social Proof System | eToro verification & badges |
+
+### Implementation Details
+
+#### CopyTrader Pro (#118)
+- Copy up to 100 traders simultaneously
+- Filter by performance, sector, strategy type
+- Risk-adjusted copying (proportional/fixed/auto)
+- Max drawdown limits and diversification rules
+- Real-time P&L attribution per copied trader
+
+#### Popular Investor (#119)
+- 4-tier program: Cadet → Champion → Elite → Elite Pro
+- Revenue share: 1-2.5% of copier profits
+- Verified badge and profile customization
+- Copier limit increases with tier
+- Monthly earnings payout
+
+#### AI Trading Studio (#120)
+- Custom indicator builder via natural language
+- Strategy architect (describe rules → get code)
+- Signal generator trained on your winning trades
+- Market analyzer with natural language queries
+- Portfolio optimizer with goal-based suggestions
+
+#### Public API Gateway (#121)
+- Self-hosted REST API for external access
+- Market data, portfolio, social, execution endpoints
+- API key + OAuth 2.0 authentication
+- Rate limits by tier (60-1000 req/min)
+- Webhook subscriptions for real-time events
+
+#### Social Proof System (#122)
+- 4 verification levels (Basic → Elite)
+- 15+ achievement badges (Sharpshooter, Bull Runner, etc.)
+- Shareable performance cards (cryptographically signed)
+- Trust score (0-100) combining metrics
+- QR code verification for authenticity
+
+---
+
+**Total K.I.T. Skills: 122** 🚀
+
+---
+
 ## Research Session: February 12, 2026 (05:22 CET)
 
 ### Sources Analyzed

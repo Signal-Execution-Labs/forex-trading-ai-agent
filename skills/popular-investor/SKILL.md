@@ -1,139 +1,71 @@
 # Popular Investor Program
 
-Become a signal provider and earn from copiers - eToro-style program.
+> Become a verified signal provider and earn from copiers (eToro-style)
 
 ## Overview
-Share your strategies, build a following, earn rewards. The more people copy your trades, the more you earn.
 
-## Program Tiers
+Transform from trader to influencer. Share your strategies, build a following, and earn rewards when others copy your trades.
 
-### Tier 1: Cadet
-```yaml
-requirements:
-  min_equity: $1,000
-  verified: true
-  trading_history: 2 months
-  
-benefits:
-  - Public profile
-  - Performance badges
-  - No earnings yet
-```
+## Tiers
 
-### Tier 2: Rising Star
-```yaml
-requirements:
-  min_copiers: 10
-  min_aum: $10,000  # Assets under management
-  max_drawdown: <30%
-  win_rate: >50%
-  
-benefits:
-  - Monthly payout: 0.5% of AUM
-  - Verified badge
-  - Featured in search
-```
+### Cadet (Entry)
+- **Requirements:** 1 month history, +5% return, <30% drawdown
+- **Benefits:** Basic profile, listed in discovery
+- **Copier Limit:** 10
 
-### Tier 3: Champion
-```yaml
-requirements:
-  min_copiers: 50
-  min_aum: $100,000
-  max_drawdown: <20%
-  consistent_profit: 6 months
-  
-benefits:
-  - Monthly payout: 1.0% of AUM
-  - Priority support
-  - Strategy spotlight
-```
+### Champion
+- **Requirements:** 3 months, +10% return, 50+ copiers
+- **Benefits:** Verified badge, priority listing
+- **Copier Limit:** 100
+- **Revenue Share:** 1% of copier profits
 
-### Tier 4: Elite
-```yaml
-requirements:
-  min_copiers: 200
-  min_aum: $500,000
-  verified_track_record: 12 months
-  
-benefits:
-  - Monthly payout: 1.5% of AUM
-  - Personal manager
-  - Media features
-  - Exclusive events
-```
+### Elite
+- **Requirements:** 6 months, +20% return, 500+ copiers
+- **Benefits:** Featured placement, custom branding
+- **Copier Limit:** 1,000
+- **Revenue Share:** 2% of copier profits
 
-## Earnings Calculator
-```
-Monthly Earnings = AUM × Tier Rate
+### Elite Pro
+- **Requirements:** 12 months, +30% return, 2,000+ copiers
+- **Benefits:** VIP support, API access, webinar hosting
+- **Copier Limit:** Unlimited
+- **Revenue Share:** 2.5% of copier profits
 
-Example (Champion):
-├── 75 copiers
-├── Average copy: $2,000
-├── AUM: $150,000
-├── Rate: 1.0%
-└── Monthly Earnings: $1,500
-```
+## Verification Requirements
+
+1. **Identity Verified:** KYC completed
+2. **Track Record:** Audited trading history
+3. **Risk Disclosure:** Clear strategy description
+4. **Communication:** Respond to copier questions within 24h
+
+## Earnings
+
+- Revenue share paid monthly
+- Based on net profits of copiers (after fees)
+- Minimum payout: $50
+- Payment methods: Crypto, Bank, PayPal
 
 ## Profile Features
 
-### Performance Display
-```
-TrendMaster Pro 🏆 Champion
-├── Total Gain: +187% (2 years)
-├── This Year: +45%
-├── Risk Score: 4/10 (Moderate)
-├── Copiers: 127
-├── AUM: $254,000
-└── Win Rate: 68%
-```
-
-### Strategy Description
-```markdown
-## My Strategy
-Long-term trend following with strict risk management.
-- Markets: Crypto + Forex
-- Timeframe: Swing (days to weeks)
-- Max positions: 5
-- Stop loss: Always 2%
-```
-
-### Social Feed
-- Post trade ideas with reasoning
-- Reply to copier questions
-- Share market analysis
-- Build community engagement
-
-## Copier Protection
-```yaml
-max_copiers: 500       # Prevent overcrowding
-min_copy_amount: $200  # Quality over quantity
-copy_sl_enabled: true  # Force stop losses
-transparency: full     # All trades visible
-```
-
-## Analytics Dashboard
-```
-Your Copier Stats:
-├── Total Copiers: 127
-├── New This Month: +23
-├── Left This Month: -8
-├── Avg Copy Amount: $2,000
-├── Copier Satisfaction: 4.6/5
-└── Comments This Week: 34
-```
-
-## Compliance
-- No manipulation
-- Disclose conflicts
-- Maintain activity (min 1 trade/month)
-- Respond to copiers (24h)
+- Bio and strategy description
+- Performance charts and metrics
+- Risk profile visualization
+- Recent trades (delayed by 1h)
+- Copier testimonials
+- Social links
 
 ## Commands
-```bash
-kit popular-investor apply
-kit popular-investor status
-kit popular-investor stats
-kit popular-investor earnings
-kit popular-investor copiers --list
-kit popular-investor post --idea "BTC looks bullish..."
-```
+
+- `kit popular apply` - Apply for Popular Investor
+- `kit popular status` - Check your tier and earnings
+- `kit popular profile` - Edit your profile
+- `kit popular copiers` - View your copiers
+- `kit popular earnings` - Earnings breakdown
+
+## API Endpoints
+
+- `POST /api/popular/apply` - Apply
+- `GET /api/popular/profile` - Your profile
+- `PUT /api/popular/profile` - Update profile
+- `GET /api/popular/earnings` - Earnings data
+- `GET /api/popular/copiers` - Your copiers list
