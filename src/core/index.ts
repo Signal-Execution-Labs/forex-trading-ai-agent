@@ -11,3 +11,5 @@ export * from './session-spawner';
 export * from './retry';
 export * from './diagnostics';
 export * from './plugin-slots';
+export * from './compaction';
+export * from './model-failover';
