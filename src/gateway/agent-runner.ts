@@ -458,6 +458,26 @@ export class AgentRunner extends EventEmitter {
 
   private loadApiKeysFromEnv(): Record<string, string> {
     const keys: Record<string, string> = {};
+    
+    // Also try to load from ~/.kit/config.json directly as fallback
+    try {
+      const configPath = require('path').join(require('os').homedir(), '.kit', 'config.json');
+      if (require('fs').existsSync(configPath)) {
+        const config = JSON.parse(require('fs').readFileSync(configPath, 'utf8'));
+        if (config.ai?.providers) {
+          for (const [provider, provConfig] of Object.entries(config.ai.providers)) {
+            if ((provConfig as any)?.apiKey) {
+              keys[provider] = (provConfig as any).apiKey;
+            }
+          }
+        }
+        if (config.ai?.apiKey && config.ai?.defaultProvider) {
+          keys[config.ai.defaultProvider] = config.ai.apiKey;
+        }
+      }
+    } catch (e) {
+      // Ignore errors loading config
+    }
 
     if (process.env.ANTHROPIC_API_KEY) {
       keys.anthropic = process.env.ANTHROPIC_API_KEY;
