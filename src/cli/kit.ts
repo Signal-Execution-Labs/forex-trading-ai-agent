@@ -1605,6 +1605,20 @@ async function main() {
     // Workflow module not available
   }
   
+  try {
+    const { registerBenchmarkCommand } = await import('./commands/benchmark');
+    registerBenchmarkCommand(program);
+  } catch {
+    // Benchmark module not available
+  }
+  
+  try {
+    const { registerReplayCommand } = await import('./commands/replay');
+    registerReplayCommand(program);
+  } catch {
+    // Replay module not available
+  }
+  
   // Parse and execute
   program.parse();
 }
