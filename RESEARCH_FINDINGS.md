@@ -2,6 +2,72 @@
 
 > Continuous research into professional finance apps to improve K.I.T.
 
+## Research Session: February 14, 2026 (23:28 CET) - Late Night Session
+
+### Sources Analyzed
+- Alpaca Markets API Documentation (docs.alpaca.markets)
+- Alpaca Commission-Free Trading Features
+
+### Key Alpaca Features Studied
+
+#### 1. Fractional Shares Trading
+- Buy as little as $1 worth of any stock
+- Supports 2,000+ US equities
+- Market orders only during normal hours
+- Riskless principal execution
+
+#### 2. Paper Trading Environment
+- Free sandbox for testing algorithms
+- Simulates real market conditions
+- No real money required
+- Full API functionality identical to live
+
+#### 3. Order Types
+- **Market/Limit/Stop/Stop-Limit:** Standard orders
+- **Trailing Stop:** Follow price with trail amount or percentage
+- **Bracket Orders:** Entry + Take Profit + Stop Loss in one
+- **OCO (One-Cancels-Other):** Advanced conditional orders
+
+#### 4. Real-Time Data
+- IEX (free) and SIP (premium) data feeds
+- Bars, quotes, trades, snapshots
+- Historical data with adjustments (splits, dividends)
+- Real-time news feed API
+
+### New Skills Implemented
+
+| # | Skill | Features |
+|---|-------|----------|
+| 123 | alpaca-broker.ts | Full Alpaca API integration - fractional shares, bracket orders, trailing stops, real-time data, watchlists, portfolio history, crypto support |
+| 124 | dca-automator.ts | Smart Dollar-Cost Averaging with 5 strategies, dip detection, Fear & Greed integration, RSI adjustments, multi-asset portfolios |
+
+### Implementation Highlights
+
+#### Alpaca Broker Integration (28KB)
+- Account management (balance, buying power, pattern day trader status)
+- Position tracking with P&L calculations
+- 10+ order types including advanced brackets
+- Real-time market data (stocks + crypto)
+- News API integration
+- Watchlist management
+- Portfolio history and performance tracking
+- Market clock and calendar
+
+#### DCA Automator (24KB)
+- **Fixed DCA:** Standard recurring purchases
+- **Value Averaging:** Buy more when below target growth
+- **Dynamic DCA:** Volatility and sentiment adjusted
+- **Dip Buying:** Multiplier system for market dips
+- **Smart DCA:** RSI + Fear/Greed index integration
+- Performance analytics and reporting
+- Multi-broker support (Alpaca, Binance, Coinbase, Kraken, IB)
+
+### GitHub Push
+- Commit: `feat(skills): add Alpaca broker integration and DCA automator`
+- 1,683 lines added across 2 new skill files
+
+---
+
 ## Research Session: February 14, 2026 (21:32 CET) - Night Session
 
 ### Sources Analyzed
