@@ -1438,6 +1438,13 @@ async function main() {
   }
   
   try {
+    const { registerTuiCommand } = await import('./commands/tui');
+    registerTuiCommand(program);
+  } catch {
+    // TUI module not available
+  }
+  
+  try {
     const { registerSystemCommand } = await import('./commands/system');
     registerSystemCommand(program);
   } catch {

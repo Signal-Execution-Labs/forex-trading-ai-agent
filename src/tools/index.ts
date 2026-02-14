@@ -34,6 +34,16 @@ export type { SkillInfo, SkillExecutionResult } from './skill-bridge';
 // Types
 export * from './types';
 
+// Tool Groups (OpenClaw-style shorthands)
+export {
+  TOOL_GROUPS,
+  expandToolGroups,
+  isToolInGroup,
+  getToolGroups,
+  listToolGroups,
+  filterToolsByPolicy
+} from './tool-groups';
+
 // Core Tools
 export { AutoTrader, createAutoTrader } from './auto-trader';
 export type { TradeParams, TradeResult, AutoTraderConfig } from './auto-trader';
