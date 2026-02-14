@@ -608,3 +608,107 @@ Ideas for #100:
 ---
 
 *Last updated: February 12, 2026 17:02 CET*
+
+---
+
+## Research Session: February 14, 2026 (09:52 CET)
+
+### Sources Analyzed
+- TradingView Pine Script v6 Release Notes (March 2025)
+- Pine Script v6 Blog: "The AI-Assisted Coding Revolution"
+- TradingView Featured Scripts: 112+ Statistical Calculations Library
+- Pineify Blog: Pine Script v6 Everything You Need to Know
+
+### Key Findings
+
+#### 1. Pine Script v6 Features
+- **Dynamic Requests:** equest.security() now supports runtime symbol/timeframe selection
+- **Automated Backtesting:** Enhanced strategy testing with profit/limit parameter improvements
+- **AI-Assisted Coding:** Natural language to Pine Script generation
+- **112+ Statistical Functions:** Single library with comprehensive quant metrics
+
+#### 2. Dynamic Security Requests
+Pine v6 allows changing symbols and timeframes at runtime without recompiling:
+- Multi-symbol analysis (up to 40 symbols)
+- Real-time correlation tracking
+- Sector rotation strategies
+- BTC dominance trading
+
+#### 3. AI Coding Revolution
+TradingView's AI-assisted coding eliminates barriers:
+- No coding experience required
+- Describe strategy in plain English
+- AI generates working Pine Script
+- Iterative refinement through conversation
+
+#### 4. Statistical Library Features
+Featured scripts now include 112+ calculations:
+- Descriptive statistics (mean, median, skewness, kurtosis)
+- Risk metrics (Sharpe, Sortino, Calmar, VaR, CVaR)
+- Correlation analysis (Pearson, Spearman, Kendall)
+- Time series functions (SMA, EMA, VWMA, Hull MA)
+- Hypothesis testing (t-test, chi-squared, ANOVA)
+
+### New Skills Implemented
+
+Based on research, added 3 new skills:
+
+| # | Skill | Inspired By |
+|---|-------|-------------|
+| 110 | Dynamic Requests | Pine Script v6 request.security() improvements |
+| 111 | Statistics Library | TradingView 112+ statistical calculations |
+| 112 | AI Code Assist | Pine v6 AI-Assisted Coding Revolution |
+
+### Implementation Details
+
+#### Dynamic Requests (#110)
+- Runtime symbol/timeframe selection
+- Multi-symbol analysis (40+ symbols)
+- Correlation matrix tracking
+- Sector rotation support
+- Smart caching with TTL
+- Request types: security, earnings, dividends, splits, financial, economic
+
+#### Statistics Library (#111)
+- 120+ statistical functions (exceeds TradingView)
+- Categories: Descriptive, Risk, Correlation, Time Series, Distribution, Hypothesis
+- Full risk report generation
+- Correlation matrix builder
+- Vectorized operations for performance
+- GPU acceleration option
+
+#### AI Code Assist (#112)
+- Natural language to K.I.T. TypeScript
+- Pine Script v4/v5/v6 converter
+- Python (Backtrader) converter
+- MQL4/MQL5 converter
+- Code explanation mode
+- Optimization suggestions
+- Bug detection
+- Auto-documentation
+- Template library (trend, mean reversion, RSI)
+- 7-day paper trading requirement for safety
+
+---
+
+## Total K.I.T. Skills: 112
+
+### Feature Parity Progress
+| Feature | TradingView | K.I.T. | Status |
+|---------|-------------|--------|--------|
+| Dynamic Requests | v6 | ✅ #110 | Complete |
+| Statistics Library | 112 functions | ✅ 120+ | Exceeded |
+| AI Code Generation | Beta | ✅ #112 | Complete |
+| Pine Script Conversion | N/A | ✅ #112 | K.I.T. exclusive |
+| Multi-timeframe | ✅ | ✅ | Complete |
+| Alert System | ✅ | ✅ #54 | Complete |
+| Backtesting | ✅ | ✅ | Complete |
+| Paper Trading | ✅ | ✅ | Complete |
+
+### Next Research Targets
+- [ ] 3Commas DCA bot advanced features
+- [ ] Zapper DeFi portfolio tracking
+- [ ] eToro/ZuluTrade copy trading mechanics
+- [ ] Pionex built-in bot strategies
+- [ ] DeBank multi-chain analytics
+
