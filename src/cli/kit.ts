@@ -1577,6 +1577,13 @@ async function main() {
     // Diagnostics module not available
   }
   
+  try {
+    const { registerLogsCommand } = await import('./commands/logs');
+    registerLogsCommand(program);
+  } catch {
+    // Logs module not available
+  }
+  
   // Parse and execute
   program.parse();
 }

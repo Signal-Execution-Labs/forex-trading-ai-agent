@@ -1,238 +1,247 @@
 /**
- * K.I.T. Logs CLI Command
+ * K.I.T. Logs Command
  * 
- * View and manage gateway logs.
- * 
- * @see OpenClaw docs/logging.md
+ * Tail and view log files like OpenClaw's `openclaw logs`
  */
 
+import { Command } from 'commander';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { Command } from 'commander';
-import { spawn } from 'child_process';
+import * as readline from 'readline';
 
 const KIT_HOME = path.join(os.homedir(), '.kit');
-const LOGS_DIR = path.join(KIT_HOME, 'logs');
-const GATEWAY_LOG = path.join(LOGS_DIR, 'gateway.log');
-const COMMANDS_LOG = path.join(LOGS_DIR, 'commands.log');
-const ERROR_LOG = path.join(LOGS_DIR, 'error.log');
 
-export function registerLogsCommand(program: Command): void {
-  const logs = program
-    .command('logs')
-    .description('View and manage gateway logs');
+function getLogDir(): string {
+  return process.platform === 'win32'
+    ? path.join(os.tmpdir(), 'kit')
+    : '/tmp/kit';
+}
 
-  // Show logs (default: gateway)
-  logs
-    .command('show')
-    .alias('view')
-    .description('Show log contents')
-    .option('--type <type>', 'Log type: gateway, commands, error', 'gateway')
-    .option('--lines <n>', 'Number of lines to show', parseInt)
-    .option('--follow', 'Follow log output (tail -f)')
-    .option('--json', 'Output as JSON (for commands log)')
-    .action((options) => {
-      const logFile = getLogFile(options.type);
-      
-      if (!fs.existsSync(logFile)) {
-        console.log(`No ${options.type} log found.`);
-        console.log('\n💡 Logs are created when K.I.T. runs.');
-        return;
+function getLogFile(date?: string): string {
+  const logDate = date || new Date().toISOString().split('T')[0];
+  return path.join(getLogDir(), `kit-${logDate}.log`);
+}
+
+interface LogEntry {
+  timestamp: string;
+  level: string;
+  name: string;
+  message: string;
+  data?: Record<string, unknown>;
+  error?: {
+    message: string;
+    stack?: string;
+  };
+}
+
+const COLORS = {
+  reset: '\x1b[0m',
+  dim: '\x1b[2m',
+  red: '\x1b[31m',
+  yellow: '\x1b[33m',
+  green: '\x1b[32m',
+  blue: '\x1b[34m',
+  cyan: '\x1b[36m',
+  magenta: '\x1b[35m',
+  gray: '\x1b[90m',
+};
+
+const LEVEL_COLORS: Record<string, string> = {
+  trace: COLORS.gray,
+  debug: COLORS.blue,
+  info: COLORS.green,
+  warn: COLORS.yellow,
+  error: COLORS.red,
+  fatal: COLORS.magenta,
+};
+
+function formatEntry(entry: LogEntry, options: { json?: boolean; plain?: boolean; noColor?: boolean }): string {
+  if (options.json) {
+    return JSON.stringify(entry);
+  }
+
+  const useColor = process.stdout.isTTY && !options.noColor && !options.plain;
+  const c = useColor ? COLORS : { reset: '', dim: '', red: '', yellow: '', green: '', blue: '', cyan: '', magenta: '', gray: '' };
+  const levelColor = useColor ? (LEVEL_COLORS[entry.level] || '') : '';
+
+  const time = entry.timestamp.split('T')[1]?.split('.')[0] || entry.timestamp;
+  const level = entry.level.toUpperCase().padEnd(5);
+
+  let line = `${c.dim}${time}${c.reset} ${levelColor}${level}${c.reset} ${c.cyan}[${entry.name}]${c.reset} ${entry.message}`;
+
+  if (entry.data && Object.keys(entry.data).length > 0) {
+    line += ` ${c.dim}${JSON.stringify(entry.data)}${c.reset}`;
+  }
+
+  if (entry.error) {
+    line += `\n${c.red}  Error: ${entry.error.message}${c.reset}`;
+    if (entry.error.stack) {
+      const stackLines = entry.error.stack.split('\n').slice(1, 4);
+      line += `\n${c.dim}${stackLines.join('\n')}${c.reset}`;
+    }
+  }
+
+  return line;
+}
+
+async function tailFile(filePath: string, options: { follow?: boolean; json?: boolean; plain?: boolean; noColor?: boolean; lines?: number; level?: string }): Promise<void> {
+  if (!fs.existsSync(filePath)) {
+    console.error(`Log file not found: ${filePath}`);
+    console.error('\nHint: Make sure K.I.T. gateway is running or has been run today.');
+    process.exit(1);
+  }
+
+  const minLevel = options.level?.toLowerCase();
+  const levelPriority: Record<string, number> = {
+    trace: 0,
+    debug: 1,
+    info: 2,
+    warn: 3,
+    error: 4,
+    fatal: 5,
+  };
+
+  const filterLevel = (entry: LogEntry): boolean => {
+    if (!minLevel) return true;
+    return (levelPriority[entry.level] ?? 0) >= (levelPriority[minLevel] ?? 0);
+  };
+
+  // Read existing content
+  const existingLines: string[] = [];
+  const rl = readline.createInterface({
+    input: fs.createReadStream(filePath),
+    crlfDelay: Infinity,
+  });
+
+  for await (const line of rl) {
+    existingLines.push(line);
+  }
+
+  // Show last N lines
+  const linesToShow = options.lines || 50;
+  const startIndex = Math.max(0, existingLines.length - linesToShow);
+
+  for (let i = startIndex; i < existingLines.length; i++) {
+    try {
+      const entry = JSON.parse(existingLines[i]) as LogEntry;
+      if (filterLevel(entry)) {
+        console.log(formatEntry(entry, options));
       }
-      
-      if (options.follow) {
-        // Follow mode - use tail on Unix or PowerShell on Windows
-        followLog(logFile);
-        return;
-      }
-      
-      let content = fs.readFileSync(logFile, 'utf8');
-      
-      if (options.lines) {
-        const lines = content.split('\n');
-        content = lines.slice(-options.lines).join('\n');
-      }
-      
-      if (options.json && options.type === 'commands') {
-        // Parse JSONL
-        const entries = content.split('\n')
-          .filter(line => line.trim())
-          .map(line => {
-            try {
-              return JSON.parse(line);
-            } catch {
-              return { raw: line };
+    } catch {
+      // Raw line, print as-is
+      console.log(existingLines[i]);
+    }
+  }
+
+  // Follow mode
+  if (options.follow) {
+    console.log('\n--- Following logs (Ctrl+C to stop) ---\n');
+
+    let position = fs.statSync(filePath).size;
+
+    const watcher = fs.watch(filePath, (eventType) => {
+      if (eventType === 'change') {
+        const stats = fs.statSync(filePath);
+        if (stats.size > position) {
+          const stream = fs.createReadStream(filePath, {
+            start: position,
+            end: stats.size,
+          });
+
+          let buffer = '';
+          stream.on('data', (chunk) => {
+            buffer += chunk.toString();
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+              if (!line.trim()) continue;
+              try {
+                const entry = JSON.parse(line) as LogEntry;
+                if (filterLevel(entry)) {
+                  console.log(formatEntry(entry, options));
+                }
+              } catch {
+                console.log(line);
+              }
             }
           });
-        console.log(JSON.stringify(entries, null, 2));
-        return;
-      }
-      
-      console.log(content);
-    });
 
-  // List log files
-  logs
-    .command('list')
-    .alias('ls')
-    .description('List all log files')
-    .action(() => {
-      if (!fs.existsSync(LOGS_DIR)) {
-        console.log('No logs directory found.');
-        return;
-      }
-      
-      const files = fs.readdirSync(LOGS_DIR);
-      
-      if (files.length === 0) {
-        console.log('No log files found.');
-        return;
-      }
-      
-      console.log('📋 Log Files:\n');
-      
-      for (const file of files) {
-        const filePath = path.join(LOGS_DIR, file);
-        const stat = fs.statSync(filePath);
-        const size = formatSize(stat.size);
-        const modified = stat.mtime.toLocaleString();
-        console.log(`  ${file} (${size}) - ${modified}`);
-      }
-    });
-
-  // Clear logs
-  logs
-    .command('clear')
-    .description('Clear log files')
-    .option('--type <type>', 'Log type: gateway, commands, error, all', 'all')
-    .option('--confirm', 'Skip confirmation')
-    .action((options) => {
-      if (!options.confirm) {
-        console.log(`⚠️ This will delete ${options.type === 'all' ? 'all' : options.type} logs.`);
-        console.log('   Use --confirm to proceed.');
-        return;
-      }
-      
-      if (!fs.existsSync(LOGS_DIR)) {
-        console.log('No logs to clear.');
-        return;
-      }
-      
-      if (options.type === 'all') {
-        const files = fs.readdirSync(LOGS_DIR);
-        for (const file of files) {
-          fs.unlinkSync(path.join(LOGS_DIR, file));
-        }
-        console.log(`✅ Cleared ${files.length} log files`);
-      } else {
-        const logFile = getLogFile(options.type);
-        if (fs.existsSync(logFile)) {
-          fs.unlinkSync(logFile);
-          console.log(`✅ Cleared ${options.type} log`);
-        } else {
-          console.log(`No ${options.type} log found.`);
+          position = stats.size;
         }
       }
     });
 
-  // Show log stats
-  logs
-    .command('stats')
-    .description('Show log statistics')
-    .action(() => {
-      if (!fs.existsSync(LOGS_DIR)) {
-        console.log('No logs directory found.');
-        return;
-      }
-      
-      console.log('📊 Log Statistics:\n');
-      
-      let totalSize = 0;
-      const files = fs.readdirSync(LOGS_DIR);
-      
-      for (const file of files) {
-        const filePath = path.join(LOGS_DIR, file);
-        const stat = fs.statSync(filePath);
-        totalSize += stat.size;
-        
-        const lineCount = countLines(filePath);
-        console.log(`${file}:`);
-        console.log(`  Size: ${formatSize(stat.size)}`);
-        console.log(`  Lines: ${lineCount}`);
-        console.log(`  Modified: ${stat.mtime.toLocaleString()}`);
-        console.log('');
-      }
-      
-      console.log(`Total: ${formatSize(totalSize)} across ${files.length} files`);
+    // Handle cleanup
+    process.on('SIGINT', () => {
+      watcher.close();
+      process.exit(0);
     });
 
-  // Shortcut: tail gateway log
-  logs
-    .command('tail')
-    .description('Tail the gateway log (shortcut for logs show --follow)')
-    .option('--lines <n>', 'Initial lines to show', parseInt)
-    .action((options) => {
-      if (!fs.existsSync(GATEWAY_LOG)) {
-        console.log('No gateway log found. Start K.I.T. first: kit start');
-        return;
-      }
-      
-      if (options.lines) {
-        const content = fs.readFileSync(GATEWAY_LOG, 'utf8');
-        const lines = content.split('\n');
-        console.log(lines.slice(-options.lines).join('\n'));
-      }
-      
-      followLog(GATEWAY_LOG);
-    });
-}
-
-function getLogFile(type: string): string {
-  switch (type) {
-    case 'commands': return COMMANDS_LOG;
-    case 'error': return ERROR_LOG;
-    case 'gateway':
-    default: return GATEWAY_LOG;
+    // Keep process alive
+    await new Promise(() => {});
   }
 }
 
-function followLog(logFile: string): void {
-  console.log(`Following ${path.basename(logFile)}... (Ctrl+C to stop)\n`);
+async function listLogs(): Promise<void> {
+  const logDir = getLogDir();
+
+  if (!fs.existsSync(logDir)) {
+    console.log('No log directory found.');
+    return;
+  }
+
+  const files = fs.readdirSync(logDir)
+    .filter(f => f.startsWith('kit-') && f.endsWith('.log'))
+    .sort()
+    .reverse();
+
+  if (files.length === 0) {
+    console.log('No log files found.');
+    return;
+  }
+
+  console.log('📄 K.I.T. Log Files:\n');
   
-  if (process.platform === 'win32') {
-    // Windows: use PowerShell Get-Content -Wait
-    const ps = spawn('powershell', [
-      '-Command',
-      `Get-Content "${logFile}" -Wait -Tail 20`
-    ], { stdio: 'inherit' });
+  for (const file of files) {
+    const filePath = path.join(logDir, file);
+    const stats = fs.statSync(filePath);
+    const size = (stats.size / 1024).toFixed(1);
+    const date = file.replace('kit-', '').replace('.log', '');
     
-    process.on('SIGINT', () => {
-      ps.kill();
-      process.exit(0);
-    });
-  } else {
-    // Unix: use tail -f
-    const tail = spawn('tail', ['-f', '-n', '20', logFile], { stdio: 'inherit' });
-    
-    process.on('SIGINT', () => {
-      tail.kill();
-      process.exit(0);
-    });
+    console.log(`  ${date}  ${size.padStart(8)} KB  ${filePath}`);
   }
+
+  console.log(`\nTotal: ${files.length} log file(s)`);
 }
 
-function countLines(filePath: string): number {
-  try {
-    const content = fs.readFileSync(filePath, 'utf8');
-    return content.split('\n').length;
-  } catch {
-    return 0;
-  }
-}
+export function registerLogsCommand(program: Command): void {
+  program
+    .command('logs')
+    .description('View and tail K.I.T. log files')
+    .option('-f, --follow', 'Follow log output (like tail -f)')
+    .option('-n, --lines <n>', 'Number of lines to show', '50')
+    .option('--level <level>', 'Filter by minimum log level (trace|debug|info|warn|error)')
+    .option('--date <date>', 'View logs from specific date (YYYY-MM-DD)')
+    .option('--json', 'Output raw JSON lines')
+    .option('--plain', 'Plain text output (no colors)')
+    .option('--no-color', 'Disable colors')
+    .option('--list', 'List available log files')
+    .action(async (options) => {
+      if (options.list) {
+        await listLogs();
+        return;
+      }
 
-function formatSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes}B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+      const logFile = getLogFile(options.date);
+      await tailFile(logFile, {
+        follow: options.follow,
+        json: options.json,
+        plain: options.plain,
+        noColor: !options.color,
+        lines: parseInt(options.lines, 10),
+        level: options.level,
+      });
+    });
 }
