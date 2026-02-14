@@ -1591,6 +1591,20 @@ async function main() {
     // Logs module not available
   }
   
+  try {
+    const { registerDebugCommand } = await import('./commands/debug');
+    registerDebugCommand(program);
+  } catch {
+    // Debug module not available
+  }
+  
+  try {
+    const { registerWorkflowCommand } = await import('./commands/workflow');
+    registerWorkflowCommand(program);
+  } catch {
+    // Workflow module not available
+  }
+  
   // Parse and execute
   program.parse();
 }

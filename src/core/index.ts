@@ -13,3 +13,4 @@ export * from './diagnostics';
 export * from './plugin-slots';
 export * from './compaction';
 export * from './model-failover';
+export * from './workflows';
