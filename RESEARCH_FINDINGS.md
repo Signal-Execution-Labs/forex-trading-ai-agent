@@ -2,6 +2,143 @@
 
 > Continuous research into professional finance apps to improve K.I.T.
 
+## Research Session: February 14, 2026 (21:32 CET) - Night Session
+
+### Sources Analyzed
+- TradingView Features Page (tradingview.com/features)
+- TradingView Premium vs Pro Comparison (2025 guides)
+- TradingView Pine Script v6 Release Notes
+
+### Key TradingView Features Studied
+
+#### 1. Advanced Chart Types (21 types)
+- **Volume Footprint:** Distribution of trading volume at price levels per candle
+- **Time Price Opportunity (TPO):** Market Profile visualization
+- **Session Volume Profile:** Intraday volume analysis by session
+- **Range Charts:** Minimize market noise
+- **Heikin Ashi:** Smooth significant price swings
+- **Renko, Kagi, Point & Figure:** Non-time-based charts
+
+#### 2. Analysis Tools
+- 400+ built-in indicators and strategies
+- 100,000+ public community indicators
+- 110+ smart drawing tools
+- Auto chart patterns (Premium)
+- Multi-timeframe analysis
+- Candlestick pattern recognition
+
+#### 3. Market Replay
+- Real and simulated trading on historical data
+- 9 replay speeds + autoplay/step mode
+- Synchronized multi-chart replay
+- Minute and second-level historical data
+
+#### 4. Seasonals
+- Track price movements over years
+- Uncover annual trends
+- Time trades with confidence
+- Great for commodities and crypto cycles
+
+#### 5. Fundamental Graphs
+- Compare 100+ financial metrics across symbols
+- Revenue, P/E, EPS, margins on single chart
+- Overlay with price charts
+- Side-by-side comparison
+
+#### 6. Yield Curves
+- 40+ economies worldwide
+- Historical date selection
+- Overlay multiple curves
+- Identify divergences and trends
+
+#### 7. Screeners (6 types)
+- Stocks, Bonds, ETFs, Crypto Coins, CEX, DEX
+- 400+ filter fields
+- Multiple timeframes (1min to 1month)
+- Global assets all industries
+
+#### 8. Options Tools
+- Strategy builder (30+ preset strategies)
+- P&L and Greeks profiles
+- What-if scenarios
+- Volatility curves by expiration
+- Real-time options quotes
+
+### New Routes Implemented (kitbot.finance)
+
+Based on TradingView research, added 5 new API route files:
+
+| # | Route | File Size | Endpoints | Inspired By |
+|---|-------|-----------|-----------|-------------|
+| 57 | yield-curves.ts | 12KB | 7 | TradingView Yield Curves |
+| 58 | seasonals.ts | 12KB | 8 | TradingView Seasonals |
+| 59 | volatility-surface.ts | 13KB | 9 | TradingView Volatility Analysis |
+| 60 | fundamental-graphs.ts | 17KB | 9 | TradingView Fundamental Graphs |
+| 61 | bond-screener.ts | 15KB | 9 | TradingView Bond Screener |
+
+### New Endpoints Added (42 total)
+
+#### Yield Curves API (`/api/yield-curves`)
+- `GET /countries` - List 20+ economies
+- `GET /:country` - Single country curve
+- `POST /compare` - Multi-country overlay
+- `GET /:country/historical` - Historical curves (1Y, 2Y, 5Y)
+- `GET /:country/spread` - 2s10s spread analysis
+- `GET /spreads/all` - Global spread heatmap
+- `GET /:country/term-structure` - Steepness/curvature analysis
+
+#### Seasonals API (`/api/seasonals`)
+- `GET /:symbol` - Full monthly seasonal analysis
+- `GET /:symbol/quarterly` - Q1-Q4 patterns
+- `GET /:symbol/halving` - Bitcoin halving cycle (BTC only)
+- `GET /:symbol/day-of-week` - Day trading patterns
+- `GET /:symbol/election-cycle` - Presidential cycle (stocks)
+- `POST /compare` - Cross-symbol seasonality
+- `GET /commodities/:commodity` - Gold, oil, natgas, corn, wheat
+
+#### Volatility Surface API (`/api/volatility`)
+- `GET /:symbol/surface` - Full 3D IV surface
+- `GET /:symbol/smile` - IV smile by expiration
+- `GET /:symbol/term-structure` - ATM term structure
+- `GET /:symbol/skew` - Put/call skew analysis
+- `GET /:symbol/historical` - IV rank percentile
+- `GET /:symbol/ivr` - IV Rank calculation
+- `POST /compare` - Multi-symbol IV comparison
+- `GET /screener` - Screen by IV conditions
+
+#### Fundamental Graphs API (`/api/fundamentals`)
+- `GET /metrics` - 45 available metrics
+- `GET /:symbol` - All fundamentals for symbol
+- `POST /compare` - Multi-symbol comparison
+- `GET /:symbol/historical` - Quarterly history
+- `POST /graph` - Generate chart data
+- `GET /screener` - Filter by fundamentals
+- `GET /:symbol/score` - Fundamental quality score
+
+#### Bond Screener API (`/api/bonds`)
+- `GET /` - Screen bonds with filters
+- `GET /types` - Treasury, Corporate, Muni, etc.
+- `GET /ratings` - Credit rating ladder
+- `GET /:id` - Bond details with cash flows
+- `POST /ladder` - Generate bond ladder
+- `GET /yield-comparison` - Yield by rating
+- `GET /duration-buckets` - Group by duration
+- `POST /portfolio-analysis` - Analyze holdings
+
+---
+
+### Running Totals
+
+**kitbot.finance Platform:**
+- **Total Route Files:** 61
+- **Total Estimated Endpoints:** 700+
+- **New This Session:** 42 endpoints across 5 routes
+
+**K.I.T. Core:**
+- **Total Skills:** 122+
+
+---
+
 ## Research Session: February 14, 2026 (17:38 CET)
 
 ### Sources Analyzed
