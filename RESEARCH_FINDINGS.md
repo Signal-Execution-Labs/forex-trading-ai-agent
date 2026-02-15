@@ -1720,4 +1720,133 @@ TradingView just released TPO (Time Price Opportunity) alerts 4 days ago!
 
 ---
 
-*Last updated: February 15, 2026 13:15 CET*
+## Research Session: February 15, 2026 (16:58 CET) - TradingView Premium Features
+
+### Sources Analyzed
+- TradingView 2026 Reviews (StockBrokers.com, Strike.money)
+- TradingView Features Page
+- TradingView Plan Comparison (ChartwiseHub)
+- TradingView Complete Guide (MyFXBook)
+
+### Key Findings
+
+#### 1. TradingView Premium Features (2026)
+- **Volume Candles:** Combine price and time in one chart (Premium exclusive)
+- **Non-expiring alerts:** Premium gets unlimited duration alerts (Essential/Plus expire after 2 months)
+- **Level II data:** Full market depth integration (Premium)
+- **400+ alerts capacity:** Premium tier
+- **25 indicators per chart:** Premium tier
+- **8 charts per tab:** Premium layout
+- **Expert & Ultimate plans:** Higher tiers above Premium for institutional users
+
+#### 2. Chart Type Arsenal
+- **Kagi Charts:** Reversal-based, ignores time axis
+- **Renko Charts:** Fixed brick size, filters market noise
+- **Point & Figure:** Classic X and O columns
+- **Line Break:** Three-line break reversal system
+- **Heikin Ashi:** Smoothed candles for trend identification
+- **Range Bars:** Fixed price range per bar
+- **Tick Charts:** Trade-based instead of time-based
+- **Moon Phase:** Community-created indicator showing lunar cycles
+
+#### 3. Smart Drawing Tools
+- **110+ drawing tools** across 9 categories
+- **Trend Lines:** 12 tools (ray, extended, channel, pitchfork variants)
+- **Fibonacci:** 15 tools (retracement, extension, spiral, arc, wedge)
+- **Gann:** 8 tools (box, fan, square, hexagon, wheel)
+- **Patterns:** 18 tools (XABCD, harmonics, Elliott Wave)
+- **Hotkeys:** Alt+T (trend), Alt+F (fib), Alt+L/S (long/short position)
+
+### New K.I.T. Skills Implemented
+
+#### Skill #97: Volume Candles (`volume-candles.ts`)
+- Volume-weighted candles (equivolume charts)
+- Candle width proportional to volume
+- Buy/sell volume estimation
+- Volume profile per candle
+- Intensity classification (low/medium/high/extreme)
+- VWAP calculation per candle
+
+#### Skill #98: Smart Drawing Tools (`smart-drawing-tools.ts`)
+- **110+ professional drawing tools**
+- 9 categories: Trend Lines, Fibonacci, Gann, Patterns, Annotations, Shapes, Measurements, Price Tools, Technical
+- Drawing persistence and management
+- Template system for saved styles
+- Hotkey support
+
+#### Skill #99: Level II Data Viewer (`level-two-data.ts`)
+- Full order book depth (20+ levels)
+- Bid/Ask imbalance analysis
+- Large order detection (whale alerts)
+- Iceberg order detection (single large orders)
+- Price impact calculation for order sizes
+- DOM (Depth of Market) ladder view
+- Liquidity scoring
+
+#### Skill #100: Advanced Chart Types (`advanced-chart-types.ts`)
+- **Kagi Charts:** Yang/Yin lines, shoulder/waist patterns
+- **Renko Charts:** Fixed brick size, noise filtering
+- **Point & Figure:** X/O columns with reversal logic
+- **Heikin Ashi:** Smoothed OHLC, trend identification
+- **Line Break:** N-line reversal detection
+
+#### Skill #101: Moon Phase Indicator (`moon-phase-indicator.ts`)
+- Real-time lunar cycle calculation
+- Full moon/New moon market analysis
+- Zodiac sign tracking
+- Supermoon detection
+- Upcoming lunar events calendar
+- Historical phase vs market performance
+- Trading implications per phase
+
+### Code Statistics
+
+| Skill | File | Lines | Size |
+|-------|------|-------|------|
+| Volume Candles | volume-candles.ts | ~200 | 7.8KB |
+| Smart Drawing | smart-drawing-tools.ts | ~380 | 13.3KB |
+| Level II Data | level-two-data.ts | ~300 | 11KB |
+| Advanced Charts | advanced-chart-types.ts | ~450 | 17.2KB |
+| Moon Phase | moon-phase-indicator.ts | ~300 | 11KB |
+
+### New Tools Added
+
+#### Volume Candles
+- `volume_candles` - Generate equivolume chart data
+
+#### Drawing Tools
+- `drawing_tools_list` - List all 110+ tools by category
+- `drawing_create` - Create a new drawing
+- `drawing_get` - Get chart drawings
+
+#### Level II Data
+- `level2_orderbook` - Full depth order book
+- `level2_large_orders` - Whale/iceberg detection
+- `level2_price_impact` - Slippage calculation
+- `level2_dom` - DOM ladder view
+
+#### Chart Types
+- `chart_kagi` - Kagi chart generation
+- `chart_renko` - Renko brick chart
+- `chart_point_figure` - P&F X/O chart
+- `chart_heikin_ashi` - Smoothed candles
+- `chart_line_break` - N-line break chart
+
+#### Moon Phase
+- `moon_phase_current` - Current lunar data
+- `moon_phase_upcoming` - Upcoming lunar events
+- `moon_phase_market_analysis` - Phase vs market stats
+- `moon_phase_calendar` - Monthly lunar calendar
+
+### Total Update
+
+| Metric | Before | After | Change |
+|--------|--------|-------|--------|
+| Skill Files | 18 | 23 | +5 |
+| Total Skills | 96 | 101 | +5 |
+| New Tools | - | 16 | +16 |
+| Code Added | - | 60KB | +60KB |
+
+---
+
+*Last updated: February 15, 2026 16:58 CET*
