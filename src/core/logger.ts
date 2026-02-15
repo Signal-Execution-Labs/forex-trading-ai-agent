@@ -241,6 +241,8 @@ export class Logger {
         console.warn(formatted);
       } else if (level === 'debug' || level === 'trace') {
         console.debug(formatted);
+      } else if (level === 'info') {
+        console.info(formatted);
       } else {
         console.log(formatted);
       }
@@ -316,6 +318,14 @@ export class Logger {
       this.error(`${label} failed`, { durationMs: Math.round(duration) }, error as Error);
       throw error;
     }
+  }
+
+  /**
+   * Static method to set global log level (for test compatibility)
+   */
+  static setLevel(level: LogLevel): void {
+    globalConfig.level = level;
+    globalConfig.consoleLevel = level;
   }
 }
 
