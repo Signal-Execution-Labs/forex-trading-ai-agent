@@ -179,12 +179,61 @@ async function main() {
     warnings.push('Python not installed - MT5 integration unavailable');
   }
 
-  // Git (optional)
+  // Git (optional but recommended - auto-install if missing)
   if (checkCommand('git')) {
     const gitVersion = run('git --version')?.trim() || 'unknown';
     logSuccess(`${gitVersion}`);
   } else {
-    logInfo('Git not found (optional)');
+    logWarn('Git not found - attempting auto-install...');
+    let gitInstalled = false;
+    
+    if (isWindows) {
+      // Try winget first
+      if (checkCommand('winget')) {
+        logInfo('Installing Git via winget...');
+        const result = run('winget install --id Git.Git -e --accept-source-agreements --accept-package-agreements', { stdio: 'inherit' });
+        if (result !== null || checkCommand('git')) {
+          gitInstalled = true;
+        }
+      }
+      // Fallback: download installer
+      if (!gitInstalled) {
+        logInfo('Download Git manually from: https://git-scm.com/download/win');
+      }
+    } else if (isMac) {
+      // Try Homebrew
+      if (checkCommand('brew')) {
+        logInfo('Installing Git via Homebrew...');
+        run('brew install git', { stdio: 'inherit' });
+        gitInstalled = checkCommand('git');
+      } else {
+        logInfo('Installing Xcode Command Line Tools (includes git)...');
+        run('xcode-select --install', { stdio: 'inherit' });
+      }
+    } else {
+      // Linux - try apt, yum, or dnf
+      if (checkCommand('apt-get')) {
+        logInfo('Installing Git via apt...');
+        run('sudo apt-get update && sudo apt-get install -y git', { stdio: 'inherit' });
+        gitInstalled = checkCommand('git');
+      } else if (checkCommand('yum')) {
+        logInfo('Installing Git via yum...');
+        run('sudo yum install -y git', { stdio: 'inherit' });
+        gitInstalled = checkCommand('git');
+      } else if (checkCommand('dnf')) {
+        logInfo('Installing Git via dnf...');
+        run('sudo dnf install -y git', { stdio: 'inherit' });
+        gitInstalled = checkCommand('git');
+      }
+    }
+    
+    if (gitInstalled || checkCommand('git')) {
+      const gitVersion = run('git --version')?.trim() || 'unknown';
+      logSuccess(`${gitVersion} (auto-installed)`);
+    } else {
+      logInfo('Git installation skipped - some features may be limited');
+      warnings.push('Git not installed - skill updates may require manual downloads');
+    }
   }
 
   if (errors.length > 0) {
