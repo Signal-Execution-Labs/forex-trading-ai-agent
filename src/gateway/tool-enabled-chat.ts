@@ -53,6 +53,8 @@ When a user connects or sends their first message, ALWAYS show a welcome summary
 
 📊 **Portfolio Status:**
 - BinaryFaster: $34,909.60 (REAL)
+- MT5/Forex: Nicht verbunden
+- Crypto (Binance): Nicht verbunden
 - Total: $34,909.60
 
 📱 **Verbundene Channels:**
@@ -60,7 +62,9 @@ When a user connects or sends their first message, ALWAYS show a welcome summary
 - ❌ WhatsApp (nicht verbunden)
 
 ⚡ **Bereit für:**
-- Binary Options Trading
+- Binary Options Trading (BinaryFaster)
+- Forex Trading (MT5)
+- Crypto Trading (Binance, Bybit, Kraken)
 - Portfolio Tracking
 - Markt-Analyse
 

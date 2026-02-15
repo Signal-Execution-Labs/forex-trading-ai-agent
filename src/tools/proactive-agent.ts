@@ -487,9 +487,11 @@ function generatePortfolioSummary(state: AgentState): string {
   return `💼 **Portfolio Summary**
 
 📍 **Connected Platforms**
-• BinaryFaster: _Connect to see balance_
-• MT5: _Connect to see balance_
-• Binance: _Connect to see balance_
+• BinaryFaster (Binary Options): _Connect to see balance_
+• MT5 (Forex): _Connect to see balance_
+• Binance (Crypto): _Connect to see balance_
+• Bybit (Crypto): _Connect to see balance_
+• Kraken (Crypto): _Connect to see balance_
 
 💰 **Passive Income Deployed**
 $${passiveTotal.toLocaleString()}
