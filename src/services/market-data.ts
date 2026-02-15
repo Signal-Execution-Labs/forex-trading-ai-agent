@@ -309,20 +309,40 @@ export async function getQuote(symbol: string): Promise<MarketQuote> {
   // Try sources in order of preference
   let quote: MarketQuote | null = null;
   
-  // 1. Try Alpha Vantage first (best for stocks/forex)
-  if (assetClass !== 'crypto' || apiKeys.alphaVantage) {
+  // For crypto: Binance is free and works without API keys
+  if (assetClass === 'crypto') {
+    quote = await fetchBinance(symbol);
+    if (quote) return quote;
+  }
+  
+  // 1. Try Alpha Vantage (needs API key for reliable forex/stock data)
+  if (apiKeys.alphaVantage) {
     quote = await fetchAlphaVantage(symbol, assetClass);
     if (quote) return quote;
   }
   
-  // 2. Try Twelve Data (good backup, 800 calls/day)
-  quote = await fetchTwelveData(symbol, assetClass);
-  if (quote) return quote;
-  
-  // 3. For crypto, try Binance (unlimited, no key needed)
-  if (assetClass === 'crypto') {
-    quote = await fetchBinance(symbol);
+  // 2. Try Twelve Data (needs API key)
+  if (apiKeys.twelveData) {
+    quote = await fetchTwelveData(symbol, assetClass);
     if (quote) return quote;
+  }
+  
+  // 3. For non-crypto without API keys: Return error quote with explanation
+  if (assetClass !== 'crypto' && !apiKeys.alphaVantage && !apiKeys.twelveData) {
+    logger.warn('No API keys configured for forex/stocks', { symbol, assetClass });
+    return {
+      symbol,
+      assetClass,
+      price: 0,
+      change: 0,
+      changePercent: 0,
+      high: 0,
+      low: 0,
+      open: 0,
+      previousClose: 0,
+      timestamp: new Date().toISOString(),
+      source: `⚠️ Symbol ${symbol} nicht gefunden - ${assetClass === 'forex' ? 'Forex' : 'Stock'} benötigt API Keys (Alpha Vantage/Twelve Data) oder MT5`,
+    };
   }
   
   // 4. Return mock data as last resort

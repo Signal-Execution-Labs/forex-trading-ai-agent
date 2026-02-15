@@ -90,21 +90,23 @@ export async function startAutonomousTrading(config: AutonomousConfig): Promise<
     markets: {
       crypto: {
         enabled: config.markets.includes('crypto'),
-        symbols: ["BTC/EUR", "ETH/EUR", "SOL/EUR", "BNB/EUR", "XRP/EUR"],
+        symbols: ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT"],
         exchange: "binance_paper",
-        maxAllocationPercent: 50
+        maxAllocationPercent: 70
       },
       forex: {
         enabled: config.markets.includes('forex'),
-        symbols: ["EUR/USD", "GBP/USD", "USD/JPY", "EUR/GBP", "AUD/USD"],
+        symbols: ["EURUSD", "GBPUSD", "USDJPY"],
         exchange: "mt5_paper",
-        maxAllocationPercent: 30
+        maxAllocationPercent: 20,
+        note: "Requires MT5 or API keys for Alpha Vantage/Twelve Data"
       },
       indices: {
         enabled: config.markets.includes('indices'),
         symbols: ["US500", "US100", "GER40"],
         exchange: "mt5_paper",
-        maxAllocationPercent: 20
+        maxAllocationPercent: 10,
+        note: "Requires MT5 connection"
       }
     },
     strategy: {
@@ -298,8 +300,8 @@ export const autonomousTools = [
         markets: {
           type: 'array',
           items: { type: 'string' },
-          description: 'Markets to trade (crypto, forex, indices)',
-          default: ['crypto', 'forex']
+          description: 'Markets to trade (crypto, forex, indices). Note: forex/indices require MT5 or API keys.',
+          default: ['crypto']
         }
       },
       required: ['capital']
@@ -309,7 +311,7 @@ export const autonomousTools = [
         capital: params.capital,
         currency: params.currency || 'EUR',
         riskLevel: params.riskLevel || 'moderate',
-        markets: params.markets || ['crypto', 'forex']
+        markets: params.markets || ['crypto']
       });
     }
   },

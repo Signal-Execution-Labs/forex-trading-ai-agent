@@ -92,7 +92,7 @@ function loadState(): AgentState {
     alerts: [],
     passiveIncome: [],
     opportunities: [],
-    watchlist: ['BTCUSDT', 'ETHUSDT', 'XAUUSD', 'EURUSD'],
+    watchlist: ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT'],
     lastMarketCheck: '',
     dailyReport: { date: '', sent: false },
     settings: {
