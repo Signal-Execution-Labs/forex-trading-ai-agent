@@ -379,6 +379,90 @@ program
   });
 
 // ═══════════════════════════════════════════════════════════════
+// MARKET-DATA - Manage API keys for Stocks/Forex/Crypto
+// ═══════════════════════════════════════════════════════════════
+program
+  .command('market-data')
+  .description('Configure market data API keys (Stocks, Forex, Crypto)')
+  .option('--alpha-vantage <key>', 'Set Alpha Vantage API key')
+  .option('--twelve-data <key>', 'Set Twelve Data API key')
+  .option('--status', 'Show current API key status')
+  .option('--help-keys', 'Show how to get free API keys')
+  .action(async (options) => {
+    const configPath = path.join(KIT_HOME, 'config.json');
+    
+    if (options.helpKeys) {
+      console.log(`
+📊 Free Market Data API Keys
+
+${'\x1b[36m'}Alpha Vantage${'\x1b[0m'} - Stocks, Forex, Crypto (25 requests/day FREE)
+   1. Go to: https://www.alphavantage.co/support/#api-key
+   2. Enter any email address
+   3. Click "GET FREE API KEY"
+   4. Copy the key (looks like: ABCD1234EFGH5678)
+   5. Run: kit market-data --alpha-vantage YOUR_KEY
+
+${'\x1b[36m'}Twelve Data${'\x1b[0m'} - All markets (800 requests/day FREE)
+   1. Go to: https://twelvedata.com/pricing
+   2. Click "Start Free" 
+   3. Sign up with email
+   4. Copy your API key
+   5. Run: kit market-data --twelve-data YOUR_KEY
+
+${'\x1b[33m'}Note:${'\x1b[0m'} Crypto (BTC, ETH, etc.) always works via Binance (no key needed).
+      API keys are only needed for Stocks (AAPL, MSFT) and Forex (EUR/USD).
+`);
+      return;
+    }
+
+    // Load or create config
+    let config: any = {};
+    if (fs.existsSync(configPath)) {
+      config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    }
+    
+    if (!config.marketData) {
+      config.marketData = {};
+    }
+
+    // Set keys if provided
+    let updated = false;
+    if (options.alphaVantage) {
+      config.marketData.alphaVantageKey = options.alphaVantage;
+      updated = true;
+      console.log('✅ Alpha Vantage API key saved');
+    }
+    if (options.twelveData) {
+      config.marketData.twelveDataKey = options.twelveData;
+      updated = true;
+      console.log('✅ Twelve Data API key saved');
+    }
+
+    if (updated) {
+      fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+      console.log('\n💡 Restart K.I.T. for changes to take effect: kit start');
+    }
+
+    // Show status
+    if (options.status || !updated) {
+      console.log(`
+📊 Market Data API Status
+
+Alpha Vantage:  ${config.marketData.alphaVantageKey ? '✅ Configured' : '❌ Not configured'}
+Twelve Data:    ${config.marketData.twelveDataKey ? '✅ Configured' : '❌ Not configured'}
+Binance:        ✅ Always available (crypto)
+
+Coverage:
+  • Stocks (AAPL, MSFT, etc.): ${config.marketData.alphaVantageKey || config.marketData.twelveDataKey ? '✅' : '❌ Need API key'}
+  • Forex (EUR/USD, etc.):     ${config.marketData.alphaVantageKey || config.marketData.twelveDataKey ? '✅' : '❌ Need API key'}
+  • Crypto (BTC, ETH, etc.):   ✅ Always works
+
+Run "kit market-data --help-keys" for setup instructions.
+`);
+    }
+  });
+
+// ═══════════════════════════════════════════════════════════════
 // EXCHANGES
 // ═══════════════════════════════════════════════════════════════
 program
