@@ -52,7 +52,7 @@ export class VolumeProfileAnalyzer implements Skill {
   version = '1.0.0';
   
   async execute(context: SkillContext): Promise<SkillResult> {
-    const { action, symbol, timeframe, candles, params } = context.params || {};
+    const { action, symbol, timeframe, candles, params } = context.input?.params || {};
     
     switch (action) {
       case 'build':
@@ -170,7 +170,7 @@ export class VolumeProfileAnalyzer implements Skill {
     return {
       success: true,
       data: profile,
-      message: `Volume profile built: POC at ${poc.price}, VA: ${val}-${vah}`
+      metadata: { message: `Volume profile built: POC at ${poc.price}, VA: ${val}-${vah}` }
     };
   }
   
@@ -267,13 +267,13 @@ export class VolumeProfileAnalyzer implements Skill {
     return {
       success: true,
       data: analysis,
-      message: `${marketType.replace('_', ' ')} market with ${bias} bias. POC: ${profile.poc}`
+      metadata: { message: `${marketType.replace('_', ' ')} market with ${bias} bias. POC: ${profile.poc}` }
     };
   }
   
   private compareProfiles(profiles: VolumeProfile[]): SkillResult {
     if (!profiles || profiles.length < 2) {
-      return { success: false, message: 'Need at least 2 profiles to compare' };
+      return { success: false, error: 'Need at least 2 profiles to compare' };
     }
     
     const comparisons = [];
@@ -300,7 +300,7 @@ export class VolumeProfileAnalyzer implements Skill {
     return {
       success: true,
       data: { comparisons },
-      message: `Compared ${profiles.length} volume profiles`
+      metadata: { message: `Compared ${profiles.length} volume profiles` }
     };
   }
   
@@ -333,9 +333,9 @@ export class VolumeProfileAnalyzer implements Skill {
         sessionsIncluded: sessions?.length || 0,
         bars: bars.sort((a, b) => a.price - b.price),
         totalVolume,
-        poc: bars.reduce((max, b) => b.volume > max.volume ? b : max, bars[0]).price
+        poc: bars.reduce((max: VolumeProfileBar, b: VolumeProfileBar) => b.volume > max.volume ? b : max, bars[0]).price
       },
-      message: `Composite profile built from ${sessions?.length || 0} sessions`
+      metadata: { message: `Composite profile built from ${sessions?.length || 0} sessions` }
     };
   }
   
@@ -384,7 +384,7 @@ export class VolumeProfileAnalyzer implements Skill {
         priceRelation: currentPrice > currentVWAP.vwap ? 'above' : 'below',
         deviation: ((currentPrice - currentVWAP.vwap) / currentVWAP.vwap) * 100
       },
-      message: `VWAP: ${currentVWAP.vwap.toFixed(2)}, Price ${currentPrice > currentVWAP.vwap ? 'above' : 'below'}`
+      metadata: { message: `VWAP: ${currentVWAP.vwap.toFixed(2)}, Price ${currentPrice > currentVWAP.vwap ? 'above' : 'below'}` }
     };
   }
   
@@ -427,7 +427,7 @@ export class VolumeProfileAnalyzer implements Skill {
           divergence: (deltaSum > 0 && priceChange < 0) || (deltaSum < 0 && priceChange > 0)
         }
       },
-      message: `Delta analysis: ${deltaSum > 0 ? 'Net buying' : 'Net selling'} pressure`
+      metadata: { message: `Delta analysis: ${deltaSum > 0 ? 'Net buying' : 'Net selling'} pressure` }
     };
   }
 }

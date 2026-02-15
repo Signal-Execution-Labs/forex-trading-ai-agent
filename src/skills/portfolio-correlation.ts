@@ -45,7 +45,7 @@ export class PortfolioCorrelation implements Skill {
   version = '1.0.0';
   
   async execute(context: SkillContext): Promise<SkillResult> {
-    const { action, assets, params } = context.params || {};
+    const { action, assets, params } = context.input?.params || {};
     
     switch (action) {
       case 'correlation':
@@ -120,7 +120,7 @@ export class PortfolioCorrelation implements Skill {
     return {
       success: true,
       data: result,
-      message: `Correlation analysis for ${n} assets, avg correlation: ${averageCorrelation.toFixed(3)}`
+      metadata: { message: `Correlation analysis for ${n} assets, avg correlation: ${averageCorrelation.toFixed(3)}` }
     };
   }
   
@@ -189,7 +189,7 @@ export class PortfolioCorrelation implements Skill {
     return {
       success: true,
       data: result,
-      message: `Diversification score: ${overall.toFixed(1)}/100`
+      metadata: { message: `Diversification score: ${overall.toFixed(1)}/100` }
     };
   }
   
@@ -252,7 +252,7 @@ export class PortfolioCorrelation implements Skill {
     return {
       success: true,
       data: result,
-      message: `Total portfolio risk: ${totalRisk.toFixed(2)}%`
+      metadata: { message: `Total portfolio risk: ${totalRisk.toFixed(2)}%` }
     };
   }
   
@@ -303,7 +303,7 @@ export class PortfolioCorrelation implements Skill {
         expectedReturn: returns.reduce((sum, r, i) => sum + r * weights[i], 0),
         expectedRisk: Math.sqrt(this.portfolioVariance(assets, weights)) * Math.sqrt(252) * 100
       },
-      message: 'Portfolio optimization complete'
+      metadata: { message: 'Portfolio optimization complete' }
     };
   }
   
@@ -330,7 +330,7 @@ export class PortfolioCorrelation implements Skill {
         dendrogram: this.buildDendrogram(clusters),
         recommendations: this.clusterRecommendations(clusters)
       },
-      message: `Identified ${clusters.length} asset clusters`
+      metadata: { message: `Identified ${clusters.length} asset clusters` }
     };
   }
   
@@ -342,7 +342,7 @@ export class PortfolioCorrelation implements Skill {
       { name: 'Stagflation', equityDrop: -0.25, bondReturn: -0.15, goldReturn: 0.30 }
     ];
     
-    const results = scenarios.map(scenario => {
+    const results = scenarios.map((scenario: { name: string; equityDrop: number; bondReturn: number; goldReturn: number }) => {
       let portfolioImpact = 0;
       
       for (const asset of assets) {
@@ -373,10 +373,10 @@ export class PortfolioCorrelation implements Skill {
       success: true,
       data: {
         scenarios: results,
-        worstCase: results.reduce((min, r) => r.portfolioImpact < min.portfolioImpact ? r : min),
+        worstCase: results.reduce((min: any, r: any) => r.portfolioImpact < min.portfolioImpact ? r : min),
         recommendations: this.stressRecommendations(results)
       },
-      message: 'Stress test complete'
+      metadata: { message: 'Stress test complete' }
     };
   }
   
@@ -393,13 +393,13 @@ export class PortfolioCorrelation implements Skill {
         risk: risk.data,
         summary: {
           assetCount: assets.length,
-          totalWeight: assets.reduce((sum, a) => sum + a.weight, 0),
+          totalWeight: assets.reduce((sum: number, a: Asset) => sum + a.weight, 0),
           avgCorrelation: (correlation.data as CorrelationMatrix).averageCorrelation,
           diversificationScore: (diversification.data as DiversificationScore).overall,
           totalRisk: (risk.data as RiskDecomposition).totalRisk
         }
       },
-      message: 'Full portfolio analysis complete'
+      metadata: { message: 'Full portfolio analysis complete' }
     };
   }
   

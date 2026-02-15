@@ -63,7 +63,7 @@ export class SmartAlertManager implements Skill {
   
   private alerts: Map<string, Alert> = new Map();
   private groups: Map<string, AlertGroup> = new Map();
-  private config: SmartAlertConfig = {
+  config: SmartAlertConfig = {
     maxAlerts: 1000,
     globalCooldownMs: 60000,
     priorityEscalation: true,
@@ -71,7 +71,7 @@ export class SmartAlertManager implements Skill {
   };
   
   async execute(context: SkillContext): Promise<SkillResult> {
-    const { action, ...params } = context.params || {};
+    const { action, ...params } = context.input?.params || {};
     
     switch (action) {
       case 'create':
@@ -118,7 +118,7 @@ export class SmartAlertManager implements Skill {
     return {
       success: true,
       data: alert,
-      message: `Alert "${alert.name}" created for ${alert.symbol}`
+      metadata: { message: `Alert "${alert.name}" created for ${alert.symbol}` }
     };
   }
   
@@ -199,7 +199,7 @@ export class SmartAlertManager implements Skill {
       return {
         success: true,
         data: group,
-        message: `Group "${group.name}" created`
+        metadata: { message: `Group "${group.name}" created` }
       };
     }
     
@@ -210,7 +210,7 @@ export class SmartAlertManager implements Skill {
       };
     }
     
-    return { success: false, message: 'Unknown group action' };
+    return { success: false, error: 'Unknown group action' };
   }
   
   private checkAlerts(params: any): SkillResult {
@@ -239,7 +239,7 @@ export class SmartAlertManager implements Skill {
         triggered,
         count: triggered.length
       },
-      message: `${triggered.length} alerts triggered`
+      metadata: { message: `${triggered.length} alerts triggered` }
     };
   }
   
@@ -286,7 +286,7 @@ export class SmartAlertManager implements Skill {
     return {
       success: true,
       data: summary,
-      message: 'Alert summary generated'
+      metadata: { message: 'Alert summary generated' }
     };
   }
   
@@ -324,7 +324,7 @@ export class SmartAlertManager implements Skill {
     return {
       success: true,
       data: { affected },
-      message: `${operation} applied to ${affected} alerts`
+      metadata: { message: `${operation} applied to ${affected} alerts` }
     };
   }
   

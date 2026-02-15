@@ -47,7 +47,7 @@ export class MultiTimeframeScanner implements Skill {
   version = '1.0.0';
   
   async execute(context: SkillContext): Promise<SkillResult> {
-    const { symbol = 'BTCUSDT', timeframes = TIMEFRAMES } = context.params || {};
+    const { symbol = 'BTCUSDT', timeframes = TIMEFRAMES } = context.input?.params || {};
     
     // Analyze each timeframe
     const signals: TimeframeSignal[] = [];
@@ -91,7 +91,7 @@ export class MultiTimeframeScanner implements Skill {
     return {
       success: true,
       data: result,
-      message: `MTF scan complete: ${overallTrend.toUpperCase()} with ${alignment.toFixed(0)}% alignment`
+      metadata: { message: `MTF scan complete: ${overallTrend.toUpperCase()} with ${alignment.toFixed(0)}% alignment` }
     };
   }
   
