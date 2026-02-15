@@ -89,6 +89,7 @@ export const TOOL_GROUPS: Record<string, string[]> = {
                     'agent_settings', 'daily_report', 'portfolio_summary'],
   'group:analysis': ['image_analyze', 'chart_analyze', 'screenshot_analyze', 'web_search', 'web_fetch'],
   'group:tts': ['tts_speak', 'tts_voices', 'tts_play'],
+  'group:voice': ['voice_speak', 'voice_tts_file', 'voice_listen', 'voice_transcribe'],
   'group:onboarding': ['onboarding_start', 'onboarding_continue', 'onboarding_status'],
   'group:config': ['config_get', 'config_set', 'config_delete', 'env_set', 'status', 'user_profile'],
   'group:skills': ['skills_list', 'skills_enable', 'skills_disable', 'skills_setup', 'skill_run', 'skill_info'],

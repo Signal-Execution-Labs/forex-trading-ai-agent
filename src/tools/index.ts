@@ -167,6 +167,17 @@ export {
   stopAutonomousTrading,
 } from './autonomous-tools';
 
+// Voice Tools - Text-to-Speech and Speech-to-Text
+export {
+  voiceTools,
+  textToSpeech,
+  speechToText,
+  speak,
+  listenForCommand,
+  recordAudio,
+  playAudio,
+} from './voice-tools';
+
 // Factory for creating all tools
 export interface ToolInstances {
   autoTrader: InstanceType<typeof import('./auto-trader').AutoTrader>;
