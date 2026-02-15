@@ -35,6 +35,9 @@ interface OnboardingData {
   telegramToken?: string;
   telegramChatId?: string;
   tradingStyle: string;
+  // Market Data API Keys (Stocks/Forex/Crypto)
+  alphaVantageKey?: string;
+  twelveDataKey?: string;
 }
 
 // ============================================================================
@@ -316,6 +319,88 @@ ${color.cyan('╚═════════════════════
   if (p.isCancel(tradingStyle)) return handleCancel();
   data.tradingStyle = tradingStyle as string;
 
+  // Step 14: Market Data API Keys (for Stocks & Forex analysis)
+  const needsMarketData = data.markets?.some(m => ['stocks', 'forex'].includes(m));
+  
+  if (needsMarketData) {
+    console.log(`
+${color.yellow('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}
+${color.bold('📊 Market Data Setup')} - Stocks & Forex Analysis
+
+K.I.T. needs free API keys to analyze stocks and forex.
+${color.dim('(Crypto works without keys via Binance)')}
+
+${color.cyan('Alpha Vantage')} - Stocks, Forex, Crypto (25 calls/day FREE)
+  → ${color.underline('https://www.alphavantage.co/support/#api-key')}
+  ${color.dim('Just enter email, get key instantly (no verification needed)')}
+
+${color.cyan('Twelve Data')} - All markets (800 calls/day FREE)  
+  → ${color.underline('https://twelvedata.com/pricing')}
+  ${color.dim('Click "Start Free", sign up, copy API key')}
+${color.yellow('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}
+`);
+
+    const setupMarketData = await p.confirm({
+      message: 'Do you want to set up market data API keys now?',
+      initialValue: true,
+    });
+
+    if (!p.isCancel(setupMarketData) && setupMarketData) {
+      // Try to open browser
+      const openBrowser = await p.confirm({
+        message: 'Open Alpha Vantage in your browser to get a free key?',
+        initialValue: true,
+      });
+
+      if (!p.isCancel(openBrowser) && openBrowser) {
+        try {
+          const { exec } = require('child_process');
+          const url = 'https://www.alphavantage.co/support/#api-key';
+          const platform = process.platform;
+          if (platform === 'win32') exec(`start ${url}`);
+          else if (platform === 'darwin') exec(`open ${url}`);
+          else exec(`xdg-open ${url}`);
+          console.log(color.dim('  Browser opened! Get your free key and paste it below.'));
+        } catch (e) {
+          console.log(color.dim('  Visit: https://www.alphavantage.co/support/#api-key'));
+        }
+      }
+
+      const alphaKey = await p.text({
+        message: 'Alpha Vantage API key (or press Enter to skip):',
+        placeholder: 'e.g., ABCD1234EFGH5678',
+      });
+      if (!p.isCancel(alphaKey) && alphaKey) {
+        data.alphaVantageKey = alphaKey as string;
+      }
+
+      // Twelve Data (optional backup)
+      const wantsTwelveData = await p.confirm({
+        message: 'Also set up Twelve Data? (800 calls/day - recommended backup)',
+        initialValue: false,
+      });
+
+      if (!p.isCancel(wantsTwelveData) && wantsTwelveData) {
+        try {
+          const { exec } = require('child_process');
+          const url = 'https://twelvedata.com/pricing';
+          const platform = process.platform;
+          if (platform === 'win32') exec(`start ${url}`);
+          else if (platform === 'darwin') exec(`open ${url}`);
+          else exec(`xdg-open ${url}`);
+        } catch (e) {}
+
+        const twelveKey = await p.text({
+          message: 'Twelve Data API key (or press Enter to skip):',
+          placeholder: 'e.g., abc123def456ghi789',
+        });
+        if (!p.isCancel(twelveKey) && twelveKey) {
+          data.twelveDataKey = twelveKey as string;
+        }
+      }
+    }
+  }
+
   // Show spinner while saving
   const s = p.spinner();
   s.start('Saving configuration...');
@@ -338,6 +423,7 @@ ${color.bold('Tools:')} ${data.enabledTools?.length || 0} enabled
 ${color.bold('Risk:')} ${data.riskTolerance} (${data.maxPositionSize}% max)
 ${color.bold('Autonomy:')} ${data.autonomyLevel}
 ${color.bold('Channels:')} ${data.channels?.join(', ')}
+${color.bold('Market Data:')} ${data.alphaVantageKey ? '✅ Alpha Vantage' : '❌ Alpha Vantage'} | ${data.twelveDataKey ? '✅ Twelve Data' : '❌ Twelve Data'} | ✅ Binance (crypto)
 
 ${color.dim('Files created:')}
   • SOUL.md - Agent directives
@@ -460,6 +546,17 @@ async function saveOnboardingData(data: OnboardingData): Promise<void> {
   }
   if (data.channels.includes('discord')) {
     config.channels.discord = { enabled: true };
+  }
+
+  // Add Market Data API keys (for Stocks/Forex analysis)
+  if (data.alphaVantageKey || data.twelveDataKey) {
+    config.marketData = {};
+    if (data.alphaVantageKey) {
+      config.marketData.alphaVantageKey = data.alphaVantageKey;
+    }
+    if (data.twelveDataKey) {
+      config.marketData.twelveDataKey = data.twelveDataKey;
+    }
   }
 
   // Save config
