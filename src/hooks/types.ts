@@ -18,6 +18,7 @@ export type HookEvent =
   | 'risk:warning'
   | 'market:open'
   | 'market:close'
+  | 'market:tick'
   | 'onboarding:complete'
   | 'config:changed'
   | 'gateway:startup'
