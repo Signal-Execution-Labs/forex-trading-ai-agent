@@ -15,7 +15,7 @@
  * - Strategy comparison
  */
 
-import { BaseSkill, SkillContext, SkillResult } from '../types/skill.js';
+import type { SkillContext, SkillResult, Skill } from '../types/skill.js';
 
 interface OptionLeg {
   type: 'call' | 'put';
@@ -55,7 +55,7 @@ interface StrategyTemplate {
   legs: Partial<OptionLeg>[];
 }
 
-export class OptionsStrategyBuilderSkill extends BaseSkill {
+export class OptionsStrategyBuilderSkill implements Skill {
   name = 'options-strategy-builder';
   description = 'Build and analyze multi-leg options strategies';
   version = '1.0.0';
@@ -261,7 +261,8 @@ export class OptionsStrategyBuilderSkill extends BaseSkill {
   };
   
   async execute(ctx: SkillContext): Promise<SkillResult> {
-    const { action, symbol, template, legs, spotPrice, riskFreeRate = 0.05 } = ctx.params;
+    const params = ctx.input?.params || {};
+    const { action, symbol, template, legs, spotPrice, riskFreeRate = 0.05 } = params;
     
     switch (action) {
       case 'list-templates':
@@ -274,13 +275,13 @@ export class OptionsStrategyBuilderSkill extends BaseSkill {
         return this.analyzeStrategy(ctx, symbol, legs, spotPrice, riskFreeRate);
         
       case 'compare':
-        return this.compareStrategies(ctx, symbol, ctx.params.strategies, spotPrice);
+        return this.compareStrategies(ctx, symbol, params.strategies, spotPrice);
         
       case 'what-if':
-        return this.whatIfAnalysis(ctx, symbol, legs, spotPrice, ctx.params.scenarios);
+        return this.whatIfAnalysis(ctx, symbol, legs, spotPrice, params.scenarios);
         
       case 'optimize':
-        return this.optimizeStrategy(ctx, symbol, template, spotPrice, ctx.params.constraints);
+        return this.optimizeStrategy(ctx, symbol, template, spotPrice, params.constraints);
         
       default:
         return { success: false, error: `Unknown action: ${action}` };
@@ -387,15 +388,11 @@ export class OptionsStrategyBuilderSkill extends BaseSkill {
   }
   
   private async fetchOptionsChain(ctx: SkillContext, symbol: string): Promise<any> {
-    const provider = ctx.providers.marketData;
-    if (!provider) {
-      return {}; // Return empty chain if no provider
-    }
-    
+    // Fetch options chain via HTTP
     try {
-      return await provider.getOptionsChain(symbol);
+      return await ctx.http.get<any>(`/api/market-data/options-chain?symbol=${symbol}`);
     } catch {
-      return {};
+      return {}; // Return empty chain if fetch fails
     }
   }
   

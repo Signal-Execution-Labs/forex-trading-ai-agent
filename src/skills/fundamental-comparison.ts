@@ -14,7 +14,7 @@
  * - Peer comparison
  */
 
-import { BaseSkill, SkillContext, SkillResult } from '../types/skill.js';
+import type { SkillContext, SkillResult, Skill } from '../types/skill.js';
 
 interface FundamentalMetric {
   name: string;
@@ -52,7 +52,7 @@ interface QualityScore {
   grade: 'A' | 'B' | 'C' | 'D' | 'F';
 }
 
-export class FundamentalComparisonSkill extends BaseSkill {
+export class FundamentalComparisonSkill implements Skill {
   name = 'fundamental-comparison';
   description = 'Compare fundamental metrics across multiple stocks';
   version = '1.0.0';
@@ -107,7 +107,8 @@ export class FundamentalComparisonSkill extends BaseSkill {
   };
   
   async execute(ctx: SkillContext): Promise<SkillResult> {
-    const { action, symbols, metrics: requestedMetrics, sector } = ctx.params;
+    const params = ctx.input?.params || {};
+    const { action, symbols, metrics: requestedMetrics, sector } = params;
     
     switch (action) {
       case 'compare':
@@ -117,7 +118,7 @@ export class FundamentalComparisonSkill extends BaseSkill {
         return this.calculateQualityScores(ctx, symbols);
         
       case 'screen':
-        return this.screenByFundamentals(ctx, ctx.params.filters, sector);
+        return this.screenByFundamentals(ctx, params.filters, sector);
         
       case 'peers':
         return this.findPeers(ctx, symbols[0]);

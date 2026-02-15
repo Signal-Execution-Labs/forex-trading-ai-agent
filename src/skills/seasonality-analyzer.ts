@@ -14,7 +14,7 @@
  * - Statistical significance testing
  */
 
-import { BaseSkill, SkillContext, SkillResult } from '../types/skill.js';
+import type { SkillContext, SkillResult, Skill } from '../types/skill.js';
 
 interface SeasonalPattern {
   period: string;         // 'January', 'Monday', 'Week 1', etc.
@@ -43,7 +43,7 @@ interface CryptoHalvingCycle {
   daysToNextHalving: number;
 }
 
-export class SeasonalityAnalyzerSkill extends BaseSkill {
+export class SeasonalityAnalyzerSkill implements Skill {
   name = 'seasonality-analyzer';
   description = 'Analyze seasonal patterns in markets for timing trades';
   version = '1.0.0';
@@ -166,7 +166,8 @@ export class SeasonalityAnalyzerSkill extends BaseSkill {
   ];
   
   async execute(ctx: SkillContext): Promise<SkillResult> {
-    const { action, symbol, years = 10 } = ctx.params;
+    const params = ctx.input?.params || {};
+    const { action, symbol, years = 10 } = params;
     
     switch (action) {
       case 'monthly':

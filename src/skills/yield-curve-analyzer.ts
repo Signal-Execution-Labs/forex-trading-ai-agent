@@ -14,7 +14,7 @@
  * - Curve shape classification
  */
 
-import { BaseSkill, SkillContext, SkillResult } from '../types/skill.js';
+import type { SkillContext, SkillResult, Skill } from '../types/skill.js';
 
 interface YieldPoint {
   maturity: string;       // '3M', '2Y', '5Y', '10Y', '30Y'
@@ -43,7 +43,7 @@ interface YieldCurveAnalysis {
   signals: string[];
 }
 
-export class YieldCurveAnalyzerSkill extends BaseSkill {
+export class YieldCurveAnalyzerSkill implements Skill {
   name = 'yield-curve-analyzer';
   description = 'Multi-country yield curve analysis and recession prediction';
   version = '1.0.0';
@@ -75,7 +75,8 @@ export class YieldCurveAnalyzerSkill extends BaseSkill {
   private maturities = ['1M', '3M', '6M', '1Y', '2Y', '3Y', '5Y', '7Y', '10Y', '20Y', '30Y'];
   
   async execute(ctx: SkillContext): Promise<SkillResult> {
-    const { action, country = 'US', countries: multiCountries, lookback = 30 } = ctx.params;
+    const params = ctx.input?.params || {};
+    const { action, country = 'US', countries: multiCountries, lookback = 30 } = params;
     
     switch (action) {
       case 'current':

@@ -14,7 +14,7 @@
  * - Profile shape classification (P, b, D, double-distribution)
  */
 
-import { BaseSkill, SkillContext, SkillResult } from '../types/skill.js';
+import type { SkillContext, SkillResult, Skill } from '../types/skill.js';
 
 interface TPOBar {
   time: string;
@@ -45,7 +45,7 @@ interface TPOAnalysis {
   tradeSetup: string | null;
 }
 
-export class TPOChartsSkill extends BaseSkill {
+export class TPOChartsSkill implements Skill {
   name = 'tpo-charts';
   description = 'Time Price Opportunity / Market Profile analysis';
   version = '1.0.0';
@@ -55,9 +55,10 @@ export class TPOChartsSkill extends BaseSkill {
   private valueAreaPercent = 0.70;
   
   async execute(ctx: SkillContext): Promise<SkillResult> {
-    const { symbol, timeframe = '30min', lookback = 5 } = ctx.params;
+    const params = ctx.input?.params || {};
+    const { symbol, timeframe = '30min', lookback = 5 } = params;
     
-    ctx.log(`Generating TPO profile for ${symbol}`);
+    ctx.logger.info(`Generating TPO profile for ${symbol}`);
     
     // Fetch OHLC data
     const candles = await this.fetchCandles(ctx, symbol, timeframe, lookback);
@@ -86,13 +87,16 @@ export class TPOChartsSkill extends BaseSkill {
   }
   
   private async fetchCandles(ctx: SkillContext, symbol: string, timeframe: string, days: number): Promise<any[]> {
-    // Use market data provider
-    const provider = ctx.providers.marketData;
-    if (!provider) {
-      throw new Error('Market data provider not configured');
+    // Fetch market data via HTTP
+    try {
+      const data = await ctx.http.get<any[]>(
+        `/api/market-data/ohlcv?symbol=${symbol}&timeframe=${timeframe}&limit=${days * 24 * 2}`
+      );
+      return data;
+    } catch (error) {
+      ctx.logger.warn(`Market data fetch failed: ${error}`);
+      return []; // Return empty for demo mode
     }
-    
-    return provider.getOHLCV(symbol, timeframe, days * 24 * 2); // ~48 periods per day
   }
   
   private buildTPOProfiles(candles: any[]): TPOProfile[] {
