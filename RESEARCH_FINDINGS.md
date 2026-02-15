@@ -2,6 +2,147 @@
 
 > Continuous research into professional finance apps to improve K.I.T.
 
+## Research Session: February 15, 2026 (15:02 CET) - Afternoon TradingView Deep Dive
+
+### Sources Analyzed
+- TradingView.com Features Page (Live Fetch)
+- TradingView Options Strategy Builder
+- TradingView Yield Curve Comparator
+- TradingView Seasonals Feature
+- TradingView Fundamental Graphs
+
+### Key Features Studied
+
+#### 1. TradingView Advanced Chart Types (2026)
+- **Volume Footprint:** Distribution of trading volume at price levels per candlestick
+- **Time Price Opportunity (TPO):** Market Profile visualization showing price concentration
+- **Session Volume Profile:** Intraday volume analysis for specific sessions
+- **21 Chart Types:** Including Heikin Ashi, Renko, Point & Figure, Kagi, Range, HLC Area
+- **Volume Candles:** Trading volume visualization using candlesticks
+
+#### 2. Market Profile / TPO Analysis
+- TPO letter generation per time period (A-Z)
+- Point of Control (POC) - price with most time spent
+- Value Area (70% of TPO activity) - VAH/VAL
+- Initial Balance (first hour range)
+- Single prints (low participation zones)
+- Profile shape classification (P, b, D, double-distribution)
+- Trading setups based on profile context
+
+#### 3. Options Trading Tools
+- 30+ pre-built strategy templates
+- P&L profile calculation at expiry
+- Greeks aggregation (Delta, Gamma, Theta, Vega, Rho)
+- What-if scenarios (price, IV, time decay)
+- Break-even analysis
+- Probability of profit calculation
+- Strategy comparison and optimization
+- IV surface and volatility skew
+
+#### 4. Yield Curve Analysis
+- 40+ country yield curves comparison
+- Historical yield curve overlays
+- Inversion detection (2s10s, 3m10y spreads)
+- Recession probability models (NY Fed style)
+- Fed funds expectations tracking
+- Curve shape classification (normal/flat/inverted/humped)
+
+#### 5. Seasonality Analysis
+- Monthly/weekly/daily seasonal patterns
+- Multi-year pattern overlays
+- Statistical significance testing
+- Holiday effects and earnings season
+- Crypto halving cycles
+- Commodity seasonal patterns
+- Calendar-based trading signals
+
+#### 6. Fundamental Graphs
+- 100+ fundamental metrics comparison
+- Multi-symbol overlay charts
+- Sector/industry benchmarking
+- Quality scoring system (A-F grades)
+- Historical metric trends
+- Peer comparison tools
+- Valuation screening
+
+### New Skills Implemented
+
+| # | Skill | Features |
+|---|-------|----------|
+| 97 | tpo-charts | Market Profile/TPO, POC, VAH/VAL, Initial Balance, single prints, profile shapes, naked POCs |
+| 98 | options-strategy-builder | 30+ templates, P&L curves, Greeks, what-if, break-evens, probability, optimization |
+| 99 | yield-curve-analyzer | 20+ countries, spreads, recession model, Fed expectations, curve shapes |
+| 100 | seasonality-analyzer | Monthly/weekly/daily patterns, halving cycles, commodity seasons, significance testing |
+| 101 | fundamental-comparison | 35+ metrics, quality scores, peer comparison, screening, historical trends |
+
+### Implementation Highlights
+
+#### TPO Charts (#97)
+- Full TPO letter generation (A-Z, a-z per period)
+- POC calculation (maximum TPO concentration)
+- Value Area algorithm (70% of activity around POC)
+- Initial Balance tracking (first 2 periods)
+- Single print detection (low liquidity zones)
+- Profile shape classification:
+  - P-shape: Buying tail (bullish)
+  - b-shape: Selling tail (bearish)
+  - D-shape: Balanced/double distribution
+- Naked POC tracking (untested prior POCs)
+- Trade signal generation based on profile context
+
+#### Options Strategy Builder (#98)
+- 22 pre-built strategy templates:
+  - Bullish: Long Call, Bull Call/Put Spread, Cash Secured Put, PMCC
+  - Bearish: Long Put, Bear Put/Call Spread
+  - Neutral: Iron Condor, Iron Butterfly, Short Straddle/Strangle, Calendar Spread
+  - Volatile: Long Straddle/Strangle, Reverse Iron Condor
+  - Income: Covered Call, Protective Collar, Jade Lizard
+  - Advanced: Ratio Spread, Broken Wing Butterfly
+- Black-Scholes pricing implementation
+- Full Greeks calculation with aggregation
+- P&L curve generation across price range
+- Break-even finder with interpolation
+- Strategy comparison rankings
+- Strike width optimization
+
+#### Yield Curve Analyzer (#99)
+- 20 supported countries (US, DE, UK, JP, CN, etc.)
+- 11 maturity points (1M to 30Y)
+- Spread calculations (2s10s, 3m10y, 2s30s)
+- Shape classification algorithm
+- NY Fed probit recession model
+- Fed expectations projection
+- Trade recommendations based on curve state
+
+#### Seasonality Analyzer (#100)
+- Monthly pattern extraction with t-test significance
+- Day-of-week effects (Monday effect)
+- Commodity seasonal patterns (heating oil, grains, gold)
+- Bitcoin halving cycle analysis:
+  - 4 halvings tracked with price performance
+  - Cycle phase detection (Accumulation → Bull → Distribution)
+  - Days since/until halving
+- Known effects library (January Effect, Sell in May, Santa Rally)
+- Seasonal calendar generation
+
+#### Fundamental Comparison (#101)
+- 35 fundamental metrics across 6 categories:
+  - Valuation: P/E, P/S, P/B, EV/EBITDA, PEG
+  - Profitability: Margins, ROE, ROA, ROIC
+  - Growth: Revenue, Earnings, EPS growth
+  - Financial Health: Current/Quick ratio, Debt/Equity
+  - Efficiency: Turnover ratios, DSO
+  - Dividend: Yield, Payout ratio, Growth
+- Quality scoring algorithm (0-100, A-F grades)
+- Peer comparison with win counting
+- Fundamental screening with filters
+- Historical metric trend analysis
+
+### Total Skills Added: 5
+### Total K.I.T. Skills: ~105 (in /src/skills)
+
+---
+
 ## Research Session: February 15, 2026 (11:08 CET) - Late Morning Session
 
 ### Sources Analyzed

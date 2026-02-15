@@ -1,53 +1,70 @@
 # K.I.T. Project Status
 
-**Last Updated:** 2026-02-15 13:30 CET  
-**Updated By:** K.I.T. Sandbox Tester (cron respawn)
+**Last Updated:** 2026-02-15 15:01 CET  
+**Updated By:** K.I.T. Improvement Agent (cron)
 
 ## Build Status: ✅ PASSING
 
 ```
 npm run build → SUCCESS
 npm test → 51/51 tests passing
-kit doctor → 14 passed, 1 warning, 0 failed
+TypeScript compiles cleanly
 ```
 
-### Session Progress (13:28-13:30 CET)
-- ✅ Build verified - TypeScript compiles cleanly
+### Session Progress (14:57-15:01 CET)
+- ✅ TypeScript build verified - no errors
 - ✅ All 51 tests passing (vitest)
-- ✅ CLI working - 45+ commands available
-- ✅ Gateway online (188,157s uptime = ~52 hours)
-- ✅ 31 hooks available and functional
-- ✅ Doctor check passed (only warning: no exchanges configured - normal)
+- ✅ **3 new hooks added:**
+  - 🎯 `price-alert` - Monitor price levels with configurable alerts
+  - 🔄 `session-pnl-reset` - Auto-reset daily P&L at market open times
+  - 📈 `trade-streak-tracker` - Track win/loss streaks with psychology alerts
+- ✅ Changes pushed to GitHub (commit 9ee0934)
 
 ## Current Stats
 
 - **Total Skills:** 54+
-- **Total Hooks:** 31 bundled
+- **Total Hooks:** 34 bundled (+3 new!)
 - **API Endpoints:** 850+
 - **Route Files:** 91
 - **Channels:** 20+ supported
 - **CLI Commands:** 45+
 - **Test Coverage:** 51 tests passing
 
+## New Hooks (This Session)
+
+### 🎯 Price Alert Hook
+- Tracks multiple price alerts per symbol
+- Supports above/below/cross conditions
+- Percentage-based targets supported
+- Auto-removes triggered alerts (optional)
+- Configurable via `workspace/price-alerts.json`
+
+### 🔄 Session P&L Reset Hook
+- Resets P&L counters at configurable times
+- Archives previous day's P&L to history
+- Supports multiple market sessions
+- Creates daily snapshots for analysis
+
+### 📈 Trade Streak Tracker Hook
+- Tracks consecutive wins/losses
+- Alerts on new personal best streaks
+- Warns on losing streaks (risk management)
+- Auto-pause after configurable losses (anti-tilt)
+- Celebrates win streaks (positive reinforcement)
+
 ## Health Check Results
 
 | Check | Status |
 |-------|--------|
 | Node.js | ✅ v24.13.0 |
-| Python | ✅ 3.14.0 |
-| MetaTrader5 | ✅ Installed |
-| Disk Space | ✅ 31.1 GB free |
-| Memory | ✅ 21.2 GB free |
-| Config | ✅ Valid |
-| Workspace | ✅ All 4 files |
-| Onboarding | ✅ Completed |
-| AI Provider | ✅ OpenAI configured |
-| Gateway | ✅ Online |
-| Internet | ✅ Connected |
+| TypeScript | ✅ Compiles |
+| Tests | ✅ 51/51 |
+| Git | ✅ Clean |
+| GitHub | ✅ Pushed |
 
 ## Git Status
 
-- **Modified:** `workspace/trading_brain.json` (minor state change)
+- **Last Commit:** 9ee0934 - feat(hooks): add 3 new trading hooks
 - **Branch:** main
 - **GitHub:** https://github.com/kayzaa/k.i.t.-bot
 
@@ -55,18 +72,16 @@ kit doctor → 14 passed, 1 warning, 0 failed
 
 ## Previous Sessions
 
-### 13:00-13:02 CET
+### 13:00-13:30 CET
 - Added market-regime-detector hook
 - Added exchange-status-monitor hook
-- Changes pushed to GitHub (commit ebbae79)
+- Build verified, all tests passing
 
 ### 11:32-11:35 CET
 - Fixed TypeScript errors in 4 skill files
-- All 51 tests passing
 
 ### 11:03-11:08 CET
-- Added 3 new risk monitoring hooks (slippage, spread, volatility)
+- Added 3 new risk monitoring hooks
 
 ### 09:36 CET
-- Added api-health-monitor hook
-- Added session-summary hook
+- Added api-health-monitor and session-summary hooks
