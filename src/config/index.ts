@@ -64,6 +64,11 @@ export interface LoggingConfig {
   file?: string;
 }
 
+export interface MarketDataConfig {
+  alphaVantageKey?: string;
+  twelveDataKey?: string;
+}
+
 export interface KITConfig {
   version?: string;
   onboarded?: boolean;
@@ -92,6 +97,7 @@ export interface KITConfig {
   memory?: MemoryConfig;
   workspace?: WorkspaceConfig;
   logging?: LoggingConfig;
+  marketData?: MarketDataConfig;
 }
 
 // Aliases for compatibility

@@ -2,11 +2,13 @@
  * K.I.T. Trading Tools
  * 
  * Tools available to the AI agent for trading operations
+ * Supports: Crypto, Forex, Stocks via Alpha Vantage + Twelve Data + Binance
  */
 
 import { ToolDefinition as ChatToolDef } from '../gateway/chat-manager';
 import { signalCopierTools } from './signal-copier-tools';
 import { getSkillToolDefinitions, getSkillToolHandlers } from './skill-tools';
+import * as marketData from '../services/market-data';
 
 // ============================================================================
 // Tool Definitions (for LLM)
@@ -257,6 +259,37 @@ export const TRADING_TOOLS: ChatToolDef[] = [
       },
     },
   },
+  {
+    name: 'get_market_overview',
+    description: 'Get overview of all markets: top crypto, forex pairs, and stocks with prices and changes',
+    parameters: {
+      type: 'object',
+      properties: {
+        markets: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Markets to include: crypto, forex, stocks. Default: all',
+        },
+      },
+    },
+  },
+  {
+    name: 'configure_market_data',
+    description: 'Configure API keys for market data. Alpha Vantage (stocks/forex) and Twelve Data (backup, 800 calls/day).',
+    parameters: {
+      type: 'object',
+      properties: {
+        alphaVantageKey: {
+          type: 'string',
+          description: 'Alpha Vantage API key (free at alphavantage.co)',
+        },
+        twelveDataKey: {
+          type: 'string',
+          description: 'Twelve Data API key (free at twelvedata.com)',
+        },
+      },
+    },
+  },
   
   // ========================================================================
   // Signal Copier Tools - Copy signals from Telegram/Discord channels
@@ -494,79 +527,68 @@ export const MOCK_TOOL_HANDLERS: Record<string, (args: Record<string, unknown>) 
   }),
 
   get_market_price: async (args) => {
-    const symbol = String(args.symbol || 'BTC/USDT').replace('/', '').toUpperCase();
-    try {
-      // Try Binance public API (no key needed)
-      const response = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${symbol}`);
-      if (response.ok) {
-        const data = await response.json();
-        return {
-          symbol: args.symbol,
-          price: parseFloat(data.lastPrice),
-          change24h: parseFloat(data.priceChangePercent),
-          high24h: parseFloat(data.highPrice),
-          low24h: parseFloat(data.lowPrice),
-          volume24h: parseFloat(data.volume),
-          timestamp: new Date().toISOString(),
-          source: 'Binance',
-        };
-      }
-    } catch (e) {
-      // Fallback to mock data
-    }
-    // Fallback mock data
+    // Use Multi-Asset Market Data Service (supports Crypto, Forex, Stocks)
+    const symbol = String(args.symbol || 'BTC/USDT');
+    const quote = await marketData.getQuote(symbol);
+    
     return {
-      symbol: args.symbol,
-      price: symbol.includes('BTC') ? 68500 : symbol.includes('ETH') ? 2650 : symbol.includes('SOL') ? 145 : 1.08,
-      change24h: 2.34,
-      high24h: symbol.includes('BTC') ? 69000 : 2700,
-      low24h: symbol.includes('BTC') ? 67500 : 2600,
-      volume24h: 45000000000,
-      timestamp: new Date().toISOString(),
-      source: 'Simulated',
+      symbol: quote.symbol,
+      assetClass: quote.assetClass,
+      price: quote.price,
+      change24h: quote.changePercent,
+      high24h: quote.high,
+      low24h: quote.low,
+      open: quote.open,
+      previousClose: quote.previousClose,
+      volume24h: quote.volume,
+      timestamp: quote.timestamp,
+      source: quote.source,
     };
   },
 
   analyze_market: async (args) => {
-    const symbol = String(args.symbol || 'BTC/USDT').replace('/', '').toUpperCase();
-    let price = 68500;
-    let change24h = 2.5;
+    // Use Multi-Asset Market Data Service (supports Crypto, Forex, Stocks)
+    const symbol = String(args.symbol || 'BTC/USDT');
+    const timeframe = String(args.timeframe || '1h');
     
-    try {
-      // Fetch real price from Binance
-      const response = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${symbol}`);
-      if (response.ok) {
-        const data = await response.json();
-        price = parseFloat(data.lastPrice);
-        change24h = parseFloat(data.priceChangePercent);
-      }
-    } catch (e) { /* use fallback */ }
-    
-    // Generate realistic indicators based on price movement
-    const trend = change24h > 1 ? 'bullish' : change24h < -1 ? 'bearish' : 'neutral';
-    const rsiValue = Math.min(85, Math.max(15, 50 + change24h * 5 + Math.random() * 10));
-    const confidence = Math.min(90, Math.max(40, 60 + change24h * 3));
-    const signal = rsiValue > 70 ? 'sell' : rsiValue < 30 ? 'buy' : trend === 'bullish' ? 'buy' : trend === 'bearish' ? 'sell' : 'hold';
+    const analysis = await marketData.analyzeMarket(symbol, timeframe);
     
     return {
-      symbol: args.symbol,
-      timeframe: args.timeframe || '1h',
-      price,
-      change24h,
-      trend,
-      strength: Math.round(Math.abs(change24h) * 10 + 50),
+      symbol: analysis.quote.symbol,
+      assetClass: analysis.quote.assetClass,
+      timeframe,
+      price: analysis.quote.price,
+      change24h: analysis.quote.changePercent,
+      trend: analysis.trend,
+      strength: analysis.strength,
       indicators: {
-        rsi: { value: Math.round(rsiValue), signal: rsiValue > 70 ? 'overbought' : rsiValue < 30 ? 'oversold' : 'neutral' },
-        macd: { histogram: change24h * 50, crossover: trend === 'bullish' ? 'bullish' : trend === 'bearish' ? 'bearish' : 'none' },
-        bollinger: { upper: price * 1.03, middle: price, lower: price * 0.97, position: trend === 'bullish' ? 'upper_half' : 'lower_half' },
-        ma: { sma20: price * 0.98, sma50: price * 0.95, ema12: price * 0.99, ema26: price * 0.97 },
+        rsi: { value: analysis.indicators.rsi, signal: analysis.indicators.rsiSignal },
+        macd: { 
+          value: analysis.indicators.macd.value,
+          signal: analysis.indicators.macd.signal,
+          histogram: analysis.indicators.macd.histogram, 
+          crossover: analysis.indicators.macdCrossover 
+        },
+        bollinger: { 
+          upper: analysis.indicators.bollingerUpper, 
+          middle: analysis.indicators.bollingerMiddle, 
+          lower: analysis.indicators.bollingerLower 
+        },
+        ma: { 
+          sma20: analysis.indicators.sma20, 
+          sma50: analysis.indicators.sma50, 
+          ema12: analysis.indicators.ema12, 
+          ema26: analysis.indicators.ema26 
+        },
+        atr: analysis.indicators.atr,
+        adx: analysis.indicators.adx,
       },
-      support: [price * 0.95, price * 0.90, price * 0.85].map(p => Math.round(p)),
-      resistance: [price * 1.05, price * 1.10, price * 1.15].map(p => Math.round(p)),
-      signal,
-      confidence: Math.round(confidence),
-      analysis: `${args.symbol} zeigt ${trend === 'bullish' ? 'bullische' : trend === 'bearish' ? 'bärische' : 'neutrale'} Tendenz auf dem ${args.timeframe || '1h'} Timeframe. Preis: $${price.toLocaleString()}. 24h Veränderung: ${change24h > 0 ? '+' : ''}${change24h.toFixed(2)}%. RSI bei ${Math.round(rsiValue)} (${rsiValue > 70 ? 'überkauft' : rsiValue < 30 ? 'überverkauft' : 'neutral'}). Signal: ${signal.toUpperCase()} mit ${Math.round(confidence)}% Konfidenz.`,
-      source: 'Binance + K.I.T. Analysis',
+      support: analysis.support,
+      resistance: analysis.resistance,
+      signal: analysis.signal,
+      confidence: analysis.confidence,
+      analysis: analysis.analysis,
+      source: analysis.quote.source,
     };
   },
 
@@ -629,10 +651,60 @@ export const MOCK_TOOL_HANDLERS: Record<string, (args: Record<string, unknown>) 
   }),
 
   get_news: async (args) => ([
-    { title: 'Bitcoin Breaks $67,000 Resistance', source: 'CoinDesk', sentiment: 'bullish', timestamp: '2025-02-09T20:00:00Z' },
-    { title: 'Fed Signals No Rate Cuts Until March', source: 'Reuters', sentiment: 'neutral', timestamp: '2025-02-09T18:30:00Z' },
-    { title: `${args.symbol || 'Crypto'} ETF Inflows Continue`, source: 'Bloomberg', sentiment: 'bullish', timestamp: '2025-02-09T16:00:00Z' },
+    { title: 'Bitcoin Breaks $95,000 - New ATH In Sight', source: 'CoinDesk', sentiment: 'bullish', timestamp: new Date().toISOString() },
+    { title: 'Fed Maintains Interest Rates', source: 'Reuters', sentiment: 'neutral', timestamp: new Date().toISOString() },
+    { title: `${args.symbol || 'Markets'} Show Strong Momentum`, source: 'Bloomberg', sentiment: 'bullish', timestamp: new Date().toISOString() },
   ]),
+
+  get_market_overview: async (args) => {
+    // Use Multi-Asset Market Data Service
+    const overview = await marketData.getMarketOverview();
+    
+    const formatQuote = (q: marketData.MarketQuote) => ({
+      symbol: q.symbol,
+      price: q.price,
+      change: q.changePercent,
+      changeFormatted: `${q.changePercent >= 0 ? '+' : ''}${q.changePercent.toFixed(2)}%`,
+      source: q.source,
+    });
+    
+    const markets = (args.markets as string[]) || ['crypto', 'forex', 'stocks'];
+    
+    return {
+      timestamp: overview.timestamp,
+      markets: {
+        crypto: markets.includes('crypto') ? overview.crypto.map(formatQuote) : [],
+        forex: markets.includes('forex') ? overview.forex.map(formatQuote) : [],
+        stocks: markets.includes('stocks') ? overview.stocks.map(formatQuote) : [],
+      },
+      summary: `Marktübersicht: ${overview.crypto.length} Crypto, ${overview.forex.length} Forex, ${overview.stocks.length} Aktien`,
+    };
+  },
+
+  configure_market_data: async (args) => {
+    const keys: { alphaVantage?: string; twelveData?: string } = {};
+    
+    if (args.alphaVantageKey) {
+      keys.alphaVantage = String(args.alphaVantageKey);
+    }
+    if (args.twelveDataKey) {
+      keys.twelveData = String(args.twelveDataKey);
+    }
+    
+    marketData.setApiKeys(keys);
+    
+    const currentKeys = marketData.getApiKeys();
+    
+    return {
+      success: true,
+      configured: {
+        alphaVantage: currentKeys.alphaVantage ? '✅ Configured' : '❌ Not set',
+        twelveData: currentKeys.twelveData ? '✅ Configured' : '❌ Not set',
+        binance: '✅ Always available (no key needed)',
+      },
+      message: 'Market data API keys updated. Stocks & Forex now supported!',
+    };
+  },
   
   // Signal Copier Handlers (connected to real implementation)
   ...Object.fromEntries(

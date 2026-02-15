@@ -889,9 +889,50 @@ export class GatewayServer extends EventEmitter {
         process.env.TELEGRAM_BOT_TOKEN = config.channels.telegram.token;
       }
       
+      // Load Market Data API keys (Alpha Vantage, Twelve Data)
+      this.initMarketDataKeys(config);
+      
       console.log('   Config: API keys loaded from config.json');
     } catch (error) {
       // Silently ignore config loading errors
+    }
+  }
+
+  /**
+   * Initialize Market Data API keys for Stocks/Forex/Crypto analysis
+   */
+  private initMarketDataKeys(config: any): void {
+    try {
+      // Dynamic import to avoid circular dependencies
+      const marketData = require('../services/market-data');
+      
+      const keys: { alphaVantage?: string; twelveData?: string } = {};
+      
+      // Load from config.marketData
+      if (config.marketData?.alphaVantageKey) {
+        keys.alphaVantage = config.marketData.alphaVantageKey;
+      }
+      if (config.marketData?.twelveDataKey) {
+        keys.twelveData = config.marketData.twelveDataKey;
+      }
+      
+      // Also check environment variables as fallback
+      if (!keys.alphaVantage && process.env.ALPHA_VANTAGE_API_KEY) {
+        keys.alphaVantage = process.env.ALPHA_VANTAGE_API_KEY;
+      }
+      if (!keys.twelveData && process.env.TWELVE_DATA_API_KEY) {
+        keys.twelveData = process.env.TWELVE_DATA_API_KEY;
+      }
+      
+      // Set the API keys
+      if (keys.alphaVantage || keys.twelveData) {
+        marketData.setApiKeys(keys);
+        console.log(`   Market Data: ${keys.alphaVantage ? '✅ Alpha Vantage' : '❌ Alpha Vantage'} | ${keys.twelveData ? '✅ Twelve Data' : '❌ Twelve Data'} | ✅ Binance (free)`);
+      } else {
+        console.log('   Market Data: No API keys configured (using Binance for crypto only)');
+      }
+    } catch (error) {
+      // Market data service not available
     }
   }
   
