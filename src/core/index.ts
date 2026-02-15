@@ -8,6 +8,7 @@ export * from './logger';
 export * from './skill-router';
 export * from './canvas-manager';
 export * from './session-spawner';
+export * from './subagent-spawner';
 export * from './retry';
 export * from './diagnostics';
 export * from './plugin-slots';

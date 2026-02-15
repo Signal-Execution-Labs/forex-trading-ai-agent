@@ -66,6 +66,8 @@ export const TOOL_GROUPS: Record<string, string[]> = {
   'group:fs': ['read', 'write', 'edit', 'list'],
   'group:runtime': ['exec', 'process'],
   'group:sessions': ['session_spawn', 'session_list', 'session_send', 'session_status', 'session_cancel'],
+  'group:subagents': ['subagent_spawn', 'subagent_list', 'subagent_status', 'subagent_send', 'subagent_cancel',
+                      'subagent_spawn_strategies', 'subagent_analyze_multi', 'subagent_results'],
   'group:memory': ['memory_search', 'memory_get', 'memory_write', 'memory_update', 'memory_list'],
   'group:messaging': ['telegram_send', 'whatsapp_send', 'discord_send', 'slack_send'],
   'group:browser': ['browser_open', 'browser_navigate', 'browser_screenshot', 'browser_snapshot', 
@@ -117,7 +119,7 @@ export const PROFILE_DEFINITIONS: Record<ToolProfile, {
   },
   trading: {
     allow: [
-      'group:fs', 'group:memory', 'group:sessions', 'group:trading',
+      'group:fs', 'group:memory', 'group:sessions', 'group:subagents', 'group:trading',
       'group:analysis', 'group:canvas', 'group:cron', 'group:config',
       'session_status', 'status', 'web_search', 'web_fetch'
     ],
@@ -516,6 +518,17 @@ import {
 } from './session-tools';
 
 import {
+  subagentSpawnToolDefinition, subagentSpawnToolHandler,
+  subagentListToolDefinition, subagentListToolHandler,
+  subagentStatusToolDefinition, subagentStatusToolHandler,
+  subagentSendToolDefinition, subagentSendToolHandler,
+  subagentCancelToolDefinition, subagentCancelToolHandler,
+  subagentSpawnStrategiesToolDefinition, subagentSpawnStrategiesToolHandler,
+  subagentAnalyzeMultiToolDefinition, subagentAnalyzeMultiToolHandler,
+  subagentResultsToolDefinition, subagentResultsToolHandler,
+} from './subagent-tools';
+
+import {
   ttsSpeakToolDefinition, ttsSpeakToolHandler,
   ttsVoicesToolDefinition, ttsVoicesToolHandler,
   ttsPlayToolDefinition, ttsPlayToolHandler,
@@ -627,12 +640,22 @@ export function createDefaultToolRegistry(workspaceDir?: string): ToolRegistry {
   registry.register(cronHistoryToolDefinition, cronHistoryToolHandler, 'system');
   registry.register(heartbeatTriggerToolDefinition, heartbeatTriggerToolHandler, 'system');
 
-  // Session/Sub-Agent tools
+  // Session/Sub-Agent tools (basic)
   registry.register(sessionSpawnToolDefinition, sessionSpawnToolHandler, 'system');
   registry.register(sessionListToolDefinition, sessionListToolHandler, 'system');
   registry.register(sessionSendToolDefinition, sessionSendToolHandler, 'system');
   registry.register(sessionStatusToolDefinition, sessionStatusToolHandler, 'system');
   registry.register(sessionCancelToolDefinition, sessionCancelToolHandler, 'system');
+
+  // Sub-Agent tools (trading-specialized)
+  registry.register(subagentSpawnToolDefinition, subagentSpawnToolHandler, 'trading');
+  registry.register(subagentListToolDefinition, subagentListToolHandler, 'trading');
+  registry.register(subagentStatusToolDefinition, subagentStatusToolHandler, 'trading');
+  registry.register(subagentSendToolDefinition, subagentSendToolHandler, 'trading');
+  registry.register(subagentCancelToolDefinition, subagentCancelToolHandler, 'trading');
+  registry.register(subagentSpawnStrategiesToolDefinition, subagentSpawnStrategiesToolHandler, 'trading');
+  registry.register(subagentAnalyzeMultiToolDefinition, subagentAnalyzeMultiToolHandler, 'trading');
+  registry.register(subagentResultsToolDefinition, subagentResultsToolHandler, 'trading');
 
   // TTS (Text-to-Speech) tools
   registry.register(ttsSpeakToolDefinition, ttsSpeakToolHandler, 'system');
