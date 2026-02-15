@@ -1,7 +1,7 @@
 # K.I.T. Project Status
 
-**Last Updated:** 2026-02-15 03:47 CET  
-**Updated By:** K.I.T. Sandbox Tester (automated cron)
+**Last Updated:** 2026-02-15 05:17 CET  
+**Updated By:** K.I.T. Continuous Improvement Agent (cron)
 
 ## Build Status: ✅ PASSING
 
@@ -20,108 +20,92 @@ TypeScript compiles cleanly (no errors)
 | decision-engine.test.ts | 18 | ✅ Pass |
 | **Total** | **51** | **✅ 100%** |
 
-## Sandbox Test Session (03:45-03:47 CET)
+## Latest Commit (05:17 CET)
 
-### Issues Fixed
+**Commit:** `ff413a3` - feat(hooks): add balance-tracker and strategy-leaderboard hooks
 
-1. **Missing `types/tools.ts`** - Created tool type definitions
-   - Added `Tool`, `ToolResult`, `ToolSchema`, `ToolContext` interfaces
-   - Required by 4 skill files: defi-dashboard, multi-condition-alerts, pine-screener, signal-generator
+### New Bundled Hooks Added
 
-2. **TypeScript Implicit Any Error** - Fixed parameter typing
-   - `defi-dashboard.ts` line 448: Added explicit `string` type to `chain` parameter
+1. **💰 balance-tracker** - Portfolio Balance Monitor
+   - Tracks total portfolio value across exchanges
+   - Alerts on significant balance changes (>5% default)
+   - Daily balance snapshots and reports
+   - Configurable thresholds and alert preferences
 
-3. **Optional Handler Invocations** - Fixed null safety
-   - `pine-screener.ts` line 428: Added non-null assertion for handler
-   - `signal-generator.ts` line 381: Added non-null assertion for handler
+2. **🏆 strategy-leaderboard** - Strategy Performance Rankings
+   - Real-time strategy rankings by multiple metrics
+   - Sharpe ratio, win rate, profit factor tracking
+   - Weekly leaderboard reports
+   - Top performer announcements
 
-### Verification Results
-
-| Check | Status |
-|-------|--------|
-| Build (`npm run build`) | ✅ Success |
-| Tests (`npm test`) | ✅ 51/51 passing |
-| CLI (`kit --help`) | ✅ 40+ commands available |
-| Doctor (`kit doctor`) | ✅ 14 passed, 1 warning |
-| Status (`kit status`) | ✅ Gateway online |
-| Skills (`kit skills`) | ✅ 58 skills listed |
-
-### Doctor Summary
-
-- ✅ Node.js: v24.13.0
-- ✅ Python: 3.14.0
-- ✅ MetaTrader5: Installed
-- ✅ Disk: 31.4 GB free
-- ✅ Memory: 21.6 GB free
-- ✅ Config: Valid
-- ✅ Workspace: 4/4 files present
-- ✅ Onboarding: Completed
-- ✅ Gateway: Online
-- ⚠️ Exchanges: None configured (expected for sandbox)
+### Files Added
+- `src/hooks/bundled/balance-tracker/HOOK.md`
+- `src/hooks/bundled/balance-tracker/handler.ts`
+- `src/hooks/bundled/strategy-leaderboard/HOOK.md`
+- `src/hooks/bundled/strategy-leaderboard/handler.ts`
 
 ## Current Stats
 
 - **Total Skills:** 58 listed in CLI (100+ documented)
-- **Total Hooks:** 20 bundled
+- **Total Hooks:** 22 bundled (was 20, +2 new)
 - **API Endpoints:** 750+
 - **Route Files:** 68
 - **Channels:** 20+ supported
 - **CLI Commands:** 40+
 
+## Bundled Hooks (22 total)
+
+| Hook | Emoji | Description |
+|------|-------|-------------|
+| balance-tracker | 💰 | Portfolio balance change monitoring |
+| boot-md | 🚀 | Runs BOOT.md on gateway start |
+| command-logger | 📝 | Logs all commands |
+| correlation-monitor | 📊 | Asset correlation tracking |
+| daily-pnl | 💵 | Daily P&L summary |
+| drawdown-alert | ⚠️ | Dangerous drawdown alerts |
+| market-hours | 🕐 | Market session awareness |
+| milestone-tracker | 🎯 | Trading milestones |
+| monthly-report | 📅 | Monthly performance report |
+| news-sentiment | 📰 | News sentiment analysis |
+| onboarding-complete | ✅ | Post-onboarding actions |
+| performance-benchmark | 📈 | Performance vs benchmarks |
+| portfolio-snapshot | 📸 | Periodic snapshots |
+| position-monitor | 👁️ | Position P&L tracking |
+| rate-limit-tracker | 🚦 | API rate limit monitoring |
+| risk-alert | 🛡️ | Risk threshold alerts |
+| session-compaction | 🗜️ | Session memory cleanup |
+| session-memory | 💾 | Session context saving |
+| signal-logger | 📡 | Trade signal logging |
+| strategy-leaderboard | 🏆 | Strategy performance rankings |
+| trade-logger | 📋 | Trade activity logging |
+| weekly-report | 📊 | Weekly performance report |
+
 ## System Health
 
 ```
-Gateway:     🟢 Online
-Uptime:      153240s (~42.5 hours)
-Clients:     1
-Sessions:    0
-AI Provider: openai (gpt-4o-mini)
+Build:       🟢 Passing
+Tests:       🟢 51/51 passing
+TypeScript:  🟢 No errors
+Git:         🟢 Pushed to origin/main
 ```
 
-## Files Modified This Session
+## Verification Commands
 
-1. `src/types/tools.ts` - **NEW** (1,440 bytes)
-2. `src/skills/defi-dashboard.ts` - Type fix
-3. `src/skills/pine-screener.ts` - Handler null safety
-4. `src/skills/signal-generator.ts` - Handler null safety
-
-## Known Issues
-
-None currently. All tests pass, build succeeds, CLI functional.
-
-## Bundled Hooks (20 total)
-
-| Hook | Description |
-|------|-------------|
-| boot-md | Runs BOOT.md on gateway start |
-| command-logger | Logs all commands |
-| correlation-monitor | Monitors asset correlations |
-| daily-pnl | Daily P&L summary |
-| drawdown-alert | Alerts on dangerous drawdowns |
-| market-hours | Market session awareness |
-| milestone-tracker | Celebrates trading milestones |
-| monthly-report | Monthly performance report |
-| news-sentiment | News sentiment analysis |
-| onboarding-complete | Post-onboarding actions |
-| performance-benchmark | Performance vs benchmarks |
-| portfolio-snapshot | Periodic portfolio snapshots |
-| position-monitor | Position P&L tracking |
-| rate-limit-tracker | API rate limit monitoring |
-| risk-alert | Risk threshold alerts |
-| session-compaction | Session memory cleanup |
-| session-memory | Session context saving |
-| signal-logger | Trade signal logging |
-| trade-logger | Trade activity logging |
-| weekly-report | Weekly performance report |
+```bash
+npx tsc --noEmit      # TypeScript check ✅
+npm test              # Run tests ✅
+npm run build         # Build ✅
+git status            # Clean working tree
+```
 
 ## Next Actions
 
-- [ ] Git commit the type fixes
-- [ ] Integration tests for skill tools
+- [ ] Integration tests for new hooks
 - [ ] VPS deployment verification
 - [ ] KitHub.finance skill sync
 - [ ] Forum API endpoint testing
+- [ ] Documentation updates for new hooks
 
 ---
 
-*Automated testing by K.I.T. Sandbox Tester cron job*
+*Automated improvement by K.I.T. Continuous Improvement Agent*
