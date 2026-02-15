@@ -31,6 +31,9 @@ export interface TelegramMessage {
   // Callback query fields (for button presses)
   callbackQueryId?: string;
   callbackData?: string;
+  // Voice message fields
+  isVoiceMessage?: boolean;
+  voiceDuration?: number;
 }
 
 export interface TelegramChannelConfig {
@@ -38,6 +41,9 @@ export interface TelegramChannelConfig {
   chatId?: string;
   pollingInterval?: number; // ms, default 2000
   allowedChatIds?: string[]; // If set, only respond to these chats
+  // Voice message support
+  voiceEnabled?: boolean; // Default: true
+  openaiApiKey?: string; // For Whisper transcription
 }
 
 export class TelegramChannel extends EventEmitter {
@@ -51,8 +57,101 @@ export class TelegramChannel extends EventEmitter {
     super();
     this.config = {
       pollingInterval: 2000,
+      voiceEnabled: true, // Voice messages enabled by default!
       ...config,
     };
+  }
+
+  /**
+   * Download a file from Telegram servers
+   */
+  private async downloadFile(fileId: string): Promise<Buffer | null> {
+    try {
+      // Get file path
+      const response = await fetch(`https://api.telegram.org/bot${this.config.token}/getFile?file_id=${fileId}`);
+      const data = await response.json() as any;
+      
+      if (!data.ok || !data.result?.file_path) {
+        console.error('[Telegram] Failed to get file path:', data.description);
+        return null;
+      }
+      
+      // Download file
+      const fileUrl = `https://api.telegram.org/file/bot${this.config.token}/${data.result.file_path}`;
+      const fileResponse = await fetch(fileUrl);
+      
+      if (!fileResponse.ok) {
+        console.error('[Telegram] Failed to download file');
+        return null;
+      }
+      
+      return Buffer.from(await fileResponse.arrayBuffer());
+    } catch (error) {
+      console.error('[Telegram] Download file error:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Transcribe voice message using OpenAI Whisper
+   */
+  private async transcribeVoice(fileBuffer: Buffer): Promise<string | null> {
+    // Get OpenAI API key from config or environment
+    const apiKey = this.config.openaiApiKey || process.env.OPENAI_API_KEY;
+    
+    if (!apiKey) {
+      console.error('[Telegram] OpenAI API key not configured for voice transcription');
+      return null;
+    }
+    
+    try {
+      // Create multipart form data manually for Whisper API
+      const boundary = '----KITVoiceBoundary' + Date.now();
+      
+      const formParts: Buffer[] = [];
+      
+      // Add file field
+      formParts.push(Buffer.from(
+        `--${boundary}\r\n` +
+        `Content-Disposition: form-data; name="file"; filename="voice.ogg"\r\n` +
+        `Content-Type: audio/ogg\r\n\r\n`
+      ));
+      formParts.push(fileBuffer);
+      formParts.push(Buffer.from('\r\n'));
+      
+      // Add model field
+      formParts.push(Buffer.from(
+        `--${boundary}\r\n` +
+        `Content-Disposition: form-data; name="model"\r\n\r\n` +
+        `whisper-1\r\n`
+      ));
+      
+      // End boundary
+      formParts.push(Buffer.from(`--${boundary}--\r\n`));
+      
+      const formBody = Buffer.concat(formParts);
+      
+      const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': `multipart/form-data; boundary=${boundary}`,
+        },
+        body: formBody,
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        console.error('[Telegram] Whisper API error:', error);
+        return null;
+      }
+      
+      const result = await response.json() as any;
+      return result.text || null;
+    } catch (error) {
+      console.error('[Telegram] Transcription error:', error);
+      return null;
+    }
   }
 
   /**
@@ -248,18 +347,52 @@ export class TelegramChannel extends EventEmitter {
 
       // Extract message
       const msg = update.message;
-      if (msg && msg.text) {
-        messages.push({
-          messageId: msg.message_id,
-          chatId: msg.chat.id,
-          userId: msg.from.id,
-          username: msg.from.username,
-          firstName: msg.from.first_name,
-          text: msg.text,
-          date: new Date(msg.date * 1000),
-          threadId: msg.message_thread_id,
-          isTopicMessage: msg.is_topic_message,
-        });
+      if (msg) {
+        // Handle text messages
+        if (msg.text) {
+          messages.push({
+            messageId: msg.message_id,
+            chatId: msg.chat.id,
+            userId: msg.from.id,
+            username: msg.from.username,
+            firstName: msg.from.first_name,
+            text: msg.text,
+            date: new Date(msg.date * 1000),
+            threadId: msg.message_thread_id,
+            isTopicMessage: msg.is_topic_message,
+          });
+        }
+        
+        // Handle voice messages (including voice notes and audio)
+        const voice = msg.voice || msg.audio;
+        if (voice && this.config.voiceEnabled) {
+          console.log(`[Telegram] 🎤 Voice message received (${voice.duration}s) - transcribing...`);
+          
+          // Download and transcribe
+          const fileBuffer = await this.downloadFile(voice.file_id);
+          if (fileBuffer) {
+            const transcription = await this.transcribeVoice(fileBuffer);
+            if (transcription) {
+              console.log(`[Telegram] 📝 Transcribed: "${transcription}"`);
+              messages.push({
+                messageId: msg.message_id,
+                chatId: msg.chat.id,
+                userId: msg.from.id,
+                username: msg.from.username,
+                firstName: msg.from.first_name,
+                text: transcription,
+                date: new Date(msg.date * 1000),
+                threadId: msg.message_thread_id,
+                isTopicMessage: msg.is_topic_message,
+                isVoiceMessage: true,
+                voiceDuration: voice.duration,
+              });
+            } else {
+              // Notify user that transcription failed
+              console.error('[Telegram] Voice transcription failed');
+            }
+          }
+        }
       }
 
       // Handle callback queries (button presses)
@@ -622,10 +755,16 @@ export function createTelegramChannel(): TelegramChannel | null {
     return null;
   }
 
+  // Get OpenAI API key for voice transcription
+  const openaiKey = config.ai?.providers?.openai?.apiKey || process.env.OPENAI_API_KEY;
+
   return new TelegramChannel({
     token: telegram.token,
     chatId: telegram.chatId,
     allowedChatIds: telegram.chatId ? [String(telegram.chatId)] : undefined,
+    // Voice enabled by default if OpenAI key is available
+    voiceEnabled: telegram.voiceEnabled !== false,
+    openaiApiKey: openaiKey,
   });
 }
 
