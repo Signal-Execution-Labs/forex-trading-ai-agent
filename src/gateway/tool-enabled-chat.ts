@@ -1507,22 +1507,40 @@ Your personal AI financial agent is ready.
     while (maxIterations > 0) {
       maxIterations--;
 
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o',
-          messages: openaiMessages,
-          tools,
-          max_tokens: this.config.maxTokens,
-        }),
-      });
+      // Add timeout to prevent hanging
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minute timeout
+      
+      let response;
+      try {
+        console.log('[OpenAI] Sending request...');
+        response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o',
+            messages: openaiMessages,
+            tools,
+            max_tokens: this.config.maxTokens,
+          }),
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        console.log('[OpenAI] Response status:', response.status);
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId);
+        if (fetchError.name === 'AbortError') {
+          throw new Error('OpenAI API request timed out after 2 minutes');
+        }
+        throw new Error(`OpenAI fetch failed: ${fetchError.message}`);
+      }
 
       if (!response.ok) {
         const error = await response.text();
+        console.error('[OpenAI] API error:', error);
         throw new Error(`OpenAI API error: ${error}`);
       }
 
