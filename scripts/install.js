@@ -323,11 +323,26 @@ async function main() {
       logWarn('npm install had issues (may still work)');
     }
 
-    // Python deps (optional)
+    // Python deps (optional but recommended for full functionality)
     if (pythonCmd) {
       const pipCmd = isWindows ? 'pip' : 'pip3';
-      run(`${pipCmd} install MetaTrader5 pandas numpy requests --quiet 2>${isWindows ? 'nul' : '/dev/null'}`);
-      logSuccess('Python dependencies installed');
+      logInfo('Installing Python packages for technical analysis...');
+      
+      // Core packages
+      run(`${pipCmd} install pandas numpy requests aiohttp --quiet 2>${isWindows ? 'nul' : '/dev/null'}`);
+      
+      // Technical analysis
+      run(`${pipCmd} install ta scikit-learn --quiet 2>${isWindows ? 'nul' : '/dev/null'}`);
+      
+      // Exchange connectors
+      run(`${pipCmd} install ccxt python-binance --quiet 2>${isWindows ? 'nul' : '/dev/null'}`);
+      
+      // MetaTrader 5 (Windows only, requires Python 3.12)
+      if (isWindows) {
+        run(`${pipCmd} install MetaTrader5 --quiet 2>nul`);
+      }
+      
+      logSuccess('Python dependencies installed (pandas, numpy, ta, scikit-learn, ccxt)');
     }
   } else {
     logStep(4, TOTAL_STEPS, 'Dependencies...');
