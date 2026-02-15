@@ -1485,3 +1485,98 @@ Based on research, added 3 new skills:
 ---
 
 *Last updated: February 15, 2026 05:30 CET*
+
+---
+
+## Research Session: February 15, 2026 (13:05 CET) - Afternoon Session
+
+### Sources Analyzed
+- TradingView TPO Alerts Blog (Feb 2025)
+- TradingView Multi-Condition Alerts (Oct 2025)
+- Wealthfront Portfolio Rebalancing Features
+- Betterment Tax-Loss Harvesting
+- 3Commas SmartPortfolio
+
+### Key Features Studied
+
+#### 1. TradingView TPO Alerts (NEW - Feb 2025)
+TradingView just released TPO (Time Price Opportunity) alerts 4 days ago!
+- **POC Alerts:** Point of Control touch/cross notifications
+- **Value Area Alerts:** VAH/VAL boundary alerts
+- **Extended Levels:** Alerts on extended TPO levels only
+- **Initial Balance Alerts:** IB breakout/breakdown detection
+- **Profile Shape Changes:** p-shape, d-shape, b-shape alerts
+
+#### 2. TradingView Multi-Condition Alerts (Oct 2025)
+- Multiple conditions per alert without code
+- AND/OR logic combinations
+- Sequential condition chains
+- Watchlist-wide alerts
+- Custom formula support
+
+#### 3. Professional Portfolio Rebalancing (Wealthfront/Betterment)
+- Target allocation setting with % weights
+- Threshold-based rebalancing (5% drift trigger)
+- Calendar rebalancing (monthly/quarterly/annually)
+- Tax-loss harvesting with wash sale avoidance
+- DCA integration for underweight assets
+- Multi-asset class support (crypto, stocks, bonds, commodities)
+
+### New Route Files Implemented
+
+| # | Route File | Size | Features |
+|---|------------|------|----------|
+| 102 | tpo-alerts.ts | 13.6KB | TPO levels API, POC/VAH/VAL alerts, naked POCs, profile shapes, market type analysis, bulk alerts |
+| 103 | smart-alerts.ts | 14.8KB | Unlimited conditions, nested AND/OR/NOT/THEN/SEQUENCE logic, templates, backtest, fork, condition builder |
+| 104 | portfolio-rebalancer.ts | 18.5KB | Target allocations, drift analysis, simulate/execute rebalance, tax-loss harvesting, DCA config, 5 templates |
+
+### New API Endpoints Added
+
+**TPO Alerts (/api/tpo):**
+- GET /api/tpo/levels/:symbol - Get Market Profile levels
+- GET /api/tpo/analysis/:symbol - Full TPO analysis
+- GET /api/tpo/naked-pocs - Unfilled POCs
+- POST /api/tpo/alerts - Create TPO alert
+- GET /api/tpo/alerts - List TPO alerts
+- DELETE /api/tpo/alerts/:id - Delete alert
+- POST /api/tpo/alerts/bulk - Bulk create alerts
+- GET /api/tpo/shapes - Profile shape reference
+- GET /api/tpo/market-type/:symbol - Market type analysis
+
+**Smart Alerts (/api/smart-alerts):**
+- POST /api/smart-alerts - Create multi-condition alert
+- GET /api/smart-alerts - List smart alerts
+- GET /api/smart-alerts/:id - Get alert with tree visualization
+- PUT /api/smart-alerts/:id - Update alert
+- DELETE /api/smart-alerts/:id - Delete alert
+- POST /api/smart-alerts/:id/pause - Pause alert
+- POST /api/smart-alerts/:id/resume - Resume alert
+- POST /api/smart-alerts/:id/test - Test alert
+- POST /api/smart-alerts/:id/backtest - Backtest alert
+- POST /api/smart-alerts/:id/fork - Fork public alert
+- GET /api/smart-alerts/templates/list - Get templates
+- GET /api/smart-alerts/condition-types - Condition builder reference
+- POST /api/smart-alerts/validate - Validate conditions
+
+**Portfolio Rebalancer (/api/rebalancer):**
+- POST /api/rebalancer/portfolios - Create portfolio
+- GET /api/rebalancer/portfolios - List portfolios
+- GET /api/rebalancer/portfolios/:id - Get portfolio
+- PUT /api/rebalancer/portfolios/:id - Update portfolio
+- DELETE /api/rebalancer/portfolios/:id - Delete portfolio
+- POST /api/rebalancer/portfolios/:id/assets - Add assets
+- GET /api/rebalancer/portfolios/:id/drift - Analyze drift
+- POST /api/rebalancer/portfolios/:id/simulate - Simulate rebalance
+- POST /api/rebalancer/portfolios/:id/rebalance - Execute rebalance
+- GET /api/rebalancer/portfolios/:id/history - Rebalance history
+- GET /api/rebalancer/portfolios/:id/tax-loss-harvest - TLH opportunities
+- GET /api/rebalancer/templates - Allocation templates
+- PUT /api/rebalancer/portfolios/:id/dca - Configure DCA
+
+### Total K.I.T. Route Files: 104
+### Total New Endpoints: 35
+### Estimated Total Endpoints: 1005+
+
+---
+
+*Last updated: February 15, 2026 13:15 CET*

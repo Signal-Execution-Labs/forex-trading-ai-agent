@@ -38,6 +38,9 @@ import { correlationRoutes } from './routes/correlations.ts';
 import { replayRoutes } from './routes/replay.ts';
 import { userJournalRoutes } from './routes/user-journal.ts';
 import { connectionsRoutes } from './routes/connections.ts';
+import { tpoAlertRoutes } from './routes/tpo-alerts.ts';
+import { smartAlertRoutes } from './routes/smart-alerts.ts';
+import { portfolioRebalancerRoutes } from './routes/portfolio-rebalancer.ts';
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const HOST = process.env.HOST || '0.0.0.0';
@@ -109,6 +112,9 @@ async function main() {
         { name: 'Calendar', description: 'Economic calendar with events and earnings' },
         { name: 'Correlations', description: 'Asset correlation matrix and hedging analysis' },
         { name: 'Replay', description: 'Historical market replay for practice and learning' },
+        { name: 'TPO Alerts', description: 'Market Profile TPO alerts (POC, VAH, VAL, IB)' },
+        { name: 'Smart Alerts', description: 'Multi-condition alert builder with nested logic' },
+        { name: 'Portfolio Rebalancer', description: 'Automated portfolio rebalancing with tax-loss harvesting' },
       ],
       components: {
         securitySchemes: {
@@ -226,6 +232,9 @@ async function main() {
   await fastify.register(replayRoutes, { prefix: '/api/replay' });
   await fastify.register(userJournalRoutes, { prefix: '/api/user/journal' });
   await fastify.register(connectionsRoutes, { prefix: '/api/connections' });
+  await fastify.register(tpoAlertRoutes, { prefix: '/api/tpo' });
+  await fastify.register(smartAlertRoutes, { prefix: '/api/smart-alerts' });
+  await fastify.register(portfolioRebalancerRoutes, { prefix: '/api/rebalancer' });
 
   // Register WebSocket route
   await fastify.register(signalWebSocket);
