@@ -1,7 +1,7 @@
 # K.I.T. Project Status
 
-**Last Updated:** 2026-02-15 11:35 CET  
-**Updated By:** K.I.T. Sandbox Tester (cron)
+**Last Updated:** 2026-02-15 13:02 CET  
+**Updated By:** K.I.T. Improvement Agent (cron)
 
 ## Build Status: ✅ PASSING
 
@@ -10,59 +10,33 @@ npm run build → SUCCESS
 TypeScript compiles cleanly (no errors)
 ```
 
-### Session Progress (11:32-11:35 CET)
-- ✅ Identified and fixed TypeScript errors in 4 skill files
-- ✅ Build passing after fixes
-- ✅ All 51 tests passing (4 test suites)
-- ✅ Changes pushed to GitHub
+### Session Progress (13:00-13:02 CET)
+- ✅ Added **market-regime-detector** hook - detects trending/ranging/volatile markets
+- ✅ Added **exchange-status-monitor** hook - monitors exchange API health
+- ✅ Build passing after additions
+- ✅ Changes pushed to GitHub (commit ebbae79)
 
-## Bug Fixes Applied
+## New Hooks Added
 
-### TypeScript Type Errors Fixed
-4 skill files had type errors introduced by a previous session:
+### 🎯 Market Regime Detector
+Analyzes price action to detect current market regime:
+- **Trending Up/Down**: ADX > 25, directional movement
+- **Ranging**: ADX < 20, narrow Bollinger Bands
+- **Volatile**: High ATR, wide price swings
 
-1. **multi-timeframe-scanner.ts**
-   - Fixed: `context.params` → `context.input?.params`
-   - Fixed: `message:` → `metadata: { message: }`
+Provides strategy recommendations for each regime.
 
-2. **portfolio-correlation.ts**
-   - Fixed: `context.params` → `context.input?.params`
-   - Fixed: All `message:` properties → `metadata: { message: }`
-   - Fixed: Implicit `any` types on scenario parameter
-
-3. **smart-alert-manager.ts**
-   - Fixed: `private config` → `config` (must be public per Skill interface)
-   - Fixed: `context.params` → `context.input?.params`
-   - Fixed: All `message:` properties → `metadata: { message: }`
-   - Fixed: `message:` in error returns → `error:`
-
-4. **volume-profile-analyzer.ts**
-   - Fixed: `context.params` → `context.input?.params`
-   - Fixed: All `message:` properties → `metadata: { message: }`
-   - Fixed: `message:` in error returns → `error:`
-
-## Test Results: ✅ ALL PASSING (51/51)
-
-| Test Suite | Tests | Status |
-|------------|-------|--------|
-| logger.test.ts | 8 | ✅ Pass |
-| session-manager.test.ts | 14 | ✅ Pass |
-| config.test.ts | 11 | ✅ Pass |
-| decision-engine.test.ts | 18 | ✅ Pass |
-| **Total** | **51** | **✅ 100%** |
-
-## CLI Verification: ✅ WORKING
-
-```bash
-kit --help → 40+ commands available
-kit hooks list → 29 bundled hooks listed
-kit skills → 54+ trading skills listed
-```
+### 🏛️ Exchange Status Monitor
+Monitors exchange API health:
+- Checks Binance, Coinbase, Kraken, KuCoin, Bybit, OKX
+- Detects: operational, degraded, maintenance, outage
+- Pauses trading during issues
+- Alerts on status changes
 
 ## Current Stats
 
-- **Total Skills:** 54+ (listed in CLI)
-- **Total Hooks:** 29 bundled
+- **Total Skills:** 54+
+- **Total Hooks:** 31 bundled (+2 new)
 - **API Endpoints:** 850+
 - **Route Files:** 91
 - **Channels:** 20+ supported
@@ -70,7 +44,7 @@ kit skills → 54+ trading skills listed
 
 ## Git Status
 
-- **Latest Commit:** a224aaf (fix: resolve TypeScript errors in 4 skill files)
+- **Latest Commit:** ebbae79 (feat: add market-regime-detector and exchange-status-monitor hooks)
 - **Branch:** main
 - **GitHub:** https://github.com/kayzaa/k.i.t.-bot
 
@@ -78,11 +52,13 @@ kit skills → 54+ trading skills listed
 
 ## Previous Sessions
 
+### 11:32-11:35 CET
+- Fixed TypeScript errors in 4 skill files
+- All 51 tests passing
+
 ### 11:03-11:08 CET
 - Added 3 new risk monitoring hooks (slippage, spread, volatility)
-- All changes pushed to GitHub
 
 ### 09:36 CET
 - Added api-health-monitor hook
 - Added session-summary hook
-- Added weekly/monthly journal reports
