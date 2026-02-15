@@ -1269,16 +1269,19 @@ Your personal AI financial agent is ready.
 
     // Call LLM with tools
     try {
+      console.log('[Chat] Calling LLM with tools...');
       const response = await this.callLLMWithTools(
         history,
         sendChunk,
         sendToolCall,
         sendToolResult
       );
+      console.log('[Chat] LLM response received, length:', response?.length || 0);
 
       // Add assistant response to history
       history.push({ role: 'assistant', content: response });
       this.conversationHistory.set(sessionId, history);
+      console.log('[Chat] History updated');
 
       // Keep history manageable
       if (history.length > 50) {
@@ -1286,10 +1289,11 @@ Your personal AI financial agent is ready.
         this.conversationHistory.set(sessionId, history);
       }
 
+      console.log('[Chat] Returning response');
       return response;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('Chat error:', errorMessage);
+      console.error('[Chat] Error:', errorMessage);
       return `I encountered an error: ${errorMessage}`;
     }
   }
@@ -1613,10 +1617,12 @@ Your personal AI financial agent is ready.
       }
 
       if (choice.finish_reason === 'stop') {
+        console.log('[OpenAI] Finish reason: stop, breaking loop');
         break;
       }
     }
 
+    console.log('[OpenAI] Returning response, length:', fullResponse.length);
     return fullResponse;
   }
 
