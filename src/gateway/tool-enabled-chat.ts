@@ -1545,25 +1545,49 @@ Your personal AI financial agent is ready.
       }
 
       const data = await response.json() as any;
+      console.log('[OpenAI] Response received, choices:', data.choices?.length || 0);
+      
+      if (!data.choices || data.choices.length === 0) {
+        console.error('[OpenAI] No choices in response:', JSON.stringify(data).slice(0, 500));
+        throw new Error('OpenAI returned no choices');
+      }
+      
       const choice = data.choices[0];
       const message = choice.message;
+      
+      if (!message) {
+        console.error('[OpenAI] No message in choice:', JSON.stringify(choice).slice(0, 500));
+        throw new Error('OpenAI choice has no message');
+      }
 
       if (message.content) {
+        console.log('[OpenAI] Content received:', message.content.slice(0, 100) + '...');
         fullResponse += message.content;
         sendChunk(message.content);
       }
 
       if (message.tool_calls && message.tool_calls.length > 0) {
+        console.log('[OpenAI] Tool calls:', message.tool_calls.length);
         openaiMessages.push(message);
 
         for (const toolCall of message.tool_calls) {
           const toolName = toolCall.function.name;
-          const toolArgs = JSON.parse(toolCall.function.arguments);
+          console.log('[OpenAI] Executing tool:', toolName);
+          
+          let toolArgs;
+          try {
+            toolArgs = JSON.parse(toolCall.function.arguments);
+          } catch (parseError) {
+            console.error('[OpenAI] Failed to parse tool args:', toolCall.function.arguments);
+            toolArgs = {};
+          }
 
           sendToolCall(toolName, toolArgs);
 
           try {
+            console.log('[OpenAI] Calling tool registry for:', toolName);
             const result = await this.toolRegistry.execute(toolName, toolArgs);
+            console.log('[OpenAI] Tool result received for:', toolName);
             sendToolResult(toolName, result);
 
             openaiMessages.push({
@@ -1571,7 +1595,8 @@ Your personal AI financial agent is ready.
               tool_call_id: toolCall.id,
               content: JSON.stringify(result),
             });
-          } catch (error) {
+          } catch (error: any) {
+            console.error('[OpenAI] Tool execution error for', toolName, ':', error?.message || error);
             const errorResult = { error: error instanceof Error ? error.message : 'Tool execution failed' };
             sendToolResult(toolName, errorResult);
 
