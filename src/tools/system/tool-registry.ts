@@ -76,6 +76,7 @@ export const TOOL_GROUPS: Record<string, string[]> = {
                  'cron_disable', 'cron_status', 'cron_history', 'heartbeat_trigger'],
   'group:trading': ['auto_trade', 'market_analysis', 'portfolio_tracker', 'alert_system',
                     'task_scheduler', 'tax_tracker', 'backtester', 'defi_connector',
+                    'autonomous_start', 'autonomous_status', 'autonomous_stop',
                     'binary_login', 'binary_trade', 'binary_balance', 'binary_history',
                     'mt5_connect', 'mt5_account_info', 'mt5_positions', 'mt5_market_order', 
                     'mt5_close_position', 'mt5_price', 'mt5_indicators', 'mt5_modify_sl',

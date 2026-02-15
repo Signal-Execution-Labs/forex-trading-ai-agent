@@ -159,6 +159,14 @@ export {
   runProactiveHeartbeat,
 } from './proactive-agent';
 
+// Autonomous Trading Tools - "Manage my €1000" style commands
+export {
+  autonomousTools,
+  startAutonomousTrading,
+  getAutonomousStatus,
+  stopAutonomousTrading,
+} from './autonomous-tools';
+
 // Factory for creating all tools
 export interface ToolInstances {
   autoTrader: InstanceType<typeof import('./auto-trader').AutoTrader>;
