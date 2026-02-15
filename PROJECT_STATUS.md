@@ -1,7 +1,7 @@
 # K.I.T. Project Status
 
-**Last Updated:** 2026-02-15 15:01 CET  
-**Updated By:** K.I.T. Improvement Agent (cron)
+**Last Updated:** 2026-02-15 15:28 CET  
+**Updated By:** K.I.T. Sandbox Tester (cron)
 
 ## Build Status: ✅ PASSING
 
@@ -11,46 +11,44 @@ npm test → 51/51 tests passing
 TypeScript compiles cleanly
 ```
 
-### Session Progress (14:57-15:01 CET)
+### Session Progress (15:25-15:28 CET)
 - ✅ TypeScript build verified - no errors
 - ✅ All 51 tests passing (vitest)
-- ✅ **3 new hooks added:**
-  - 🎯 `price-alert` - Monitor price levels with configurable alerts
-  - 🔄 `session-pnl-reset` - Auto-reset daily P&L at market open times
-  - 📈 `trade-streak-tracker` - Track win/loss streaks with psychology alerts
-- ✅ Changes pushed to GitHub (commit 9ee0934)
+- ✅ **Fixed 5 skill files with TypeScript errors:**
+  - `seasonality-analyzer.ts` - BaseSkill → Skill, ctx.params → ctx.input?.params
+  - `options-strategy-builder.ts` - BaseSkill → Skill, ctx.params/providers fixes
+  - `tpo-charts.ts` - BaseSkill → Skill, ctx.log → ctx.logger, ctx.providers → ctx.http
+  - `yield-curve-analyzer.ts` - BaseSkill → Skill, ctx.params fixes
+  - `fundamental-comparison.ts` - BaseSkill → Skill, ctx.params fixes
+- ✅ Changes pushed to GitHub (commit 28c967c)
 
 ## Current Stats
 
 - **Total Skills:** 54+
-- **Total Hooks:** 34 bundled (+3 new!)
+- **Total Hooks:** 34 bundled
 - **API Endpoints:** 850+
 - **Route Files:** 91
 - **Channels:** 20+ supported
 - **CLI Commands:** 45+
 - **Test Coverage:** 51 tests passing
 
-## New Hooks (This Session)
+## TypeScript Fixes Applied
 
-### 🎯 Price Alert Hook
-- Tracks multiple price alerts per symbol
-- Supports above/below/cross conditions
-- Percentage-based targets supported
-- Auto-removes triggered alerts (optional)
-- Configurable via `workspace/price-alerts.json`
+All skill files now follow the correct pattern:
+```typescript
+// Correct import
+import type { SkillContext, SkillResult, Skill } from '../types/skill.js';
 
-### 🔄 Session P&L Reset Hook
-- Resets P&L counters at configurable times
-- Archives previous day's P&L to history
-- Supports multiple market sessions
-- Creates daily snapshots for analysis
-
-### 📈 Trade Streak Tracker Hook
-- Tracks consecutive wins/losses
-- Alerts on new personal best streaks
-- Warns on losing streaks (risk management)
-- Auto-pause after configurable losses (anti-tilt)
-- Celebrates win streaks (positive reinforcement)
+// Correct class declaration
+export class MySkill implements Skill {
+  // Access params via ctx.input?.params || {}
+  async execute(ctx: SkillContext): Promise<SkillResult> {
+    const params = ctx.input?.params || {};
+    const { action } = params;
+    // ...
+  }
+}
+```
 
 ## Health Check Results
 
@@ -64,13 +62,16 @@ TypeScript compiles cleanly
 
 ## Git Status
 
-- **Last Commit:** 9ee0934 - feat(hooks): add 3 new trading hooks
+- **Last Commit:** 28c967c - fix(skills): fix TypeScript errors in 5 skill files
 - **Branch:** main
 - **GitHub:** https://github.com/kayzaa/k.i.t.-bot
 
 ---
 
 ## Previous Sessions
+
+### 15:01 CET
+- Added 3 new hooks: price-alert, session-pnl-reset, trade-streak-tracker
 
 ### 13:00-13:30 CET
 - Added market-regime-detector hook
