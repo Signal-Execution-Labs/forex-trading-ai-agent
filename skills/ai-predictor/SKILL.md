@@ -1,6 +1,6 @@
-# 🧠 AI Market Predictor
+# AI Market Predictor
 
-**K.I.T.'s Gehirn für Preisvorhersagen - Machine Learning auf Steroiden!**
+**K.I.T.'s brain for price predictions - Machine Learning that WORKS!**
 
 ## Features
 

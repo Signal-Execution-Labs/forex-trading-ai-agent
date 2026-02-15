@@ -39,10 +39,15 @@ try:
     from sklearn.preprocessing import MinMaxScaler, StandardScaler
     from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
     from sklearn.metrics import mean_absolute_error, mean_squared_error
-    import xgboost as xgb
     SKLEARN_AVAILABLE = True
 except ImportError:
     SKLEARN_AVAILABLE = False
+
+try:
+    import xgboost as xgb
+    XGB_AVAILABLE = True
+except ImportError:
+    XGB_AVAILABLE = False
 
 logger = logging.getLogger("kit.ai-predictor")
 
@@ -374,14 +379,15 @@ class EnsemblePredictor:
         
     def add_xgboost(self):
         """Add XGBoost regressor"""
-        if not SKLEARN_AVAILABLE:
+        if not XGB_AVAILABLE:
             return
         
         self.models['xgboost'] = xgb.XGBRegressor(
             n_estimators=100,
             max_depth=6,
             learning_rate=0.1,
-            objective='reg:squarederror'
+            objective='reg:squarederror',
+            verbosity=0
         )
         self.weights['xgboost'] = 0.3
     
@@ -627,33 +633,55 @@ class MarketPredictor:
 # CLI Demo
 if __name__ == "__main__":
     import asyncio
+    import sys
+    
+    # Fix Windows encoding
+    if sys.platform == 'win32':
+        try:
+            sys.stdout.reconfigure(encoding='utf-8')
+        except:
+            pass
     
     async def demo():
-        print("🧠 K.I.T. AI Market Predictor Demo")
+        print("[AI] K.I.T. AI Market Predictor Demo")
         print("=" * 50)
         
         predictor = MarketPredictor()
+        
+        # Check available backends
+        backends = []
+        if TF_AVAILABLE:
+            backends.append("TensorFlow/LSTM")
+        if SKLEARN_AVAILABLE:
+            backends.append("sklearn (RF+GB)")
+        if XGB_AVAILABLE:
+            backends.append("XGBoost")
+        print(f"[INFO] Available backends: {', '.join(backends) or 'None!'}")
         
         # Single prediction
         pred = await predictor.predict(
             symbol="BTC/USDT",
             timeframe="1h",
-            horizon=24
+            horizon=24,
+            use_lstm=TF_AVAILABLE,
+            use_ensemble=SKLEARN_AVAILABLE
         )
         
-        print("\n📊 BTC/USDT 24h Prediction:")
-        print(json.dumps(pred.to_dict(), indent=2))
+        print("\n[PREDICT] BTC/USDT 24h Prediction:")
+        print(json.dumps(pred.to_dict(), indent=2, default=str))
         
         # Batch predictions
         symbols = ["BTC/USDT", "ETH/USDT", "SOL/USDT"]
         predictions = await predictor.predict_batch(symbols, horizon=24)
         
-        print("\n🔮 Batch Predictions:")
+        print("\n[BATCH] Predictions:")
         for p in predictions:
             print(f"  {p.symbol}: {p.direction.value} to ${p.predicted_price:.2f} ({p.confidence:.1%})")
         
         # Top picks
         top = predictor.get_top_predictions(predictions, min_confidence=0.5)
-        print(f"\n🏆 Top Picks (>50% confidence): {len(top)}")
+        print(f"\n[TOP] Picks (>50% confidence): {len(top)}")
+        
+        print("\n[SUCCESS] AI Predictor ready for production!")
     
     asyncio.run(demo())
