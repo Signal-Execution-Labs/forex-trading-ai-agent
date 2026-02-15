@@ -425,7 +425,7 @@ export const pineScreenerTools: Tool[] = [
         return { success: false, error: 'Screener tool not found' };
       }
       
-      const result = await screenerTool.handler({
+      const result = await screenerTool.handler!({
         market,
         filters: preset.filters,
         timeframe,

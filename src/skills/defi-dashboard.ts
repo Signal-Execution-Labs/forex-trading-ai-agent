@@ -445,7 +445,7 @@ export const defiDashboardTools: Tool[] = [
         data: {
           timestamp: new Date().toISOString(),
           ethPriceUsd: ethPrice,
-          chains: chains.map(chain => {
+          chains: chains.map((chain: string) => {
             const gas = gasData[chain as keyof typeof gasData];
             if (!gas) return { chain, error: 'Not supported' };
             

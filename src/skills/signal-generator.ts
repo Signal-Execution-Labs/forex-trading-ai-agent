@@ -378,7 +378,7 @@ export const signalGeneratorTools: Tool[] = [
       const signalTool = signalGeneratorTools.find(t => t.name === 'signal_generate');
       
       for (const symbol of symbols) {
-        const result = await signalTool!.handler({
+        const result = await signalTool!.handler!({
           symbol,
           timeframe,
           riskPercent,
