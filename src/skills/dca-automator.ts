@@ -142,8 +142,8 @@ export class DCAAutomatorSkill implements Skill {
   
   async initialize(context: SkillContext): Promise<void> {
     // Load saved schedules from storage
-    const saved = await context.storage?.get('dca-schedules');
-    if (saved) {
+    const saved = await context.storage?.get<DCASchedule[]>('dca-schedules');
+    if (saved && Array.isArray(saved)) {
       for (const schedule of saved) {
         this.schedules.set(schedule.id, schedule);
       }
@@ -688,6 +688,9 @@ export class DCAAutomatorSkill implements Skill {
   // ===== SKILL INTERFACE =====
   
   async execute(context: SkillContext): Promise<SkillResult> {
+    if (!context.input) {
+      return { success: false, error: 'No input provided' };
+    }
     const { action, params } = context.input;
     
     try {

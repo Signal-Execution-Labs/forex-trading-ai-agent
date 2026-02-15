@@ -204,22 +204,22 @@ export class AlpacaBrokerSkill implements Skill {
   description = 'Commission-free stock, ETF & crypto trading via Alpaca API';
   version = '1.0.0';
   
-  private config: AlpacaConfig | null = null;
+  private _config: AlpacaConfig | null = null;
   private baseUrl: string = '';
   private dataUrl = 'https://data.alpaca.markets';
   
   async initialize(context: SkillContext): Promise<void> {
-    this.config = context.config as AlpacaConfig;
-    this.baseUrl = this.config.paperTrading 
+    this._config = context.config as AlpacaConfig;
+    this.baseUrl = this._config.paperTrading 
       ? 'https://paper-api.alpaca.markets'
       : 'https://api.alpaca.markets';
   }
   
   private getHeaders(): Record<string, string> {
-    if (!this.config) throw new Error('Skill not initialized');
+    if (!this._config) throw new Error('Skill not initialized');
     return {
-      'APCA-API-KEY-ID': this.config.apiKey,
-      'APCA-API-SECRET-KEY': this.config.secretKey,
+      'APCA-API-KEY-ID': this._config.apiKey,
+      'APCA-API-SECRET-KEY': this._config.secretKey,
       'Content-Type': 'application/json',
     };
   }
@@ -784,6 +784,9 @@ export class AlpacaBrokerSkill implements Skill {
   // ===== SKILL INTERFACE =====
   
   async execute(context: SkillContext): Promise<SkillResult> {
+    if (!context.input) {
+      return { success: false, error: 'No input provided' };
+    }
     const { action, params } = context.input;
     
     try {
