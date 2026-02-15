@@ -187,8 +187,10 @@ Last Updated: February 2026
 ### Voice Commands
 | Feature | Status |
 |---------|--------|
-| Voice input | ❌ Text only |
-| Voice responses | ❌ Text only |
+| Voice input (STT) | ✅ OpenAI Whisper |
+| Voice responses (TTS) | ✅ System/OpenAI/ElevenLabs |
+| "Speak this" | ✅ voice_speak tool |
+| "Listen to me" | ✅ voice_listen tool |
 
 ### Mobile App
 | Feature | Status |
@@ -238,11 +240,49 @@ Last Updated: February 2026
 | Scheduled Tasks | ✅ | - | - |
 | Tax Reports | ✅ | - | - |
 | DeFi | ✅ | - | - |
+| Voice (TTS/STT) | ✅ | - | - |
 | MT5/Forex | - | ⚠️ Setup required | - |
 | Binary Options | - | ⚠️ Setup required | - |
-| Voice | - | - | ❌ |
 | Mobile App | - | - | ❌ |
 | ML Training | - | - | ❌ |
+
+---
+
+## 🆚 K.I.T. vs OpenClaw Comparison
+
+| Feature | K.I.T. | OpenClaw |
+|---------|--------|----------|
+| **Core AI Chat** | ✅ GPT-4, Claude | ✅ GPT-4, Claude |
+| **File Operations** | ✅ read/write/edit | ✅ read/write/edit |
+| **Shell Commands** | ✅ exec/process | ✅ exec/process |
+| **Web Search** | ✅ Brave API | ✅ Brave API |
+| **Web Fetch** | ✅ URL content | ✅ URL content |
+| **Browser Control** | ✅ Playwright | ✅ Playwright |
+| **Cron Jobs** | ✅ Scheduled tasks | ✅ Cron jobs |
+| **Memory** | ✅ MEMORY.md system | ✅ MEMORY.md system |
+| **Channels** | ✅ Telegram/Discord/WhatsApp | ✅ Telegram/Discord/WhatsApp |
+| **Voice TTS** | ✅ System/OpenAI/ElevenLabs | ✅ ElevenLabs |
+| **Voice STT** | ✅ OpenAI Whisper | ❌ No STT |
+| **Workspace Files** | ✅ SOUL.md, AGENTS.md, etc. | ✅ SOUL.md, AGENTS.md, etc. |
+| **Skills System** | ✅ 138 skills | ✅ Skills system |
+| **Hooks** | ✅ Event hooks | ✅ Event hooks |
+| **Sessions** | ✅ Sub-agents | ✅ Sub-agents |
+| | | |
+| **TRADING-SPECIFIC:** | | |
+| Autonomous Trading | ✅ "Manage my €1000" | ❌ Not a finance agent |
+| Real-Time Prices | ✅ Crypto/Forex/Stocks | ❌ Not built-in |
+| Exchange APIs | ✅ 23+ platforms | ❌ Not built-in |
+| Portfolio Tracking | ✅ Multi-exchange | ❌ Not built-in |
+| Technical Analysis | ✅ 50+ indicators | ❌ Not built-in |
+| Trading Bots | ✅ Grid, DCA, Scalping | ❌ Not built-in |
+| Backtesting | ✅ Strategy testing | ❌ Not built-in |
+| Tax Reports | ✅ Multi-jurisdiction | ❌ Not built-in |
+| DeFi Integration | ✅ Staking, Yield | ❌ Not built-in |
+| Binary Options | ✅ BinaryFaster | ❌ Not built-in |
+| MetaTrader 5 | ✅ Full integration | ❌ Not built-in |
+| Risk Management | ✅ Stop-loss, sizing | ❌ Not built-in |
+
+**Verdict:** K.I.T. has 100% of OpenClaw's core features PLUS complete trading capabilities.
 
 ---
 
