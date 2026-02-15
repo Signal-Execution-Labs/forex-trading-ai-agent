@@ -1,7 +1,7 @@
 # K.I.T. Project Status
 
-**Last Updated:** 2026-02-15 15:28 CET  
-**Updated By:** K.I.T. Sandbox Tester (cron)
+**Last Updated:** 2026-02-15 16:56 CET  
+**Updated By:** K.I.T. Improvement Agent (cron)
 
 ## Build Status: ✅ PASSING
 
@@ -11,44 +11,47 @@ npm test → 51/51 tests passing
 TypeScript compiles cleanly
 ```
 
-### Session Progress (15:25-15:28 CET)
+### Session Progress (16:53-16:56 CET)
 - ✅ TypeScript build verified - no errors
 - ✅ All 51 tests passing (vitest)
-- ✅ **Fixed 5 skill files with TypeScript errors:**
-  - `seasonality-analyzer.ts` - BaseSkill → Skill, ctx.params → ctx.input?.params
-  - `options-strategy-builder.ts` - BaseSkill → Skill, ctx.params/providers fixes
-  - `tpo-charts.ts` - BaseSkill → Skill, ctx.log → ctx.logger, ctx.providers → ctx.http
-  - `yield-curve-analyzer.ts` - BaseSkill → Skill, ctx.params fixes
-  - `fundamental-comparison.ts` - BaseSkill → Skill, ctx.params fixes
-- ✅ Changes pushed to GitHub (commit 28c967c)
+- ✅ **Added 3 new trading hooks:**
+  - `liquidation-detector` - Monitors leveraged positions for liquidation risk (💀)
+  - `rebalance-alert` - Alerts when portfolio allocations drift from targets (⚖️)
+  - `target-hit` - Alerts when price targets or stop losses are hit (🎯)
+- ✅ Changes pushed to GitHub (commit a9e6971)
 
 ## Current Stats
 
 - **Total Skills:** 54+
-- **Total Hooks:** 34 bundled
+- **Total Hooks:** 37 bundled (+3 new)
 - **API Endpoints:** 850+
 - **Route Files:** 91
 - **Channels:** 20+ supported
 - **CLI Commands:** 45+
 - **Test Coverage:** 51 tests passing
 
-## TypeScript Fixes Applied
+## New Hooks Added
 
-All skill files now follow the correct pattern:
-```typescript
-// Correct import
-import type { SkillContext, SkillResult, Skill } from '../types/skill.js';
+### 💀 liquidation-detector
+Monitors leveraged positions for liquidation risk:
+- Warning at 80% distance to liquidation price
+- Critical at 90% distance
+- Emergency at 95% - suggests reducing position
+- Events: `position_update`, `price_tick`
 
-// Correct class declaration
-export class MySkill implements Skill {
-  // Access params via ctx.input?.params || {}
-  async execute(ctx: SkillContext): Promise<SkillResult> {
-    const params = ctx.input?.params || {};
-    const { action } = params;
-    // ...
-  }
-}
-```
+### ⚖️ rebalance-alert
+Monitors portfolio allocations and alerts on drift:
+- Warning at 5% drift from target
+- Critical at 10% drift
+- Suggests rebalancing trades
+- Events: `portfolio_update`, `price_tick`
+
+### 🎯 target-hit
+Monitors prices and alerts when targets are hit:
+- Take-profit targets
+- Stop-loss targets
+- Support/resistance levels
+- Events: `price_tick`
 
 ## Health Check Results
 
@@ -62,7 +65,7 @@ export class MySkill implements Skill {
 
 ## Git Status
 
-- **Last Commit:** 28c967c - fix(skills): fix TypeScript errors in 5 skill files
+- **Last Commit:** a9e6971 - feat(hooks): add 3 new trading hooks
 - **Branch:** main
 - **GitHub:** https://github.com/kayzaa/k.i.t.-bot
 
@@ -70,13 +73,16 @@ export class MySkill implements Skill {
 
 ## Previous Sessions
 
+### 15:28 CET
+- Fixed 5 skill files with TypeScript errors
+- Build verified, all tests passing
+
 ### 15:01 CET
 - Added 3 new hooks: price-alert, session-pnl-reset, trade-streak-tracker
 
 ### 13:00-13:30 CET
 - Added market-regime-detector hook
 - Added exchange-status-monitor hook
-- Build verified, all tests passing
 
 ### 11:32-11:35 CET
 - Fixed TypeScript errors in 4 skill files
