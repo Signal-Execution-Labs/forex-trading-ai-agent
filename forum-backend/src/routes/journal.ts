@@ -999,6 +999,609 @@ export async function journalRoutes(fastify: FastifyInstance) {
       }
     };
   });
+
+  // ============================================================================
+  // WEEKLY / MONTHLY REPORTS
+  // ============================================================================
+
+  // Generate weekly report
+  fastify.get('/reports/weekly', async (request: FastifyRequest, reply: FastifyReply) => {
+    ensureJournalCollections();
+    const userId = request.headers['x-user-id'] as string || 'default';
+    const query = request.query as any;
+    const data = db.data as any;
+    
+    // Calculate date range (current week or specified week)
+    const now = new Date();
+    let weekStart: Date;
+    let weekEnd: Date;
+    
+    if (query.weekOf) {
+      weekStart = new Date(query.weekOf);
+    } else {
+      weekStart = new Date(now);
+      weekStart.setDate(now.getDate() - now.getDay() + 1); // Monday
+    }
+    weekStart.setHours(0, 0, 0, 0);
+    weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    weekEnd.setHours(23, 59, 59, 999);
+    
+    const fromStr = weekStart.toISOString().split('T')[0];
+    const toStr = weekEnd.toISOString().split('T')[0];
+    
+    // Get trades for the week
+    let trades = data.journalEntries.filter((t: JournalEntry) => 
+      t.userId === userId && 
+      t.status === 'closed' &&
+      t.entryTime >= fromStr && 
+      t.entryTime <= toStr + 'T23:59:59'
+    );
+    if (query.accountId) trades = trades.filter((t: JournalEntry) => t.accountId === query.accountId);
+    
+    // Get previous week for comparison
+    const prevWeekStart = new Date(weekStart);
+    prevWeekStart.setDate(prevWeekStart.getDate() - 7);
+    const prevFromStr = prevWeekStart.toISOString().split('T')[0];
+    const prevToStr = new Date(weekStart.getTime() - 1).toISOString().split('T')[0];
+    
+    let prevTrades = data.journalEntries.filter((t: JournalEntry) => 
+      t.userId === userId && 
+      t.status === 'closed' &&
+      t.entryTime >= prevFromStr && 
+      t.entryTime <= prevToStr + 'T23:59:59'
+    );
+    if (query.accountId) prevTrades = prevTrades.filter((t: JournalEntry) => t.accountId === query.accountId);
+    
+    // Calculate metrics
+    const metrics = calculatePerformanceMetrics(trades);
+    const prevMetrics = calculatePerformanceMetrics(prevTrades);
+    
+    // Daily breakdown
+    const dailyBreakdown: Record<string, { trades: number; pnl: number; wins: number }> = {};
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    
+    for (const trade of trades) {
+      const day = dayNames[new Date(trade.entryTime).getDay()];
+      if (!dailyBreakdown[day]) dailyBreakdown[day] = { trades: 0, pnl: 0, wins: 0 };
+      dailyBreakdown[day].trades++;
+      dailyBreakdown[day].pnl += trade.pnl || 0;
+      if (trade.isWin) dailyBreakdown[day].wins++;
+    }
+    
+    // Best and worst trades
+    const sortedByPnL = [...trades].sort((a, b) => (b.pnl || 0) - (a.pnl || 0));
+    const bestTrade = sortedByPnL[0] || null;
+    const worstTrade = sortedByPnL[sortedByPnL.length - 1] || null;
+    
+    // Emotional analysis
+    const emotionalTrades = trades.filter((t: JournalEntry) => 
+      ['fomo', 'revenge', 'greedy', 'fearful'].includes(t.emotion?.toLowerCase() || '')
+    );
+    const emotionalRate = trades.length > 0 ? (emotionalTrades.length / trades.length) * 100 : 0;
+    const emotionalPnL = emotionalTrades.reduce((sum: number, t: JournalEntry) => sum + (t.pnl || 0), 0);
+    
+    // Mistakes analysis
+    const mistakeTrades = trades.filter((t: JournalEntry) => t.mistake);
+    const mistakeRate = trades.length > 0 ? (mistakeTrades.length / trades.length) * 100 : 0;
+    const mistakePnL = mistakeTrades.reduce((sum: number, t: JournalEntry) => sum + (t.pnl || 0), 0);
+    
+    return {
+      success: true,
+      report: {
+        period: 'weekly',
+        weekOf: fromStr,
+        startDate: fromStr,
+        endDate: toStr,
+        summary: {
+          totalTrades: metrics.totalTrades,
+          winRate: Math.round(metrics.winRate * 10) / 10,
+          totalPnL: Math.round(metrics.totalPnL * 100) / 100,
+          profitFactor: Math.round(metrics.profitFactor * 100) / 100,
+          avgWin: Math.round(metrics.averageWin * 100) / 100,
+          avgLoss: Math.round(metrics.averageLoss * 100) / 100,
+          largestWin: metrics.largestWin,
+          largestLoss: metrics.largestLoss,
+        },
+        comparison: {
+          prevWeekPnL: Math.round(prevMetrics.totalPnL * 100) / 100,
+          pnlChange: prevMetrics.totalPnL !== 0 
+            ? Math.round(((metrics.totalPnL - prevMetrics.totalPnL) / Math.abs(prevMetrics.totalPnL)) * 100 * 10) / 10
+            : metrics.totalPnL > 0 ? 100 : 0,
+          prevWinRate: Math.round(prevMetrics.winRate * 10) / 10,
+          winRateChange: Math.round((metrics.winRate - prevMetrics.winRate) * 10) / 10,
+          tradeCountChange: metrics.totalTrades - prevMetrics.totalTrades,
+        },
+        dailyBreakdown,
+        bestTrade: bestTrade ? {
+          symbol: bestTrade.symbol,
+          direction: bestTrade.direction,
+          pnl: bestTrade.pnl,
+          setup: bestTrade.setup,
+          date: bestTrade.entryTime?.split('T')[0],
+        } : null,
+        worstTrade: worstTrade ? {
+          symbol: worstTrade.symbol,
+          direction: worstTrade.direction,
+          pnl: worstTrade.pnl,
+          setup: worstTrade.setup,
+          mistake: worstTrade.mistake,
+          date: worstTrade.entryTime?.split('T')[0],
+        } : null,
+        psychology: {
+          emotionalTradeRate: Math.round(emotionalRate * 10) / 10,
+          emotionalTradePnL: Math.round(emotionalPnL * 100) / 100,
+          mistakeRate: Math.round(mistakeRate * 10) / 10,
+          mistakePnL: Math.round(mistakePnL * 100) / 100,
+        },
+        topSymbols: Object.entries(metrics.bySymbol)
+          .map(([symbol, data]: [string, any]) => ({ symbol, ...data }))
+          .sort((a, b) => b.pnl - a.pnl)
+          .slice(0, 5),
+        topSetups: Object.entries(metrics.bySetup)
+          .map(([setup, data]: [string, any]) => ({ setup, ...data }))
+          .sort((a, b) => b.pnl - a.pnl)
+          .slice(0, 5),
+      },
+    };
+  });
+
+  // Generate monthly report
+  fastify.get('/reports/monthly', async (request: FastifyRequest, reply: FastifyReply) => {
+    ensureJournalCollections();
+    const userId = request.headers['x-user-id'] as string || 'default';
+    const query = request.query as any;
+    const data = db.data as any;
+    
+    const now = new Date();
+    const year = parseInt(query.year || now.getFullYear().toString());
+    const month = parseInt(query.month || (now.getMonth() + 1).toString());
+    
+    const monthStart = new Date(year, month - 1, 1);
+    const monthEnd = new Date(year, month, 0);
+    const fromStr = monthStart.toISOString().split('T')[0];
+    const toStr = monthEnd.toISOString().split('T')[0];
+    
+    let trades = data.journalEntries.filter((t: JournalEntry) => 
+      t.userId === userId && 
+      t.status === 'closed' &&
+      t.entryTime >= fromStr && 
+      t.entryTime <= toStr + 'T23:59:59'
+    );
+    if (query.accountId) trades = trades.filter((t: JournalEntry) => t.accountId === query.accountId);
+    
+    // Previous month comparison
+    const prevMonth = month === 1 ? 12 : month - 1;
+    const prevYear = month === 1 ? year - 1 : year;
+    const prevMonthStart = new Date(prevYear, prevMonth - 1, 1);
+    const prevMonthEnd = new Date(prevYear, prevMonth, 0);
+    const prevFromStr = prevMonthStart.toISOString().split('T')[0];
+    const prevToStr = prevMonthEnd.toISOString().split('T')[0];
+    
+    let prevTrades = data.journalEntries.filter((t: JournalEntry) => 
+      t.userId === userId && 
+      t.status === 'closed' &&
+      t.entryTime >= prevFromStr && 
+      t.entryTime <= prevToStr + 'T23:59:59'
+    );
+    if (query.accountId) prevTrades = prevTrades.filter((t: JournalEntry) => t.accountId === query.accountId);
+    
+    const metrics = calculatePerformanceMetrics(trades);
+    const prevMetrics = calculatePerformanceMetrics(prevTrades);
+    
+    // Weekly breakdown
+    const weeklyBreakdown: Array<{ week: number; trades: number; pnl: number; winRate: number }> = [];
+    let weekNum = 1;
+    let weekTrades: JournalEntry[] = [];
+    
+    const sortedTrades = [...trades].sort((a, b) => 
+      new Date(a.entryTime).getTime() - new Date(b.entryTime).getTime()
+    );
+    
+    for (let d = 1; d <= monthEnd.getDate(); d++) {
+      const date = `${year}-${month.toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`;
+      const dayTrades = sortedTrades.filter(t => t.entryTime?.startsWith(date));
+      weekTrades.push(...dayTrades);
+      
+      const dayOfWeek = new Date(year, month - 1, d).getDay();
+      if (dayOfWeek === 0 || d === monthEnd.getDate()) {
+        const weekMetrics = calculatePerformanceMetrics(weekTrades);
+        weeklyBreakdown.push({
+          week: weekNum,
+          trades: weekMetrics.totalTrades,
+          pnl: Math.round(weekMetrics.totalPnL * 100) / 100,
+          winRate: Math.round(weekMetrics.winRate * 10) / 10,
+        });
+        weekNum++;
+        weekTrades = [];
+      }
+    }
+    
+    // Account balance progress (if account specified)
+    let balanceProgress = null;
+    if (query.accountId) {
+      const account = data.tradingAccounts.find((a: TradingAccount) => a.id === query.accountId);
+      if (account) {
+        balanceProgress = {
+          initialBalance: account.initialBalance,
+          currentBalance: account.currentBalance,
+          monthStartBalance: account.initialBalance + prevMetrics.totalPnL,
+          monthEndBalance: account.initialBalance + prevMetrics.totalPnL + metrics.totalPnL,
+          percentGain: account.initialBalance > 0 
+            ? Math.round((metrics.totalPnL / account.initialBalance) * 100 * 10) / 10
+            : 0,
+        };
+      }
+    }
+    
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
+                        'July', 'August', 'September', 'October', 'November', 'December'];
+    
+    return {
+      success: true,
+      report: {
+        period: 'monthly',
+        month: monthNames[month - 1],
+        year,
+        startDate: fromStr,
+        endDate: toStr,
+        summary: {
+          totalTrades: metrics.totalTrades,
+          winningTrades: metrics.winningTrades,
+          losingTrades: metrics.losingTrades,
+          winRate: Math.round(metrics.winRate * 10) / 10,
+          totalPnL: Math.round(metrics.totalPnL * 100) / 100,
+          profitFactor: Math.round(metrics.profitFactor * 100) / 100,
+          avgWin: Math.round(metrics.averageWin * 100) / 100,
+          avgLoss: Math.round(metrics.averageLoss * 100) / 100,
+          largestWin: metrics.largestWin,
+          largestLoss: metrics.largestLoss,
+          longestWinStreak: metrics.longestWinStreak,
+          longestLoseStreak: metrics.longestLoseStreak,
+          expectancy: Math.round(metrics.expectancy * 100) / 100,
+        },
+        comparison: {
+          prevMonth: monthNames[prevMonth - 1],
+          prevMonthPnL: Math.round(prevMetrics.totalPnL * 100) / 100,
+          pnlChange: prevMetrics.totalPnL !== 0 
+            ? Math.round(((metrics.totalPnL - prevMetrics.totalPnL) / Math.abs(prevMetrics.totalPnL)) * 100 * 10) / 10
+            : metrics.totalPnL > 0 ? 100 : 0,
+          prevWinRate: Math.round(prevMetrics.winRate * 10) / 10,
+          winRateChange: Math.round((metrics.winRate - prevMetrics.winRate) * 10) / 10,
+          tradeCountChange: metrics.totalTrades - prevMetrics.totalTrades,
+        },
+        weeklyBreakdown,
+        balanceProgress,
+        byDayOfWeek: metrics.byDayOfWeek,
+        byHourOfDay: metrics.byHourOfDay,
+        topSymbols: Object.entries(metrics.bySymbol)
+          .map(([symbol, data]: [string, any]) => ({ symbol, ...data }))
+          .sort((a, b) => b.pnl - a.pnl)
+          .slice(0, 10),
+        topSetups: Object.entries(metrics.bySetup)
+          .map(([setup, data]: [string, any]) => ({ setup, ...data }))
+          .sort((a, b) => b.pnl - a.pnl)
+          .slice(0, 10),
+        byEmotion: metrics.byEmotion,
+      },
+    };
+  });
+
+  // ============================================================================
+  // AI TRADE REVIEW
+  // ============================================================================
+
+  // Generate AI insights for trading patterns
+  fastify.get('/ai/insights', async (request: FastifyRequest, reply: FastifyReply) => {
+    ensureJournalCollections();
+    const userId = request.headers['x-user-id'] as string || 'default';
+    const query = request.query as any;
+    const data = db.data as any;
+    
+    // Get recent trades (last 30 days by default)
+    const fromDate = new Date();
+    fromDate.setDate(fromDate.getDate() - 30);
+    const fromStr = fromDate.toISOString().split('T')[0];
+    
+    let trades = data.journalEntries.filter((t: JournalEntry) => 
+      t.userId === userId && 
+      t.status === 'closed' &&
+      t.entryTime >= fromStr
+    );
+    if (query.accountId) trades = trades.filter((t: JournalEntry) => t.accountId === query.accountId);
+    
+    const metrics = calculatePerformanceMetrics(trades);
+    const insights: Array<{ type: string; severity: string; title: string; description: string; action: string }> = [];
+    
+    // Insight 1: Win rate analysis
+    if (metrics.winRate < 40) {
+      insights.push({
+        type: 'performance',
+        severity: 'warning',
+        title: 'Low Win Rate Detected',
+        description: `Your win rate is ${metrics.winRate.toFixed(1)}%. Focus on trade selection and entry criteria.`,
+        action: 'Review your losing trades and identify common patterns. Consider tightening entry requirements.',
+      });
+    } else if (metrics.winRate > 70) {
+      insights.push({
+        type: 'performance',
+        severity: 'positive',
+        title: 'Strong Win Rate',
+        description: `Your win rate of ${metrics.winRate.toFixed(1)}% is excellent! Ensure you're not cutting winners too early.`,
+        action: 'Monitor your average win size - high win rates with small wins may indicate premature exits.',
+      });
+    }
+    
+    // Insight 2: Risk/Reward analysis
+    const avgRR = metrics.averageWin > 0 && metrics.averageLoss > 0 
+      ? metrics.averageWin / metrics.averageLoss 
+      : 0;
+    if (avgRR > 0 && avgRR < 1.5) {
+      insights.push({
+        type: 'risk',
+        severity: 'warning',
+        title: 'Risk/Reward Could Be Improved',
+        description: `Your average R:R is ${avgRR.toFixed(2)}:1. Aim for at least 2:1 for sustainable profitability.`,
+        action: 'Review your take profit placement. Consider letting winners run longer or tightening stop losses.',
+      });
+    }
+    
+    // Insight 3: Emotional trading patterns
+    const emotionalTrades = trades.filter((t: JournalEntry) => 
+      ['fomo', 'revenge', 'greedy', 'fearful'].includes(t.emotion?.toLowerCase() || '')
+    );
+    const emotionalRate = trades.length > 0 ? (emotionalTrades.length / trades.length) * 100 : 0;
+    if (emotionalRate > 30) {
+      const emotionalPnL = emotionalTrades.reduce((sum: number, t: JournalEntry) => sum + (t.pnl || 0), 0);
+      insights.push({
+        type: 'psychology',
+        severity: emotionalPnL < 0 ? 'critical' : 'warning',
+        title: 'High Emotional Trading Rate',
+        description: `${emotionalRate.toFixed(0)}% of your trades are made under emotional pressure, costing you $${Math.abs(emotionalPnL).toFixed(2)}.`,
+        action: 'Implement a pre-trade checklist. Take breaks after losses. Consider reducing position sizes during emotional periods.',
+      });
+    }
+    
+    // Insight 4: Best performing setup
+    const bestSetup = Object.entries(metrics.bySetup)
+      .filter(([, data]: [string, any]) => data.trades >= 5)
+      .sort((a: any, b: any) => b[1].pnl - a[1].pnl)[0];
+    if (bestSetup) {
+      insights.push({
+        type: 'opportunity',
+        severity: 'positive',
+        title: `Your Best Setup: ${bestSetup[0]}`,
+        description: `This setup has a ${(bestSetup[1] as any).winRate.toFixed(0)}% win rate with $${(bestSetup[1] as any).pnl.toFixed(2)} profit from ${(bestSetup[1] as any).trades} trades.`,
+        action: 'Focus more on this setup. Consider increasing position size when this pattern appears.',
+      });
+    }
+    
+    // Insight 5: Best trading time
+    const bestHour = Object.entries(metrics.byHourOfDay)
+      .filter(([, data]: [string, any]) => data.trades >= 3)
+      .sort((a: any, b: any) => b[1].pnl - a[1].pnl)[0];
+    const worstHour = Object.entries(metrics.byHourOfDay)
+      .filter(([, data]: [string, any]) => data.trades >= 3)
+      .sort((a: any, b: any) => a[1].pnl - b[1].pnl)[0];
+    if (bestHour && worstHour) {
+      insights.push({
+        type: 'timing',
+        severity: 'info',
+        title: 'Optimal Trading Hours',
+        description: `Your best hour is ${bestHour[0]} (+$${(bestHour[1] as any).pnl.toFixed(2)}). Avoid trading at ${worstHour[0]} (-$${Math.abs((worstHour[1] as any).pnl).toFixed(2)}).`,
+        action: 'Adjust your trading schedule to focus on profitable hours. Consider stopping trading during your worst hours.',
+      });
+    }
+    
+    // Insight 6: Mistake patterns
+    const mistakeCounts: Record<string, number> = {};
+    trades.forEach((t: JournalEntry) => {
+      if (t.mistake) {
+        mistakeCounts[t.mistake] = (mistakeCounts[t.mistake] || 0) + 1;
+      }
+    });
+    const topMistake = Object.entries(mistakeCounts).sort((a, b) => b[1] - a[1])[0];
+    if (topMistake && topMistake[1] >= 3) {
+      insights.push({
+        type: 'mistake',
+        severity: 'warning',
+        title: `Recurring Mistake: ${topMistake[0].replace(/_/g, ' ')}`,
+        description: `You've made this mistake ${topMistake[1]} times in the last 30 days.`,
+        action: 'Create a specific rule to prevent this mistake. Add it to your pre-trade checklist.',
+      });
+    }
+    
+    // Insight 7: Overtrading check
+    const tradingDays = new Set(trades.map((t: JournalEntry) => t.entryTime?.split('T')[0])).size;
+    const avgTradesPerDay = tradingDays > 0 ? trades.length / tradingDays : 0;
+    if (avgTradesPerDay > 10) {
+      insights.push({
+        type: 'risk',
+        severity: 'warning',
+        title: 'Possible Overtrading',
+        description: `You're averaging ${avgTradesPerDay.toFixed(1)} trades per day. High-frequency trading increases costs and emotional stress.`,
+        action: 'Set a maximum daily trade limit. Focus on quality over quantity.',
+      });
+    }
+    
+    // Insight 8: Consecutive losses
+    if (metrics.longestLoseStreak >= 5) {
+      insights.push({
+        type: 'psychology',
+        severity: 'critical',
+        title: `${metrics.longestLoseStreak}-Trade Losing Streak Detected`,
+        description: 'Extended losing streaks can lead to revenge trading and account damage.',
+        action: 'Implement a circuit breaker: stop trading after 3 consecutive losses. Review your strategy.',
+      });
+    }
+    
+    // Insight 9: Profit factor
+    if (metrics.profitFactor > 0 && metrics.profitFactor < 1.3) {
+      insights.push({
+        type: 'performance',
+        severity: 'warning',
+        title: 'Low Profit Factor',
+        description: `Your profit factor is ${metrics.profitFactor.toFixed(2)}. Aim for at least 1.5 for a robust edge.`,
+        action: 'Focus on both increasing winners and reducing losers. Review exit timing.',
+      });
+    } else if (metrics.profitFactor >= 2) {
+      insights.push({
+        type: 'performance',
+        severity: 'positive',
+        title: 'Excellent Profit Factor',
+        description: `Your profit factor of ${metrics.profitFactor.toFixed(2)} shows a strong edge.`,
+        action: 'Consider gradually increasing position sizes while maintaining your strategy.',
+      });
+    }
+    
+    // Store insights for history
+    if (!data.aiInsights) data.aiInsights = [];
+    data.aiInsights.push({
+      id: uuidv4(),
+      userId,
+      accountId: query.accountId || null,
+      generatedAt: new Date().toISOString(),
+      insights,
+    });
+    if (data.aiInsights.length > 100) data.aiInsights = data.aiInsights.slice(-100);
+    await db.write();
+    
+    return {
+      success: true,
+      period: 'last_30_days',
+      totalTrades: trades.length,
+      insights,
+      summary: {
+        positiveInsights: insights.filter(i => i.severity === 'positive').length,
+        warningInsights: insights.filter(i => i.severity === 'warning').length,
+        criticalInsights: insights.filter(i => i.severity === 'critical').length,
+        infoInsights: insights.filter(i => i.severity === 'info').length,
+      },
+    };
+  });
+
+  // Review a specific trade with AI
+  fastify.get('/ai/review/:tradeId', async (request: FastifyRequest<{ Params: { tradeId: string } }>, reply: FastifyReply) => {
+    ensureJournalCollections();
+    const { tradeId } = request.params;
+    const data = db.data as any;
+    
+    const trade = data.journalEntries.find((t: JournalEntry) => t.id === tradeId);
+    if (!trade) return reply.code(404).send({ success: false, error: 'Trade not found' });
+    
+    const review: Array<{ aspect: string; rating: string; comment: string }> = [];
+    
+    // Entry analysis
+    if (trade.entryReason) {
+      review.push({
+        aspect: 'Entry Criteria',
+        rating: 'documented',
+        comment: `Entry reason documented: "${trade.entryReason}". Good practice for review.`,
+      });
+    } else {
+      review.push({
+        aspect: 'Entry Criteria',
+        rating: 'missing',
+        comment: 'No entry reason documented. Always record why you entered a trade.',
+      });
+    }
+    
+    // Risk management
+    if (trade.stopLoss) {
+      const riskPercent = Math.abs((trade.stopLoss - trade.entryPrice) / trade.entryPrice * 100);
+      review.push({
+        aspect: 'Risk Management',
+        rating: riskPercent <= 2 ? 'good' : 'warning',
+        comment: riskPercent <= 2 
+          ? `Stop loss set at ${riskPercent.toFixed(2)}% risk. Good risk control.`
+          : `Stop loss risk of ${riskPercent.toFixed(2)}% may be too wide. Consider tighter stops.`,
+      });
+    } else {
+      review.push({
+        aspect: 'Risk Management',
+        rating: 'critical',
+        comment: 'No stop loss recorded! Always define your risk before entering.',
+      });
+    }
+    
+    // Take profit
+    if (trade.takeProfit && trade.stopLoss) {
+      const reward = Math.abs(trade.takeProfit - trade.entryPrice);
+      const risk = Math.abs(trade.entryPrice - trade.stopLoss);
+      const rr = risk > 0 ? reward / risk : 0;
+      review.push({
+        aspect: 'Risk/Reward',
+        rating: rr >= 2 ? 'good' : rr >= 1 ? 'acceptable' : 'poor',
+        comment: `R:R ratio of ${rr.toFixed(2)}:1. ${rr >= 2 ? 'Excellent setup.' : rr >= 1 ? 'Consider aiming for 2:1 minimum.' : 'Risk exceeds potential reward.'}`,
+      });
+    }
+    
+    // Trade duration
+    if (trade.duration) {
+      review.push({
+        aspect: 'Trade Duration',
+        rating: 'info',
+        comment: `Trade held for ${trade.duration} minutes (${(trade.duration / 60).toFixed(1)} hours).`,
+      });
+    }
+    
+    // Psychology
+    if (trade.emotion) {
+      const negativeEmotions = ['fomo', 'revenge', 'greedy', 'fearful', 'panic'];
+      const isNegative = negativeEmotions.includes(trade.emotion.toLowerCase());
+      review.push({
+        aspect: 'Psychology',
+        rating: isNegative ? 'warning' : 'good',
+        comment: isNegative 
+          ? `Traded with ${trade.emotion} emotion. This may have affected decision quality.`
+          : `Emotional state: ${trade.emotion}. Good mental clarity.`,
+      });
+    }
+    
+    // Mistakes
+    if (trade.mistake) {
+      review.push({
+        aspect: 'Mistakes',
+        rating: 'learning',
+        comment: `Identified mistake: ${trade.mistake.replace(/_/g, ' ')}. ${trade.lessonLearned ? `Lesson: "${trade.lessonLearned}"` : 'Document the lesson learned.'}`,
+      });
+    }
+    
+    // Outcome analysis
+    if (trade.pnl !== undefined) {
+      review.push({
+        aspect: 'Outcome',
+        rating: trade.pnl > 0 ? 'positive' : trade.pnl < 0 ? 'negative' : 'neutral',
+        comment: trade.pnl > 0 
+          ? `Profitable trade: +$${trade.pnl.toFixed(2)}. ${trade.rMultiple ? `(${trade.rMultiple.toFixed(2)}R)` : ''}`
+          : trade.pnl < 0 
+            ? `Loss of $${Math.abs(trade.pnl).toFixed(2)}. ${trade.exitReason ? `Exit reason: ${trade.exitReason}` : 'Document why you exited.'}`
+            : 'Breakeven trade.',
+      });
+    }
+    
+    // Overall score
+    const positiveCount = review.filter(r => ['good', 'positive', 'documented'].includes(r.rating)).length;
+    const negativeCount = review.filter(r => ['warning', 'critical', 'poor', 'negative', 'missing'].includes(r.rating)).length;
+    const score = Math.round((positiveCount / review.length) * 100);
+    
+    return {
+      success: true,
+      trade: {
+        id: trade.id,
+        symbol: trade.symbol,
+        direction: trade.direction,
+        pnl: trade.pnl,
+        date: trade.entryTime?.split('T')[0],
+      },
+      review,
+      overallScore: score,
+      grade: score >= 80 ? 'A' : score >= 60 ? 'B' : score >= 40 ? 'C' : score >= 20 ? 'D' : 'F',
+      summary: score >= 60 
+        ? 'This trade followed good practices. Keep it up!'
+        : 'Room for improvement. Focus on the areas marked as warning or critical.',
+    };
+  });
 }
 
 export default journalRoutes;
