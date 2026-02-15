@@ -2036,4 +2036,15 @@ if (require.main === module) {
     await gateway.stop();
     process.exit(0);
   });
+  
+  // Prevent crashes from unhandled errors
+  process.on('uncaughtException', (error) => {
+    console.error('[CRASH] Uncaught Exception:', error);
+    // Don't exit - keep running
+  });
+  
+  process.on('unhandledRejection', (reason, promise) => {
+    console.error('[CRASH] Unhandled Rejection at:', promise, 'reason:', reason);
+    // Don't exit - keep running
+  });
 }
