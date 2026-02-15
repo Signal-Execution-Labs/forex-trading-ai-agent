@@ -13,7 +13,7 @@
  * - Volume Charts (volume-based candles)
  */
 
-import { Tool } from '../types/tool.js';
+// Tool types removed for TS compatibility
 
 interface OHLCV {
   timestamp: number;
@@ -385,7 +385,7 @@ function generateMockData(periods: number, basePrice: number): OHLCV[] {
   return data;
 }
 
-export const kagiChartTool: Tool = {
+export const kagiChartTool: any = {
   name: 'chart_kagi',
   description: 'Generate Kagi chart (reversal-based, ignores time)',
   parameters: {
@@ -397,7 +397,7 @@ export const kagiChartTool: Tool = {
     },
     required: ['symbol']
   },
-  execute: async (params) => {
+  execute: async (params: any) => {
     const basePrice = params.symbol.includes('BTC') ? 50000 : 100;
     const data = generateMockData(params.periods || 100, basePrice);
     const kagi = calculateKagi(data, params.reversalPercent || 4);
@@ -423,7 +423,7 @@ export const kagiChartTool: Tool = {
   }
 };
 
-export const renkoChartTool: Tool = {
+export const renkoChartTool: any = {
   name: 'chart_renko',
   description: 'Generate Renko chart (fixed brick size, filters noise)',
   parameters: {
@@ -435,7 +435,7 @@ export const renkoChartTool: Tool = {
     },
     required: ['symbol']
   },
-  execute: async (params) => {
+  execute: async (params: any) => {
     const basePrice = params.symbol.includes('BTC') ? 50000 : 100;
     const brickSize = params.brickSize || (basePrice * 0.005);  // Default 0.5% brick
     const data = generateMockData(params.periods || 200, basePrice);
@@ -461,7 +461,7 @@ export const renkoChartTool: Tool = {
   }
 };
 
-export const pnfChartTool: Tool = {
+export const pnfChartTool: any = {
   name: 'chart_point_figure',
   description: 'Generate Point & Figure chart (X and O columns)',
   parameters: {
@@ -473,7 +473,7 @@ export const pnfChartTool: Tool = {
     },
     required: ['symbol']
   },
-  execute: async (params) => {
+  execute: async (params: any) => {
     const basePrice = params.symbol.includes('BTC') ? 50000 : 100;
     const boxSize = params.boxSize || (basePrice * 0.01);
     const data = generateMockData(200, basePrice);
@@ -500,7 +500,7 @@ export const pnfChartTool: Tool = {
   }
 };
 
-export const heikinAshiTool: Tool = {
+export const heikinAshiTool: any = {
   name: 'chart_heikin_ashi',
   description: 'Generate Heikin Ashi chart (smoothed candles)',
   parameters: {
@@ -511,7 +511,7 @@ export const heikinAshiTool: Tool = {
     },
     required: ['symbol']
   },
-  execute: async (params) => {
+  execute: async (params: any) => {
     const basePrice = params.symbol.includes('BTC') ? 50000 : 100;
     const data = generateMockData(params.periods || 50, basePrice);
     const ha = calculateHeikinAshi(data);
@@ -534,7 +534,7 @@ export const heikinAshiTool: Tool = {
   }
 };
 
-export const lineBreakTool: Tool = {
+export const lineBreakTool: any = {
   name: 'chart_line_break',
   description: 'Generate Three Line Break chart (reversal lines)',
   parameters: {
@@ -545,7 +545,7 @@ export const lineBreakTool: Tool = {
     },
     required: ['symbol']
   },
-  execute: async (params) => {
+  execute: async (params: any) => {
     const basePrice = params.symbol.includes('BTC') ? 50000 : 100;
     const data = generateMockData(100, basePrice);
     const lines = calculateLineBreak(data, params.lineCount || 3);

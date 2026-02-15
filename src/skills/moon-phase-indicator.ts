@@ -12,7 +12,7 @@
  * - Seasonal + lunar combined signals
  */
 
-import { Tool } from '../types/tool.js';
+// Tool types removed for TS compatibility
 
 interface MoonPhase {
   timestamp: number;
@@ -175,7 +175,7 @@ function generateLunarMarketStats(): LunarMarketStats {
   };
 }
 
-export const currentMoonPhaseTool: Tool = {
+export const currentMoonPhaseTool: any = {
   name: 'moon_phase_current',
   description: 'Get current moon phase and lunar data',
   parameters: {
@@ -184,7 +184,7 @@ export const currentMoonPhaseTool: Tool = {
       date: { type: 'string', description: 'Date to check (ISO format, default now)' }
     }
   },
-  execute: async (params) => {
+  execute: async (params: any) => {
     const date = params.date ? new Date(params.date) : new Date();
     const phase = calculateMoonPhase(date);
     
@@ -215,7 +215,7 @@ export const currentMoonPhaseTool: Tool = {
   }
 };
 
-export const upcomingLunarEventsTool: Tool = {
+export const upcomingLunarEventsTool: any = {
   name: 'moon_phase_upcoming',
   description: 'Get upcoming lunar events and phases',
   parameters: {
@@ -224,7 +224,7 @@ export const upcomingLunarEventsTool: Tool = {
       days: { type: 'number', description: 'Days to look ahead (default 30)' }
     }
   },
-  execute: async (params) => {
+  execute: async (params: any) => {
     const events = getUpcomingLunarEvents(params.days || 30);
     
     return {
@@ -239,7 +239,7 @@ export const upcomingLunarEventsTool: Tool = {
   }
 };
 
-export const lunarMarketAnalysisTool: Tool = {
+export const lunarMarketAnalysisTool: any = {
   name: 'moon_phase_market_analysis',
   description: 'Analyze historical market performance relative to moon phases',
   parameters: {
@@ -248,7 +248,7 @@ export const lunarMarketAnalysisTool: Tool = {
       symbol: { type: 'string', description: 'Trading symbol to analyze' }
     }
   },
-  execute: async (params) => {
+  execute: async (params: any) => {
     const stats = generateLunarMarketStats();
     const currentPhase = calculateMoonPhase();
     
@@ -283,7 +283,7 @@ export const lunarMarketAnalysisTool: Tool = {
   }
 };
 
-export const lunarCalendarTool: Tool = {
+export const lunarCalendarTool: any = {
   name: 'moon_phase_calendar',
   description: 'Generate lunar calendar with trading implications',
   parameters: {
@@ -293,7 +293,7 @@ export const lunarCalendarTool: Tool = {
       year: { type: 'number', description: 'Year' }
     }
   },
-  execute: async (params) => {
+  execute: async (params: any) => {
     const now = new Date();
     const month = params.month || now.getMonth() + 1;
     const year = params.year || now.getFullYear();

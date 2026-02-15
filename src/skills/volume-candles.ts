@@ -13,7 +13,7 @@
  * - Multiple aggregation periods
  */
 
-import { Tool } from '../types/tool.js';
+// Tool types removed for TS compatibility
 
 interface VolumeCandle {
   timestamp: number;
@@ -180,7 +180,7 @@ function calculateVolumeCandles(
   };
 }
 
-export const volumeCandlesTool: Tool = {
+export const volumeCandlesTool: any = {
   name: 'volume_candles',
   description: 'Generate volume-weighted candles combining price and volume (equivolume charts)',
   parameters: {
@@ -197,7 +197,7 @@ export const volumeCandlesTool: Tool = {
     },
     required: ['symbol']
   },
-  execute: async (params) => {
+  execute: async (params: any) => {
     const config: VolumeCandleConfig = {
       ...defaultConfig,
       symbol: params.symbol,

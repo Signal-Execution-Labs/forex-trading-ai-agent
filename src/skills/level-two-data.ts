@@ -15,7 +15,7 @@
  * - Time & Sales integration
  */
 
-import { Tool } from '../types/tool.js';
+// Tool types removed for TS compatibility
 
 interface OrderBookLevel {
   price: number;
@@ -220,7 +220,7 @@ function generateDOM(book: OrderBook): DOMRow[] {
   return rows;
 }
 
-export const getOrderBookTool: Tool = {
+export const getOrderBookTool: any = {
   name: 'level2_orderbook',
   description: 'Get Level II order book data with full depth',
   parameters: {
@@ -231,7 +231,7 @@ export const getOrderBookTool: Tool = {
     },
     required: ['symbol']
   },
-  execute: async (params) => {
+  execute: async (params: any) => {
     const basePrice = params.symbol.includes('BTC') ? 50000 : 
                       params.symbol.includes('ETH') ? 3000 : 100;
     
@@ -265,7 +265,7 @@ export const getOrderBookTool: Tool = {
   }
 };
 
-export const detectLargeOrdersTool: Tool = {
+export const detectLargeOrdersTool: any = {
   name: 'level2_large_orders',
   description: 'Detect large orders and potential iceberg orders',
   parameters: {
@@ -276,7 +276,7 @@ export const detectLargeOrdersTool: Tool = {
     },
     required: ['symbol']
   },
-  execute: async (params) => {
+  execute: async (params: any) => {
     const basePrice = params.symbol.includes('BTC') ? 50000 : 100;
     const book = generateMockOrderBook(params.symbol, basePrice);
     const largeOrders = detectLargeOrders(book, params.threshold || 5);
@@ -297,7 +297,7 @@ export const detectLargeOrdersTool: Tool = {
   }
 };
 
-export const priceImpactTool: Tool = {
+export const priceImpactTool: any = {
   name: 'level2_price_impact',
   description: 'Calculate price impact for a given order size',
   parameters: {
@@ -309,7 +309,7 @@ export const priceImpactTool: Tool = {
     },
     required: ['symbol', 'side', 'size']
   },
-  execute: async (params) => {
+  execute: async (params: any) => {
     const basePrice = params.symbol.includes('BTC') ? 50000 : 100;
     const book = generateMockOrderBook(params.symbol, basePrice);
     const impact = calculatePriceImpact(book, params.side as 'buy' | 'sell', params.size);
@@ -330,7 +330,7 @@ export const priceImpactTool: Tool = {
   }
 };
 
-export const getDOMTool: Tool = {
+export const getDOMTool: any = {
   name: 'level2_dom',
   description: 'Get DOM (Depth of Market) ladder view',
   parameters: {
@@ -341,7 +341,7 @@ export const getDOMTool: Tool = {
     },
     required: ['symbol']
   },
-  execute: async (params) => {
+  execute: async (params: any) => {
     const basePrice = params.symbol.includes('BTC') ? 50000 : 100;
     const book = generateMockOrderBook(params.symbol, basePrice);
     const dom = generateDOM(book);
