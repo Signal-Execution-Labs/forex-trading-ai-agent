@@ -1258,3 +1258,57 @@ Based on research, added 3 new skills:
 - [ ] Automated Gann analysis
 - [ ] Real-time narrative streaming via WebSocket
 
+
+---
+
+## Research Session: February 15, 2026 (05:18 CET) - Early Morning Session
+
+### Sources Analyzed
+- TradingView Community Scripts Library (2025)
+- TradingView Pine Script v6 Release Notes (Volume Footprint API)
+- TradingView Features Page & What's New
+- Click Capital Institutional Buying % Indicator
+- Mind Math Money: 4 Powerful TradingView Indicators for 2025
+
+### Key Features Discovered
+
+#### 1. Liquidity Sweep Detector (TradingView Community)
+- **Multi-Zone Liquidity Map** - Tracks up to 16 simultaneous S/R zones
+- Full picture of where liquidity is stacked above/below price
+- Precise sweep moment detection for stop hunt identification
+- Institutional player behavior tracking
+
+#### 2. Volume Footprint API (Pine Script v6)
+- volume_row.*() functions for row-level footprint data
+- Price levels with volume values and delta
+- Imbalance detection at each level
+- Premium/Ultimate tier feature
+- Enables custom footprint calculations across bars
+
+#### 3. Institutional Buying % Indicator
+- First of its kind on TradingView (Click Capital)
+- Tracks institutional vs retail flow
+- Large order detection and block trades
+- Smart money index calculation
+
+#### 4. Crypto Heat Map & Pattern Detector
+- Sector-based performance visualization
+- Market cap weighted views
+- Auto-detected chart patterns
+- Custom screener integration
+
+### New Skills Implemented
+
+| # | Skill | Size | Features |
+|---|-------|------|----------|
+| 124 | institutional-flow.ts | 13.9KB | Institutional buying %, whale tracking, dark pool %, smart money index, accumulation screener |
+| 125 | liquidity-zone-detector.ts | 14.9KB | 16-zone liquidity tracking, sweep detection, FVG analysis, order blocks, heatmap |
+| 126 | crypto-heat-map.ts | 17.2KB | Sector performance, correlation matrix, relative strength, trending assets, movers |
+
+### Total K.I.T. Skills: 126
+
+### New Endpoints Added: 25
+
+---
+
+*Last updated: February 15, 2026 05:30 CET*
