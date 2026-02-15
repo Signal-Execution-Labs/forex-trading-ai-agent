@@ -6,6 +6,7 @@
  */
 
 import { getAutonomousAgent, TradeAction, PriceAlert, PassivePosition } from './autonomous-agent';
+import { getPythonPath } from '../tools/skill-bridge';
 
 // ============================================================================
 // Command Patterns (German + English)
@@ -1002,7 +1003,8 @@ async function getPrice(symbol: string): Promise<number | null> {
 async function checkMT5Connection(): Promise<boolean> {
   try {
     const { execSync } = require('child_process');
-    execSync('python -c "import MetaTrader5 as mt5; mt5.initialize(); print(mt5.terminal_info())"', 
+    const pythonPath = getPythonPath();
+    execSync(`${pythonPath} -c "import MetaTrader5 as mt5; mt5.initialize(); print(mt5.terminal_info())"`, 
       { encoding: 'utf8', timeout: 5000 });
     return true;
   } catch {

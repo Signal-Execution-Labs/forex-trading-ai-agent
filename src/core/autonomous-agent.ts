@@ -18,6 +18,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { EventEmitter } from 'events';
+import { getPythonPath } from '../tools/skill-bridge';
 
 const KIT_HOME = path.join(os.homedir(), '.kit');
 const AGENT_STATE_PATH = path.join(KIT_HOME, 'autonomous_state.json');
@@ -327,10 +328,11 @@ async function getBinanceBalance(apiKey: string, apiSecret: string): Promise<{ t
 }
 
 async function getMT5Balance(): Promise<{ balance: number; equity: number; profit: number }> {
-  // Uses local MT5 connection via Python
+  // Uses local MT5 connection via Python (auto-detects Python path)
   try {
     const { execSync } = require('child_process');
-    const result = execSync('python -c "import MetaTrader5 as mt5; mt5.initialize(); info = mt5.account_info(); print(info.balance, info.equity, info.profit)"', { encoding: 'utf8' });
+    const pythonPath = getPythonPath();
+    const result = execSync(`${pythonPath} -c "import MetaTrader5 as mt5; mt5.initialize(); info = mt5.account_info(); print(info.balance, info.equity, info.profit)"`, { encoding: 'utf8' });
     const [balance, equity, profit] = result.trim().split(' ').map(Number);
     return { balance, equity, profit };
   } catch {

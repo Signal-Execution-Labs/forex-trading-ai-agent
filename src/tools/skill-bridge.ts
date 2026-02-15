@@ -10,7 +10,102 @@
 import { execSync, spawn, ChildProcess } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as os from 'os';
 import { ToolDefinition, ToolHandler, ToolRegistry } from './system/tool-registry';
+
+// ============================================================================
+// Python Path Detection (cross-platform)
+// ============================================================================
+
+let cachedPythonPath: string | null = null;
+
+/**
+ * Auto-detect Python executable path
+ * Works on Windows, Mac, Linux without requiring PATH to be set
+ */
+export function getPythonPath(): string {
+  if (cachedPythonPath) return cachedPythonPath;
+  
+  const isWindows = os.platform() === 'win32';
+  
+  // Try common commands first
+  const commands = isWindows 
+    ? ['python', 'python3', 'py -3', 'py']
+    : ['python3', 'python'];
+  
+  for (const cmd of commands) {
+    try {
+      const result = execSync(`${cmd} --version`, { 
+        encoding: 'utf-8',
+        timeout: 5000,
+        stdio: ['pipe', 'pipe', 'pipe']
+      });
+      if (result.includes('Python 3')) {
+        cachedPythonPath = cmd.split(' ')[0]; // Get just 'python' or 'py'
+        console.log(`[Python] Found: ${cmd} → ${result.trim()}`);
+        return cachedPythonPath;
+      }
+    } catch {}
+  }
+  
+  // Windows: Check common installation paths
+  if (isWindows) {
+    const windowsPaths = [
+      'C:\\Python314\\python.exe',
+      'C:\\Python313\\python.exe',
+      'C:\\Python312\\python.exe',
+      'C:\\Python311\\python.exe',
+      'C:\\Python310\\python.exe',
+      path.join(os.homedir(), 'AppData\\Local\\Programs\\Python\\Python314\\python.exe'),
+      path.join(os.homedir(), 'AppData\\Local\\Programs\\Python\\Python313\\python.exe'),
+      path.join(os.homedir(), 'AppData\\Local\\Programs\\Python\\Python312\\python.exe'),
+      path.join(os.homedir(), 'AppData\\Local\\Programs\\Python\\Python311\\python.exe'),
+      path.join(os.homedir(), 'AppData\\Local\\Programs\\Python\\Python310\\python.exe'),
+      'C:\\Program Files\\Python314\\python.exe',
+      'C:\\Program Files\\Python311\\python.exe',
+    ];
+    
+    for (const pyPath of windowsPaths) {
+      if (fs.existsSync(pyPath)) {
+        try {
+          const result = execSync(`"${pyPath}" --version`, { 
+            encoding: 'utf-8',
+            timeout: 5000,
+            stdio: ['pipe', 'pipe', 'pipe']
+          });
+          if (result.includes('Python 3')) {
+            cachedPythonPath = pyPath;
+            console.log(`[Python] Found at: ${pyPath} → ${result.trim()}`);
+            return cachedPythonPath;
+          }
+        } catch {}
+      }
+    }
+  }
+  
+  // Mac/Linux: Check common paths
+  if (!isWindows) {
+    const unixPaths = [
+      '/usr/bin/python3',
+      '/usr/local/bin/python3',
+      '/opt/homebrew/bin/python3',
+      path.join(os.homedir(), '.pyenv/shims/python3'),
+    ];
+    
+    for (const pyPath of unixPaths) {
+      if (fs.existsSync(pyPath)) {
+        cachedPythonPath = pyPath;
+        console.log(`[Python] Found at: ${pyPath}`);
+        return cachedPythonPath;
+      }
+    }
+  }
+  
+  // Fallback - will likely fail but let the error message help user
+  console.warn('[Python] Could not auto-detect Python. Skills may not work.');
+  console.warn('[Python] Install Python 3.10+ from https://python.org');
+  return 'python';
+}
 
 // ============================================================================
 // Types
@@ -379,8 +474,10 @@ export function executeSkillStreaming(
     const startTime = Date.now();
     const argsJson = JSON.stringify(args);
     
-    const child = spawn('python', [skill.scriptPath, argsJson], {
+    const pythonPath = getPythonPath();
+    const child = spawn(pythonPath, [skill.scriptPath, argsJson], {
       cwd: path.dirname(skill.scriptPath),
+      shell: pythonPath.includes(' '), // Use shell if path has spaces or is a command like 'py -3'
       env: {
         ...process.env,
         PYTHONIOENCODING: 'utf-8',
