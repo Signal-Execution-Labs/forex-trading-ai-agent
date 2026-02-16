@@ -442,7 +442,7 @@ export class TelegramChannel extends EventEmitter {
   async setReaction(chatId: number | string, messageId: number, emoji: string): Promise<boolean> {
     if (!this.bot) return false;
     try {
-      await this.bot.api.setMessageReaction(chatId, messageId, [{ type: 'emoji', emoji }]);
+      await this.bot.api.setMessageReaction(chatId, messageId, [{ type: 'emoji', emoji: emoji as any }]);
       return true;
     } catch {
       return false;
