@@ -1323,25 +1323,31 @@ Your personal AI financial agent is ready.
       // Use default
     }
 
-    // Use configured provider first
-    if (configuredProvider === 'openai' && process.env.OPENAI_API_KEY) {
-      return this.callOpenAI(messages, sendChunk, sendToolCall, sendToolResult);
-    }
-    
-    if (configuredProvider === 'anthropic' && process.env.ANTHROPIC_API_KEY) {
-      return this.callAnthropic(messages, sendChunk, sendToolCall, sendToolResult);
-    }
+    // Use configured provider first - with robust error handling
+    try {
+      if (configuredProvider === 'openai' && process.env.OPENAI_API_KEY) {
+        return await this.callOpenAI(messages, sendChunk, sendToolCall, sendToolResult);
+      }
+      
+      if (configuredProvider === 'anthropic' && process.env.ANTHROPIC_API_KEY) {
+        return await this.callAnthropic(messages, sendChunk, sendToolCall, sendToolResult);
+      }
 
-    // Fallback: check any available API key
-    if (process.env.OPENAI_API_KEY) {
-      return this.callOpenAI(messages, sendChunk, sendToolCall, sendToolResult);
-    }
-    
-    if (process.env.ANTHROPIC_API_KEY) {
-      return this.callAnthropic(messages, sendChunk, sendToolCall, sendToolResult);
-    }
+      // Fallback: check any available API key
+      if (process.env.OPENAI_API_KEY) {
+        return await this.callOpenAI(messages, sendChunk, sendToolCall, sendToolResult);
+      }
+      
+      if (process.env.ANTHROPIC_API_KEY) {
+        return await this.callAnthropic(messages, sendChunk, sendToolCall, sendToolResult);
+      }
 
-    throw new Error('No AI API key configured. Set OPENAI_API_KEY or ANTHROPIC_API_KEY');
+      return 'No AI API key configured. Please set OPENAI_API_KEY or ANTHROPIC_API_KEY.';
+    } catch (llmError: any) {
+      console.error('[LLM] Provider call failed:', llmError?.message || llmError);
+      // Return error message instead of throwing - this prevents crashes
+      return `I encountered an error communicating with the AI provider: ${llmError?.message || 'Unknown error'}. Please try again.`;
+    }
   }
 
   /**
@@ -1455,6 +1461,7 @@ Your personal AI financial agent is ready.
 
   /**
    * Call OpenAI API with tools
+   * All errors are caught and returned as messages - never throws
    */
   private async callOpenAI(
     messages: ChatMessage[],
@@ -1462,6 +1469,7 @@ Your personal AI financial agent is ready.
     sendToolCall: (name: string, args: any) => void,
     sendToolResult: (name: string, result: any) => void
   ): Promise<string> {
+    try {
     const apiKey = process.env.OPENAI_API_KEY;
     // OpenAI has a 128 tool limit - prioritize important tools
     const allTools = this.getToolDefinitions();
@@ -1624,6 +1632,12 @@ Your personal AI financial agent is ready.
 
     console.log('[OpenAI] Returning response, length:', fullResponse.length);
     return fullResponse;
+    } catch (error: any) {
+      // Catch ALL errors and return as message - never crash
+      const errorMsg = error?.message || String(error);
+      console.error('[OpenAI] Fatal error in callOpenAI (returning error message):', errorMsg);
+      return `I encountered an error: ${errorMsg}. Please try again.`;
+    }
   }
 
   /**
