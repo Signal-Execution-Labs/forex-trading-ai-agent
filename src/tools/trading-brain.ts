@@ -336,8 +336,16 @@ async function runStrategy(name: string): Promise<void> {
     return;
   }
   
+  // Handle multi-asset: split by comma/space/semicolon and use first asset
+  // For multiple assets, create separate strategies!
+  const assets = s.asset.split(/[,;\s]+/).filter((a: string) => a.trim());
+  const currentAsset = assets[0]; // Use first asset
+  if (assets.length > 1) {
+    log(name, `⚠️ Multi-asset detected. Using first: ${currentAsset} (create separate strategies for each asset)`);
+  }
+  
   // Get market data
-  const price = mt5(`price ${s.asset}`);
+  const price = mt5(`price ${currentAsset}`);
   if (!price.success) { log(name, `❌ ${price.error}`); saveAll(all); return; }
   
   if (price.spread > s.max_spread) {
@@ -346,11 +354,11 @@ async function runStrategy(name: string): Promise<void> {
     return;
   }
   
-  const ind = mt5(`indicators ${s.asset} ${s.timeframe} 100`);
+  const ind = mt5(`indicators ${currentAsset} ${s.timeframe} 100`);
   if (!ind.success) { log(name, `❌ ${ind.error}`); saveAll(all); return; }
   
   const pos = mt5('positions');
-  const myPos = pos.success ? (pos.positions || []).filter((p: any) => p.symbol === s.asset) : [];
+  const myPos = pos.success ? (pos.positions || []).filter((p: any) => p.symbol === currentAsset) : [];
   
   const market: MarketData = {
     price: ind.current_price,
@@ -461,7 +469,7 @@ async function runStrategy(name: string): Promise<void> {
   log(name, `📝 ${signal} ${lot} lots | SL=${sl} TP=${tp}`);
   
   // EXECUTE!
-  const order = mt5(`${signal} ${s.asset} ${lot} ${sl} ${tp}`);
+  const order = mt5(`${signal} ${currentAsset} ${lot} ${sl} ${tp}`);
   
   if (order.success) {
     log(name, `✅ FILLED #${order.ticket} @ ${order.price}`);
