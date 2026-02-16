@@ -651,66 +651,59 @@ export class GatewayServer extends EventEmitter {
 
   /**
    * Start Telegram channel for bidirectional messaging
-   * Includes retry logic for conflict resolution
+   * REBUILT: Simple, reliable, with explicit logging
    */
-  private async startTelegramChannel(retryCount = 0): Promise<void> {
-    const MAX_RETRIES = 3;
-    const RETRY_DELAYS = [10000, 30000, 60000]; // 10s, 30s, 60s
-    
+  private async startTelegramChannel(): Promise<void> {
     try {
       this.telegramChannel = createTelegramChannel();
       
       if (!this.telegramChannel) {
-        console.log('[Telegram] Not configured - use telegram_setup tool to connect');
+        console.log('[TG] Not configured - use telegram_setup tool to connect');
         return;
       }
 
-      // Initialize tool chat handler for Telegram
+      // Get tool chat handler
       const toolChatHandler = getToolEnabledChatHandler();
       
-      // Import command processor for natural language commands
+      // Get command processor
       const { processCommand, isCommand } = await import('../core/command-processor');
 
+      // Start the channel with a simple handler
       await this.telegramChannel.start(async (msg) => {
-        console.log(`[Telegram] Message from ${msg.username || msg.firstName}: ${msg.text}`);
+        const logPrefix = `[TG→AI ${msg.chatId}]`;
+        console.log(`${logPrefix} Received: "${msg.text?.slice(0, 50)}..."`);
         
-        // First, try to process as a direct command (faster, no AI needed)
+        // Try direct command first (faster, no AI needed)
         if (isCommand(msg.text)) {
-          const commandResult = await processCommand(msg.text);
-          if (commandResult) {
-            console.log('[Telegram] Processed as direct command');
-            return commandResult;
+          console.log(`${logPrefix} Trying command processor...`);
+          const cmdResult = await processCommand(msg.text);
+          if (cmdResult) {
+            console.log(`${logPrefix} Command processed, returning ${cmdResult.length} chars`);
+            return cmdResult;
           }
         }
         
-        // If not a command, process through AI with tools
+        // Process through AI with tools
+        console.log(`${logPrefix} Calling AI...`);
+        const startTime = Date.now();
+        
         const response = await toolChatHandler.processMessage(
           `telegram_${msg.chatId}`,
           msg.text,
-          () => {}, // No streaming for Telegram
+          () => {}, // No streaming
           () => {}, // No tool call display
           () => {}  // No tool result display
         );
-
+        
+        const elapsed = Date.now() - startTime;
+        console.log(`${logPrefix} AI responded in ${elapsed}ms, ${response?.length || 0} chars`);
+        
         return response;
       });
 
-      console.log('📱 Telegram channel active - listening for messages');
+      console.log('📱 Telegram channel active and ready');
     } catch (error: any) {
-      const errorMsg = error?.message || String(error);
-      console.error('[Telegram] Failed to start:', errorMsg);
-      
-      // Retry on conflict errors
-      if (errorMsg.includes('Conflict') || errorMsg.includes('terminated by other')) {
-        if (retryCount < MAX_RETRIES) {
-          const delay = RETRY_DELAYS[retryCount] || 60000;
-          console.log(`[Telegram] Will retry in ${delay/1000}s (attempt ${retryCount + 1}/${MAX_RETRIES})...`);
-          setTimeout(() => this.startTelegramChannel(retryCount + 1), delay);
-        } else {
-          console.error('[Telegram] Max retries reached. Please stop other instances and restart K.I.T.');
-          console.log('[Telegram] Tip: Run "taskkill /F /IM node.exe" to stop all Node processes');
-        }
-      }
+      console.error('[TG] Failed to start:', error?.message || error);
     }
   }
 
