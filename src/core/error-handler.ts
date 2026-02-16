@@ -16,7 +16,24 @@ const TRANSIENT_NETWORK_CODES = new Set([
   'ENETUNREACH',
   'UND_ERR_CONNECT_TIMEOUT',
   'UND_ERR_SOCKET',
+  'ECONNABORTED',
+  'ENETDOWN',
+  'EPROTO',
+  'ERR_STREAM_PREMATURE_CLOSE',
 ]);
+
+// Error messages that should NOT crash (transient)
+const TRANSIENT_ERROR_MESSAGES = [
+  'fetch failed',
+  'terminated',
+  'aborted',
+  'socket hang up',
+  'network error',
+  'connection reset',
+  'timeout',
+  'ECONNRESET',
+  'read ECONNRESET',
+];
 
 // Error codes that SHOULD crash (config issues)
 const CONFIG_ERROR_CODES = new Set([
@@ -57,6 +74,12 @@ export function isTransientNetworkError(err: unknown): boolean {
   
   const code = extractErrorCode(err);
   if (code && TRANSIENT_NETWORK_CODES.has(code)) return true;
+  
+  // Check error message for known transient patterns
+  const message = err instanceof Error ? err.message.toLowerCase() : String(err).toLowerCase();
+  for (const pattern of TRANSIENT_ERROR_MESSAGES) {
+    if (message.includes(pattern.toLowerCase())) return true;
+  }
   
   // Handle "fetch failed" errors
   if (err instanceof TypeError && err.message === 'fetch failed') {
