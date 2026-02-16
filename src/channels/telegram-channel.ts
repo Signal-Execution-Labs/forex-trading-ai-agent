@@ -153,9 +153,13 @@ export class TelegramChannel extends EventEmitter {
 
     // Get initial offset
     await this.getUpdates(true);
+    console.log('[TG] Initial offset set, starting poll interval...');
     
-    // Start poll loop
-    this.pollLoop();
+    // Start poll with setInterval (more reliable than while loop)
+    this.pollTimer = setInterval(() => this.pollOnce(), this.config.pollingInterval || 2000);
+    
+    // Also run immediately
+    this.pollOnce();
   }
 
   /**
@@ -164,47 +168,46 @@ export class TelegramChannel extends EventEmitter {
   stop(): void {
     this.polling = false;
     if (this.pollTimer) {
-      clearTimeout(this.pollTimer);
+      clearInterval(this.pollTimer);
       this.pollTimer = null;
     }
     console.log('[TG] Stopped polling');
   }
 
   /**
-   * Main polling loop - NON-BLOCKING
-   * Messages are processed in background to keep polling active
+   * Single poll iteration - called by setInterval
    */
-  private async pollLoop(): Promise<void> {
-    while (this.polling) {
-      try {
-        const messages = await this.getUpdates(false);
-        
-        for (const msg of messages) {
-          // Check if chat is allowed
-          if (this.config.allowedChatIds?.length) {
-            if (!this.config.allowedChatIds.includes(String(msg.chatId))) {
-              console.log(`[TG] Ignoring unauthorized chat: ${msg.chatId}`);
-              continue;
-            }
-          }
-
-          // Emit event
-          this.emit('message', msg);
-
-          // Process with handler IN BACKGROUND (don't block polling!)
-          if (this.messageHandler) {
-            // Fire and forget - polling continues while message is processed
-            this.processMessage(msg).catch(err => 
-              console.error(`[TG] Background process error for ${msg.chatId}:`, err)
-            );
+  private async pollOnce(): Promise<void> {
+    if (!this.polling) return;
+    
+    try {
+      const messages = await this.getUpdates(false);
+      
+      if (messages.length > 0) {
+        console.log(`[TG] Got ${messages.length} message(s)`);
+      }
+      
+      for (const msg of messages) {
+        // Check if chat is allowed
+        if (this.config.allowedChatIds?.length) {
+          if (!this.config.allowedChatIds.includes(String(msg.chatId))) {
+            console.log(`[TG] Ignoring unauthorized chat: ${msg.chatId}`);
+            continue;
           }
         }
-      } catch (error) {
-        console.error('[TG] Poll loop error:', error);
-      }
 
-      // Wait before next poll
-      await new Promise(r => setTimeout(r, this.config.pollingInterval));
+        // Emit event
+        this.emit('message', msg);
+
+        // Process with handler IN BACKGROUND (don't block polling!)
+        if (this.messageHandler) {
+          this.processMessage(msg).catch(err => 
+            console.error(`[TG] Background process error for ${msg.chatId}:`, err)
+          );
+        }
+      }
+    } catch (error) {
+      console.error('[TG] Poll error:', error);
     }
   }
 
