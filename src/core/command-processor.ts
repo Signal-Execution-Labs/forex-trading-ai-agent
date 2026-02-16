@@ -875,37 +875,60 @@ async function handleStatus(match: RegExpMatchArray, text: string): Promise<stri
 }
 
 async function handleHelp(match: RegExpMatchArray, text: string): Promise<string> {
-  return `🤖 **K.I.T. Commands**
+  return `🤖 **K.I.T. - Vollständige Funktionen**
 
-**Monitoring**
-• "watch XAUUSD"
-• "alert if BTC above 50000"
-• "watchlist"
+**📊 CRYPTO Trading**
+• "buy BTC" / "buy ETH for 500"
+• "sell SOL" / "price BTC ETH"
+• "whale tracker" / "arbitrage scan"
 
-**Trading**
-• "buy BTC" / "buy BTC for 500"
-• "sell ETH on Binance"
-• "close all positions"
+**💱 FOREX Trading**
+• "analyze EURUSD" / "trade GBPUSD"
+• "XAUUSD price" (Gold)
+• MetaTrader 5 Integration
 
-**Autonomous Trading**
-• "trade autonomous"
+**📈 AKTIEN Trading**
+• "buy AAPL" / "sell TSLA"
+• "stock price NVDA"
+• "dividend tracker"
+
+**⚡ BINARY OPTIONS**
+• "binary call BTCUSDT 5min"
+• "binary put EURUSD 1min"
+• Pocket Option, IQ Option
+
+**🤖 AUTONOMES Trading**
+• "trade autonomous" - 24/7 AI Trading
 • "stop auto trading"
-• "pause trading"
+• "trading status"
 
-**Reports**
+**📋 PORTFOLIO**
+• "portfolio" / "sync platforms"
+• "rebalance" / "performance"
+• "risk calculator"
+
+**🔔 ALERTS & REPORTS**
+• "alert if BTC above 70000"
 • "morning briefing at 8"
-• "report"
-• "portfolio"
+• "market analysis"
 
-**Platforms**
-• "connect binance"
-• "sync"
-• "platforms"
+**💰 DeFi & YIELD**
+• "staking opportunities"
+• "yield farming" / "airdrop scan"
 
-**Info**
-• "price BTC"
-• "market overview"
-• "status"`;
+**🔗 PLATTFORMEN**
+• "connect binance" / "connect mt5"
+• "platforms" / "sync"
+
+**📰 MARKT INTELLIGENCE**
+• "news crypto" / "sentiment BTC"
+• "fear greed index"
+
+**🧮 TOOLS**
+• "lot size calculator"
+• "pip calculator" / "tax report"
+
+_K.I.T. hat 50+ Skills & 162 Tools!_`;
 }
 
 // ============================================================================
