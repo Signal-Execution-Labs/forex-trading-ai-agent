@@ -171,7 +171,8 @@ export class TelegramChannel extends EventEmitter {
   }
 
   /**
-   * Main polling loop - SIMPLE AND RELIABLE
+   * Main polling loop - NON-BLOCKING
+   * Messages are processed in background to keep polling active
    */
   private async pollLoop(): Promise<void> {
     while (this.polling) {
@@ -190,9 +191,12 @@ export class TelegramChannel extends EventEmitter {
           // Emit event
           this.emit('message', msg);
 
-          // Process with handler
+          // Process with handler IN BACKGROUND (don't block polling!)
           if (this.messageHandler) {
-            await this.processMessage(msg);
+            // Fire and forget - polling continues while message is processed
+            this.processMessage(msg).catch(err => 
+              console.error(`[TG] Background process error for ${msg.chatId}:`, err)
+            );
           }
         }
       } catch (error) {
