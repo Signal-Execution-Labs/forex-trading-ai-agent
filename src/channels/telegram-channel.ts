@@ -288,9 +288,14 @@ export class TelegramChannel extends EventEmitter {
             console.log(`[Telegram] Processing message from ${msg.username || msg.firstName}: ${msg.text}${msg.threadId ? ` (thread: ${msg.threadId})` : ''}`);
             const response = await this.messageHandler(msg);
             
+            console.log(`[Telegram] Handler returned response, length: ${response?.length || 0}`);
+            
             if (response && response.trim()) {
-              // Reply in the same thread if message was in a thread
-              await this.sendMessage(msg.chatId, response, { threadId: msg.threadId });
+              console.log(`[Telegram] Sending response to ${msg.chatId}...`);
+              const sent = await this.sendMessage(msg.chatId, response, { threadId: msg.threadId });
+              console.log(`[Telegram] Response sent: ${sent}`);
+            } else {
+              console.log(`[Telegram] No response to send (empty or null)`);
             }
           } catch (error) {
             console.error('[Telegram] Handler error:', error);
