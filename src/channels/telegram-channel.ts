@@ -129,18 +129,49 @@ export class TelegramChannel extends EventEmitter {
         // Handle message
         if (update.message) {
           const msg = update.message;
+          const chatId = msg.chat.id;
           
-          // Text message
-          if (msg.text) {
-            const chatId = msg.chat.id;
-            
-            // Check allowed chats
-            if (this.config.allowedChatIds?.length) {
-              if (!this.config.allowedChatIds.includes(String(chatId))) {
-                continue;
-              }
+          // Check allowed chats
+          if (this.config.allowedChatIds?.length) {
+            if (!this.config.allowedChatIds.includes(String(chatId))) {
+              continue;
             }
+          }
+          
+          // Voice message
+          if (msg.voice && this.config.voiceEnabled) {
+            console.log(`[TG ${chatId}] Voice message (${msg.voice.duration}s) from ${msg.from?.username || 'unknown'}`);
+            
+            // Transcribe voice message
+            const transcription = await this.transcribeVoice(msg.voice.file_id);
+            
+            if (transcription) {
+              console.log(`[TG ${chatId}] Transcribed: "${transcription.slice(0, 50)}..."`);
+              
+              const telegramMsg: TelegramMessage = {
+                messageId: msg.message_id,
+                chatId: chatId,
+                userId: msg.from?.id || 0,
+                username: msg.from?.username,
+                firstName: msg.from?.first_name,
+                text: transcription,
+                date: new Date(msg.date * 1000),
+                threadId: msg.message_thread_id,
+                isVoiceMessage: true,
+                voiceDuration: msg.voice.duration,
+              };
 
+              this.emit('message', telegramMsg);
+
+              if (this.messageHandler) {
+                this.processInBackground(telegramMsg);
+              }
+            } else {
+              await this.sendMessage(chatId, '🎤 Sorry, I could not transcribe that voice message.', { threadId: msg.message_thread_id });
+            }
+          }
+          // Text message
+          else if (msg.text) {
             console.log(`[TG ${chatId}] Message: "${msg.text.slice(0, 50)}..." from ${msg.from?.username || 'unknown'}`);
 
             const telegramMsg: TelegramMessage = {
@@ -297,6 +328,61 @@ export class TelegramChannel extends EventEmitter {
         body: JSON.stringify({ chat_id: chatId, action: 'typing' }),
       });
     } catch {}
+  }
+
+  /**
+   * Transcribe voice message using OpenAI Whisper
+   */
+  private async transcribeVoice(fileId: string): Promise<string | null> {
+    try {
+      // Get file path from Telegram
+      const fileRes = await fetch(`https://api.telegram.org/bot${this.config.token}/getFile?file_id=${fileId}`);
+      const fileData = await fileRes.json() as any;
+      
+      if (!fileData.ok || !fileData.result?.file_path) {
+        console.error('[TG] Failed to get voice file path');
+        return null;
+      }
+      
+      // Download the voice file
+      const fileUrl = `https://api.telegram.org/file/bot${this.config.token}/${fileData.result.file_path}`;
+      const audioRes = await fetch(fileUrl);
+      const audioBuffer = await audioRes.arrayBuffer();
+      
+      // Get OpenAI API key
+      const openaiKey = this.config.openaiApiKey || process.env.OPENAI_API_KEY;
+      if (!openaiKey) {
+        console.error('[TG] No OpenAI API key for voice transcription');
+        return null;
+      }
+      
+      // Create form data for Whisper API
+      const formData = new FormData();
+      const blob = new Blob([audioBuffer], { type: 'audio/ogg' });
+      formData.append('file', blob, 'voice.ogg');
+      formData.append('model', 'whisper-1');
+      
+      // Call OpenAI Whisper API
+      const whisperRes = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openaiKey}`,
+        },
+        body: formData,
+      });
+      
+      if (!whisperRes.ok) {
+        const error = await whisperRes.text();
+        console.error('[TG] Whisper API error:', error);
+        return null;
+      }
+      
+      const result = await whisperRes.json() as any;
+      return result.text || null;
+    } catch (error: any) {
+      console.error('[TG] Voice transcription error:', error.message);
+      return null;
+    }
   }
 
   /**
