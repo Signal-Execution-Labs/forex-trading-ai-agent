@@ -17,6 +17,16 @@ export const startCommand = new Command('start')
   .option('--autonomous', 'Start in autonomous mode (24/7 monitoring)')
   .option('--telegram', 'Enable Telegram notifications')
   .action(async (options) => {
+    // Global crash handlers to prevent exit on errors
+    process.on('uncaughtException', (error) => {
+      console.error('[CRASH] Uncaught Exception:', error);
+      // Don't exit - keep running
+    });
+    
+    process.on('unhandledRejection', (reason, promise) => {
+      console.error('[CRASH] Unhandled Rejection at:', promise, 'reason:', reason);
+      // Don't exit - keep running
+    });
     console.log(chalk.cyan(`
     ╔═══════════════════════════════════════╗
     ║                                       ║
