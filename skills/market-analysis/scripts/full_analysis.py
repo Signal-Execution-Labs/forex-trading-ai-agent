@@ -27,10 +27,42 @@ except ImportError as e:
     print(json.dumps({"error": f"Missing package: {e}"}))
     sys.exit(1)
 
-# Default assets to analyze
-CRYPTO_ASSETS = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT']
-FOREX_PAIRS = ['EUR/USD', 'GBP/USD', 'USD/JPY']
-STOCK_SYMBOLS = ['AAPL', 'MSFT', 'GOOGL']
+# Default assets to analyze - EXPANDED COVERAGE
+CRYPTO_ASSETS = [
+    # Top 10 by Market Cap
+    'BTC/USDT', 'ETH/USDT', 'BNB/USDT', 'SOL/USDT', 'XRP/USDT',
+    'ADA/USDT', 'AVAX/USDT', 'DOGE/USDT', 'DOT/USDT', 'MATIC/USDT',
+    # DeFi
+    'LINK/USDT', 'UNI/USDT', 'AAVE/USDT',
+    # Layer 2 & Alt L1s
+    'ARB/USDT', 'OP/USDT', 'NEAR/USDT', 'ATOM/USDT',
+    # Meme & Trending
+    'SHIB/USDT', 'PEPE/USDT', 'WIF/USDT'
+]
+
+FOREX_PAIRS = [
+    # Major Pairs
+    'EUR/USD', 'GBP/USD', 'USD/JPY', 'USD/CHF',
+    # Commodity Currencies
+    'AUD/USD', 'USD/CAD', 'NZD/USD',
+    # Cross Pairs
+    'EUR/GBP', 'EUR/JPY', 'GBP/JPY',
+    # Metals
+    'XAU/USD', 'XAG/USD'
+]
+
+STOCK_SYMBOLS = [
+    # Magnificent 7
+    'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'META', 'TSLA',
+    # Other Tech
+    'AMD', 'INTC', 'CRM', 'ORCL', 'ADBE',
+    # Finance
+    'JPM', 'V', 'MA',
+    # Healthcare
+    'JNJ', 'UNH',
+    # Consumer
+    'WMT', 'KO', 'PEP'
+]
 
 def analyze_crypto(symbol, timeframe='4h'):
     """Analyze a crypto pair using Binance"""
@@ -92,11 +124,22 @@ def analyze_forex(pair):
     
     # Simulated current rates (would come from real API)
     rates = {
+        # Major Pairs
         'EUR/USD': 1.0850,
         'GBP/USD': 1.2650,
         'USD/JPY': 149.50,
+        'USD/CHF': 0.8820,
+        # Commodity Currencies
         'AUD/USD': 0.6550,
-        'USD/CAD': 1.3550
+        'USD/CAD': 1.3550,
+        'NZD/USD': 0.6150,
+        # Cross Pairs
+        'EUR/GBP': 0.8575,
+        'EUR/JPY': 162.20,
+        'GBP/JPY': 189.10,
+        # Metals (per oz)
+        'XAU/USD': 2045.00,
+        'XAG/USD': 23.50,
     }
     
     price = rates.get(pair, 1.0)
@@ -140,12 +183,31 @@ def analyze_stock(symbol):
     # This provides pattern-based analysis
     
     stocks = {
+        # Magnificent 7
         'AAPL': {'price': 185.50, 'sector': 'Technology'},
         'MSFT': {'price': 420.00, 'sector': 'Technology'},
         'GOOGL': {'price': 175.00, 'sector': 'Technology'},
         'AMZN': {'price': 185.00, 'sector': 'Consumer'},
-        'TSLA': {'price': 195.00, 'sector': 'Automotive'},
         'NVDA': {'price': 880.00, 'sector': 'Technology'},
+        'META': {'price': 485.00, 'sector': 'Technology'},
+        'TSLA': {'price': 195.00, 'sector': 'Automotive'},
+        # Other Tech
+        'AMD': {'price': 165.00, 'sector': 'Semiconductors'},
+        'INTC': {'price': 42.00, 'sector': 'Semiconductors'},
+        'CRM': {'price': 295.00, 'sector': 'Software'},
+        'ORCL': {'price': 125.00, 'sector': 'Software'},
+        'ADBE': {'price': 520.00, 'sector': 'Software'},
+        # Finance
+        'JPM': {'price': 195.00, 'sector': 'Finance'},
+        'V': {'price': 285.00, 'sector': 'Finance'},
+        'MA': {'price': 475.00, 'sector': 'Finance'},
+        # Healthcare
+        'JNJ': {'price': 155.00, 'sector': 'Healthcare'},
+        'UNH': {'price': 525.00, 'sector': 'Healthcare'},
+        # Consumer
+        'WMT': {'price': 175.00, 'sector': 'Consumer'},
+        'KO': {'price': 62.00, 'sector': 'Consumer'},
+        'PEP': {'price': 168.00, 'sector': 'Consumer'},
     }
     
     stock_data = stocks.get(symbol, {'price': 100.0, 'sector': 'Unknown'})
