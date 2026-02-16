@@ -1352,6 +1352,7 @@ Your personal AI financial agent is ready.
 
   /**
    * Call Anthropic Claude API with tools
+   * All errors are caught and returned as messages - never throws
    */
   private async callAnthropic(
     messages: ChatMessage[],
@@ -1359,6 +1360,7 @@ Your personal AI financial agent is ready.
     sendToolCall: (name: string, args: any) => void,
     sendToolResult: (name: string, result: any) => void
   ): Promise<string> {
+    try {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     const tools = this.getToolDefinitions().map(t => ({
       name: t.function.name,
@@ -1382,24 +1384,42 @@ Your personal AI financial agent is ready.
     while (maxIterations > 0) {
       maxIterations--;
 
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey!,
-          'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify({
-          model: this.config.model,
-          max_tokens: this.config.maxTokens,
-          system: this.config.systemPrompt,
-          messages: anthropicMessages,
-          tools,
-        }),
-      });
+      // Add timeout to prevent hanging
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minute timeout
+      
+      let response;
+      try {
+        console.log('[Anthropic] Sending request...');
+        response = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey!,
+            'anthropic-version': '2023-06-01',
+          },
+          body: JSON.stringify({
+            model: this.config.model,
+            max_tokens: this.config.maxTokens,
+            system: this.config.systemPrompt,
+            messages: anthropicMessages,
+            tools,
+          }),
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        console.log('[Anthropic] Response status:', response.status);
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId);
+        if (fetchError.name === 'AbortError') {
+          throw new Error('Anthropic API request timed out after 2 minutes');
+        }
+        throw new Error(`Anthropic fetch failed: ${fetchError.message}`);
+      }
 
       if (!response.ok) {
         const error = await response.text();
+        console.error('[Anthropic] API error:', error);
         throw new Error(`Anthropic API error: ${error}`);
       }
 
@@ -1456,7 +1476,14 @@ Your personal AI financial agent is ready.
       }
     }
 
+    console.log('[Anthropic] Returning response, length:', fullResponse.length);
     return fullResponse;
+    } catch (error: any) {
+      // Catch ALL errors and return as message - never crash
+      const errorMsg = error?.message || String(error);
+      console.error('[Anthropic] Fatal error in callAnthropic (returning error message):', errorMsg);
+      return `I encountered an error: ${errorMsg}. Please try again.`;
+    }
   }
 
   /**
