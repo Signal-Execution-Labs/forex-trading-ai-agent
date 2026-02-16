@@ -93,7 +93,7 @@ export class LLMClient extends EventEmitter {
     this.config = {
       defaultProvider: config.defaultProvider || 'openai',  // Default to OpenAI (matches K.I.T. config)
       defaultModel: config.defaultModel || 'gpt-4o-mini',
-      timeout: config.timeout || 60000,
+      timeout: config.timeout || 180000, // 3 minutes for complex requests
       ...config,
     };
 
@@ -633,7 +633,7 @@ export class LLMClient extends EventEmitter {
       try {
         // Use AbortController for timeout
         const controller = new AbortController();
-        const timeout = this.config.timeout || 120000; // 2 minutes default
+        const timeout = this.config.timeout || 180000; // 3 minutes for complex requests
         const timeoutId = setTimeout(() => controller.abort(), timeout);
         
         const response = await fetch(url, {

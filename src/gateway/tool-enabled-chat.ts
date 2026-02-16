@@ -1386,7 +1386,7 @@ Your personal AI financial agent is ready.
 
       // Add timeout to prevent hanging
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minute timeout
+      const timeoutId = setTimeout(() => controller.abort(), 180000); // 3 minute timeout for complex requests
       
       let response;
       try {
@@ -1482,6 +1482,14 @@ Your personal AI financial agent is ready.
       // Catch ALL errors and return as message - never crash
       const errorMsg = error?.message || String(error);
       console.error('[Anthropic] Fatal error in callAnthropic (returning error message):', errorMsg);
+      
+      // User-friendly error messages
+      if (errorMsg.includes('terminated') || errorMsg.includes('abort') || errorMsg.includes('timeout')) {
+        return `⏱️ Request took too long. Try a simpler question or ask about fewer items at once.`;
+      }
+      if (errorMsg.includes('fetch failed') || errorMsg.includes('network')) {
+        return `🌐 Network error - please try again in a moment.`;
+      }
       return `I encountered an error: ${errorMsg}. Please try again.`;
     }
   }
@@ -1548,7 +1556,7 @@ Your personal AI financial agent is ready.
 
       // Add timeout to prevent hanging
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minute timeout
+      const timeoutId = setTimeout(() => controller.abort(), 180000); // 3 minute timeout for complex requests
       
       let response;
       try {
@@ -1663,6 +1671,14 @@ Your personal AI financial agent is ready.
       // Catch ALL errors and return as message - never crash
       const errorMsg = error?.message || String(error);
       console.error('[OpenAI] Fatal error in callOpenAI (returning error message):', errorMsg);
+      
+      // User-friendly error messages
+      if (errorMsg.includes('terminated') || errorMsg.includes('abort') || errorMsg.includes('timeout')) {
+        return `⏱️ Request took too long. Try a simpler question or ask about fewer items at once.`;
+      }
+      if (errorMsg.includes('fetch failed') || errorMsg.includes('network')) {
+        return `🌐 Network error - please try again in a moment.`;
+      }
       return `I encountered an error: ${errorMsg}. Please try again.`;
     }
   }
