@@ -8,6 +8,7 @@ import { createGatewayServer } from '../../gateway/server';
 import { loadConfig } from '../config';
 import chalk from 'chalk';
 import { getAutonomousAgent } from '../../core/autonomous-agent';
+import { installErrorHandlers } from '../../core/error-handler';
 
 export const startCommand = new Command('start')
   .description('Start the K.I.T. Gateway server')
@@ -17,16 +18,9 @@ export const startCommand = new Command('start')
   .option('--autonomous', 'Start in autonomous mode (24/7 monitoring)')
   .option('--telegram', 'Enable Telegram notifications')
   .action(async (options) => {
-    // Global crash handlers to prevent exit on errors
-    process.on('uncaughtException', (error) => {
-      console.error('[CRASH] Uncaught Exception:', error);
-      // Don't exit - keep running
-    });
-    
-    process.on('unhandledRejection', (reason, promise) => {
-      console.error('[CRASH] Unhandled Rejection at:', promise, 'reason:', reason);
-      // Don't exit - keep running
-    });
+    // Install OpenClaw-style error handlers that prevent crashes from transient errors
+    installErrorHandlers();
+
     console.log(chalk.cyan(`
     ╔═══════════════════════════════════════╗
     ║                                       ║
