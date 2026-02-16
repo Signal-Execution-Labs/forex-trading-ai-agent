@@ -626,12 +626,43 @@ export class LLMClient extends EventEmitter {
   }
 
   private async fetch(url: string, options: RequestInit): Promise<Response> {
-    // Use global fetch (Node 18+)
-    return fetch(url, {
-      ...options,
-      // @ts-ignore - timeout supported in Node 18+
-      timeout: this.config.timeout,
-    });
+    const maxRetries = 3;
+    let lastError: Error | null = null;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        // Use AbortController for timeout
+        const controller = new AbortController();
+        const timeout = this.config.timeout || 120000; // 2 minutes default
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
+        
+        const response = await fetch(url, {
+          ...options,
+          signal: options.signal || controller.signal,
+        });
+        
+        clearTimeout(timeoutId);
+        return response;
+      } catch (error: any) {
+        lastError = error;
+        console.error(`[LLM] Fetch attempt ${attempt}/${maxRetries} failed:`, error?.message || error);
+        
+        // Don't retry on abort
+        if (error?.name === 'AbortError') {
+          throw new Error(`Request timed out after ${this.config.timeout}ms`);
+        }
+        
+        // Wait before retry (exponential backoff)
+        if (attempt < maxRetries) {
+          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000);
+          console.log(`[LLM] Retrying in ${delay}ms...`);
+          await new Promise(r => setTimeout(r, delay));
+        }
+      }
+    }
+    
+    // All retries failed
+    throw new Error(`Fetch failed after ${maxRetries} attempts: ${lastError?.message || 'Unknown error'}`);
   }
 }
 
