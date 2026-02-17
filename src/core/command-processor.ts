@@ -206,8 +206,9 @@ const COMMAND_PATTERNS: CommandPattern[] = [
   },
   {
     patterns: [
-      /(?:plattformen?|platforms?|accounts?|verbindungen|connections)/i,
-      /(?:zeig|show|list)\s+(?:meine\s+)?(?:plattformen?|platforms?|accounts?)/i,
+      /^(?:plattformen?|platforms?|accounts?|verbindungen|connections)$/i,
+      /(?:zeig|show|list|meine)\s+(?:meine\s+)?(?:plattformen?|platforms?|accounts?|verbindungen)/i,
+      /(?:welche|which)\s+(?:plattformen?|platforms?|accounts?)/i,
     ],
     handler: handleListPlatforms,
     description: 'Show platforms',
