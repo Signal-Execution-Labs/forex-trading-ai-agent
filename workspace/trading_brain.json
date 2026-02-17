@@ -1,30 +1,42 @@
 {
-  "Autonomous EURUSD GBPUSD XAUUSD Trading": {
-    "name": "Autonomous EURUSD GBPUSD XAUUSD Trading",
-    "asset": "EURUSD,GBPUSD,XAUUSD",
-    "strategy": "Analyze every 5 minutes and trade based on market conditions. Max 3 open trades at any time.",
-    "platform": "mt5",
-    "timeframe": "M5",
-    "mode": "ai",
-    "entry_long": [],
-    "entry_short": [],
-    "risk_percent": 1,
-    "sl_atr": 1.5,
-    "tp_atr": 3,
-    "trailing_stop": true,
-    "trailing_atr": 1.5,
-    "max_spread": 50,
-    "max_positions": 3,
-    "max_daily_trades": 10,
-    "check_minutes": 5,
-    "status": "running",
-    "created": "2026-02-13T08:18:30.427Z",
-    "trades_today": 0,
-    "total_trades": 0,
-    "wins": 0,
-    "losses": 0,
-    "profit": 0,
-    "trades": [],
-    "last_check": "2026-02-17T01:03:44.478Z"
+  "strategies": {
+    "autonomous-paper-trader": {
+      "id": "autonomous-paper-trader",
+      "name": "Autonomous Paper Trader",
+      "symbols": ["BTCUSDT", "ETHUSDT", "XAUUSD", "EURUSD", "SOLUSDT"],
+      "timeframe": "1h",
+      "indicators": {
+        "rsi": {"period": 14, "overbought": 70, "oversold": 30},
+        "ema_fast": 12,
+        "ema_slow": 26,
+        "atr": 14
+      },
+      "risk": {
+        "max_position_pct": 2,
+        "stop_loss_atr": 1.5,
+        "take_profit_atr": 3,
+        "max_daily_loss_pct": 5
+      },
+      "rules": {
+        "long_entry": "RSI < 30 AND price > EMA_slow",
+        "short_entry": "RSI > 70 AND price < EMA_slow",
+        "exit": "RSI crosses 50 OR SL/TP hit"
+      },
+      "check_minutes": 15,
+      "status": "running",
+      "mode": "paper",
+      "capital": 1000,
+      "currency": "EUR",
+      "last_check": "",
+      "created_at": "2026-02-17T02:35:00.000Z",
+      "trades": [],
+      "stats": {
+        "total_trades": 0,
+        "winning_trades": 0,
+        "losing_trades": 0,
+        "total_pnl": 0,
+        "win_rate": 0
+      }
+    }
   }
 }
