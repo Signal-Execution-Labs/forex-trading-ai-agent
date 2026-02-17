@@ -6,6 +6,7 @@
  */
 
 import { ToolDefinition as ChatToolDef } from '../gateway/chat-manager';
+import { getAutonomousAgent } from '../core/autonomous-agent';
 
 // ============================================================================
 // BinaryFaster Client (using fetch)
@@ -434,6 +435,22 @@ export const BINARY_OPTIONS_HANDLERS: Record<string, (args: Record<string, unkno
       await fetchAssets();
       
       const balance = await getBalance();
+      
+      // Register with autonomous agent so platform is tracked
+      try {
+        const agent = getAutonomousAgent();
+        await agent.addPlatform({
+          platform: 'binaryfaster',
+          credentials: { email, password },
+          enabled: true,
+          balance: session.demoMode ? balance.demo : balance.real,
+          lastSync: new Date().toISOString(),
+        });
+        console.log('[BinaryFaster] Registered with autonomous agent');
+      } catch (e) {
+        console.log('[BinaryFaster] Warning: Could not register with autonomous agent:', e);
+      }
+      
       return {
         success: true,
         message: `✅ Logged in to BinaryFaster as ${email}`,
