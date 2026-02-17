@@ -316,13 +316,25 @@ function log(name: string, msg: string): void {
 }
 
 async function runStrategy(name: string): Promise<void> {
-  const all = loadAll();
-  const s = all[name];
+  console.log(`[Trading Brain] runStrategy called: ${name}`);
   
-  if (!s || s.status !== 'running') return;
-  
-  log(name, '📊 Checking...');
-  s.last_check = new Date().toISOString();
+  try {
+    const all = loadAll();
+    const s = all[name];
+    
+    if (!s) {
+      console.log(`[Trading Brain] Strategy not found: ${name}`);
+      return;
+    }
+    
+    if (s.status !== 'running') {
+      console.log(`[Trading Brain] Strategy not running: ${name} (status=${s.status})`);
+      return;
+    }
+    
+    log(name, '📊 Checking...');
+    s.last_check = new Date().toISOString();
+    console.log(`[Trading Brain] ${name} last_check updated: ${s.last_check}`);
   
   // Reset daily trades at midnight
   const today = s.last_check.split('T')[0];
@@ -489,16 +501,44 @@ async function runStrategy(name: string): Promise<void> {
   }
   
   saveAll(all);
+  } catch (error: any) {
+    console.error(`[Trading Brain] CRITICAL ERROR in ${name}:`, error?.message || error);
+    // Still try to save the last_check timestamp to show we attempted
+    try {
+      const all = loadAll();
+      if (all[name]) {
+        all[name].last_check = new Date().toISOString();
+        saveAll(all);
+      }
+    } catch (e) {
+      // Ignore save errors
+    }
+  }
 }
 
 function start(name: string, minutes: number): void {
   if (running.has(name)) clearInterval(running.get(name)!);
   
   log(name, `🚀 STARTING (every ${minutes}m)`);
-  runStrategy(name);  // Run immediately
   
-  const interval = setInterval(() => runStrategy(name), minutes * 60 * 1000);
+  // Run immediately with error handling
+  runStrategy(name).catch(err => {
+    console.error(`[Trading Brain] Error in initial run of ${name}:`, err);
+  });
+  
+  // Set interval with proper error handling
+  const interval = setInterval(async () => {
+    try {
+      console.log(`[Trading Brain] Timer tick for: ${name}`);
+      await runStrategy(name);
+    } catch (err) {
+      console.error(`[Trading Brain] Error in strategy ${name}:`, err);
+      // Don't stop the interval on error - keep trying
+    }
+  }, minutes * 60 * 1000);
+  
   running.set(name, interval);
+  console.log(`[Trading Brain] Timer set for ${name}: every ${minutes} minutes`);
 }
 
 function stop(name: string): void {
@@ -664,15 +704,26 @@ export const TRADING_BRAIN_HANDLERS: Record<string, (args: any) => Promise<any>>
 // ============================================================================
 
 export function initTradingBrain(): void {
-  console.log('[Trading Brain] Initializing...');
-  const all = loadAll();
+  console.log('[Trading Brain] ════════════════════════════════════════');
+  console.log('[Trading Brain] Initializing Trading Brain...');
   
-  for (const [name, s] of Object.entries(all)) {
+  const all = loadAll();
+  const strategies = Object.entries(all);
+  
+  console.log(`[Trading Brain] Found ${strategies.length} strategies`);
+  
+  let resumed = 0;
+  for (const [name, s] of strategies) {
+    console.log(`[Trading Brain]   - ${name}: status=${s.status}, check_minutes=${s.check_minutes}`);
     if (s.status === 'running') {
-      console.log(`[Trading Brain] Resuming: ${name}`);
+      console.log(`[Trading Brain] ▶ Resuming: ${name} (every ${s.check_minutes}m)`);
       start(name, s.check_minutes);
+      resumed++;
     }
   }
+  
+  console.log(`[Trading Brain] Resumed ${resumed} strategies`);
+  console.log('[Trading Brain] ════════════════════════════════════════');
 }
 
 export function registerTradingBrain(registry: Map<string, any>): void {
