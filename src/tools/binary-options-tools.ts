@@ -202,6 +202,149 @@ async function getTradeHistory(limit: number = 20): Promise<unknown[]> {
 }
 
 // ============================================================================
+// Background Auto-Trade Function
+// ============================================================================
+
+async function runAutoTradesInBackground(
+  assetId: number,
+  assetName: string,
+  baseAmount: number,
+  duration: number,
+  totalTrades: number,
+  useMartingale: boolean,
+  directionStrategy: string,
+  agent: ReturnType<typeof getAutonomousAgent> | null
+): Promise<void> {
+  // Run in next tick to not block
+  setImmediate(async () => {
+    let currentAmount = baseAmount;
+    let wins = 0;
+    let losses = 0;
+    let totalProfit = 0;
+
+    for (let i = 0; i < totalTrades; i++) {
+      // Determine direction
+      let direction: 'call' | 'put';
+      if (directionStrategy === 'call') {
+        direction = 'call';
+      } else if (directionStrategy === 'put') {
+        direction = 'put';
+      } else if (directionStrategy === 'alternate') {
+        direction = i % 2 === 0 ? 'call' : 'put';
+      } else {
+        direction = Math.random() > 0.5 ? 'call' : 'put';
+      }
+
+      console.log(`[BinaryFaster] Trade ${i + 1}/${totalTrades}: ${direction.toUpperCase()} $${currentAmount} on ${assetName}`);
+
+      // Place trade
+      const tradeResult = await placeTrade(direction, assetId, currentAmount, duration);
+      
+      if (!tradeResult.success) {
+        console.log(`[BinaryFaster] ❌ Trade ${i + 1} failed: ${tradeResult.message}`);
+        if (agent) {
+          agent.emit('notification', `❌ Trade ${i + 1}/${totalTrades} FAILED\n${tradeResult.message}`);
+        }
+        continue;
+      }
+
+      // Notify trade opened
+      if (agent) {
+        agent.emit('notification', `📊 Trade ${i + 1}/${totalTrades} GEÖFFNET\n\n${direction.toUpperCase()} $${currentAmount} ${assetName}\nTrade ID: ${tradeResult.tradeId}\n⏳ Warte ${duration}s auf Ergebnis...`);
+      }
+
+      // Wait for trade to expire + buffer
+      const waitTime = (duration + 10) * 1000;
+      console.log(`[BinaryFaster] ⏳ Waiting ${duration + 10}s for trade result...`);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+
+      // Check actual result from trade history
+      let isWin = false;
+      try {
+        const historyResponse = await fetch('https://wsauto.binaryfaster.com/automation/trades/history', {
+          method: 'GET',
+          headers: {
+            'x-api-key': session.apiKey!,
+            'User-Agent': 'K.I.T./2.0 TradingAgent',
+          },
+        });
+        
+        if (historyResponse.ok) {
+          const history = await historyResponse.json() as Array<{
+            id?: number;
+            trade_id?: number;
+            result?: string;
+            profit?: number;
+            status?: string;
+          }>;
+          
+          const ourTrade = Array.isArray(history) ? history.find(t => 
+            String(t.id || t.trade_id) === tradeResult.tradeId
+          ) : null;
+          
+          if (ourTrade) {
+            isWin = Boolean(
+              (ourTrade.profit && ourTrade.profit > 0) || 
+              (ourTrade.result && ourTrade.result.toLowerCase().includes('win')) ||
+              (ourTrade.status && ourTrade.status.toLowerCase().includes('win'))
+            );
+            console.log(`[BinaryFaster] Trade ${tradeResult.tradeId} result: ${isWin ? 'WIN' : 'LOSS'}`);
+          }
+        }
+      } catch (histError) {
+        console.error('[BinaryFaster] Error checking trade result:', histError);
+      }
+      
+      if (isWin) {
+        wins++;
+        const profit = currentAmount * 0.85;
+        totalProfit += profit;
+        console.log(`[BinaryFaster] ✅ Trade ${i + 1} WON! +$${profit.toFixed(2)}`);
+        
+        if (agent) {
+          agent.emit('notification', `✅ Trade ${i + 1}/${totalTrades} GEWONNEN!\n\n${direction.toUpperCase()} $${currentAmount} ${assetName}\n💰 Profit: +$${profit.toFixed(2)}\n\n📈 Gesamt: ${wins}W/${losses}L ($${totalProfit.toFixed(2)})`);
+        }
+        
+        if (useMartingale) {
+          currentAmount = baseAmount;
+        }
+      } else {
+        losses++;
+        totalProfit -= currentAmount;
+        console.log(`[BinaryFaster] ❌ Trade ${i + 1} LOST! -$${currentAmount.toFixed(2)}`);
+        
+        if (agent) {
+          const nextAmount = useMartingale ? currentAmount * 2 : currentAmount;
+          agent.emit('notification', `❌ Trade ${i + 1}/${totalTrades} VERLOREN!\n\n${direction.toUpperCase()} $${currentAmount} ${assetName}\n💸 Verlust: -$${currentAmount.toFixed(2)}\n\n📉 Gesamt: ${wins}W/${losses}L ($${totalProfit.toFixed(2)})${useMartingale ? `\n📈 Martingale: Nächster Trade $${nextAmount}` : ''}`);
+        }
+        
+        if (useMartingale) {
+          currentAmount *= 2;
+        }
+      }
+    }
+
+    // Final summary
+    const winRate = ((wins / totalTrades) * 100).toFixed(1);
+    const summaryMsg = `🏁 **AUTO-TRADE ABGESCHLOSSEN**
+
+📊 Asset: ${assetName}
+🔢 Trades: ${totalTrades}
+✅ Gewonnen: ${wins}
+❌ Verloren: ${losses}
+📈 Win Rate: ${winRate}%
+💰 Gesamt P&L: ${totalProfit >= 0 ? '+' : ''}$${totalProfit.toFixed(2)}
+💵 Mode: ${session.demoMode ? 'DEMO' : 'REAL 💰'}`;
+
+    console.log(`[BinaryFaster] 🏁 Auto-trade complete: ${wins}W/${losses}L, Profit: $${totalProfit.toFixed(2)}`);
+    
+    if (agent) {
+      agent.emit('notification', summaryMsg);
+    }
+  });
+}
+
+// ============================================================================
 // Tool Definitions (for LLM)
 // ============================================================================
 
@@ -640,151 +783,43 @@ export const BINARY_OPTIONS_HANDLERS: Record<string, (args: Record<string, unkno
     console.log(`[BinaryFaster] 🚀 Starting auto-trade: ${totalTrades} trades on ${assetName}`);
     console.log(`[BinaryFaster] Base amount: $${baseAmount}, Duration: ${duration}s, Martingale: ${useMartingale}`);
 
-    const results: Array<{
-      trade: number;
-      direction: string;
-      amount: number;
-      asset: string;
-      result: string;
-      tradeId?: string;
-    }> = [];
-    
-    let currentAmount = baseAmount;
-    let wins = 0;
-    let losses = 0;
-    let totalProfit = 0;
-
-    for (let i = 0; i < totalTrades; i++) {
-      // Determine direction
-      let direction: 'call' | 'put';
-      if (directionStrategy === 'call') {
-        direction = 'call';
-      } else if (directionStrategy === 'put') {
-        direction = 'put';
-      } else if (directionStrategy === 'alternate') {
-        direction = i % 2 === 0 ? 'call' : 'put';
-      } else {
-        direction = Math.random() > 0.5 ? 'call' : 'put';
-      }
-
-      console.log(`[BinaryFaster] Trade ${i + 1}/${totalTrades}: ${direction.toUpperCase()} $${currentAmount} on ${assetName}`);
-
-      // Place trade
-      const tradeResult = await placeTrade(direction, assetId, currentAmount, duration);
-      
-      if (!tradeResult.success) {
-        results.push({
-          trade: i + 1,
-          direction: direction.toUpperCase(),
-          amount: currentAmount,
-          asset: assetName,
-          result: 'FAILED',
-          tradeId: tradeResult.tradeId,
-        });
-        console.log(`[BinaryFaster] ❌ Trade ${i + 1} failed: ${tradeResult.message}`);
-        continue;
-      }
-
-      // Wait for trade to expire + buffer
-      const waitTime = (duration + 10) * 1000;
-      console.log(`[BinaryFaster] ⏳ Waiting ${duration + 10}s for trade result...`);
-      await new Promise(resolve => setTimeout(resolve, waitTime));
-
-      // Check actual result from trade history
-      let isWin = false;
-      try {
-        const historyResponse = await fetch('https://wsauto.binaryfaster.com/automation/trades/history', {
-          method: 'GET',
-          headers: {
-            'x-api-key': session.apiKey!,
-            'User-Agent': 'K.I.T./2.0 TradingAgent',
-          },
-        });
-        
-        if (historyResponse.ok) {
-          const history = await historyResponse.json() as Array<{
-            id?: number;
-            trade_id?: number;
-            result?: string;
-            profit?: number;
-            status?: string;
-          }>;
-          
-          // Find our trade in history
-          const ourTrade = Array.isArray(history) ? history.find(t => 
-            String(t.id || t.trade_id) === tradeResult.tradeId
-          ) : null;
-          
-          if (ourTrade) {
-            // Check if won (profit > 0 or result contains 'win')
-            isWin = Boolean(
-              (ourTrade.profit && ourTrade.profit > 0) || 
-              (ourTrade.result && ourTrade.result.toLowerCase().includes('win')) ||
-              (ourTrade.status && ourTrade.status.toLowerCase().includes('win'))
-            );
-            console.log(`[BinaryFaster] Trade ${tradeResult.tradeId} result: ${isWin ? 'WIN' : 'LOSS'}`);
-          } else {
-            console.log(`[BinaryFaster] Trade ${tradeResult.tradeId} not found in history yet`);
-          }
-        }
-      } catch (histError) {
-        console.error('[BinaryFaster] Error checking trade result:', histError);
-      }
-      
-      if (isWin) {
-        wins++;
-        totalProfit += currentAmount * 0.85; // 85% payout
-        results.push({
-          trade: i + 1,
-          direction: direction.toUpperCase(),
-          amount: currentAmount,
-          asset: assetName,
-          result: `WIN (+$${(currentAmount * 0.85).toFixed(2)})`,
-          tradeId: tradeResult.tradeId,
-        });
-        console.log(`[BinaryFaster] ✅ Trade ${i + 1} WON! +$${(currentAmount * 0.85).toFixed(2)}`);
-        
-        // Martingale: reset after win
-        if (useMartingale) {
-          currentAmount = baseAmount;
-        }
-      } else {
-        losses++;
-        totalProfit -= currentAmount;
-        results.push({
-          trade: i + 1,
-          direction: direction.toUpperCase(),
-          amount: currentAmount,
-          asset: assetName,
-          result: `LOSS (-$${currentAmount.toFixed(2)})`,
-          tradeId: tradeResult.tradeId,
-        });
-        console.log(`[BinaryFaster] ❌ Trade ${i + 1} LOST! -$${currentAmount.toFixed(2)}`);
-        
-        // Martingale: double after loss
-        if (useMartingale) {
-          currentAmount *= 2;
-          console.log(`[BinaryFaster] 📈 Martingale: Next trade will be $${currentAmount}`);
-        }
-      }
+    // Get agent for notifications
+    let agent: ReturnType<typeof getAutonomousAgent> | null = null;
+    try {
+      agent = getAutonomousAgent();
+    } catch (e) {
+      console.log('[BinaryFaster] Could not get agent for notifications');
     }
 
-    const summary = {
-      success: true,
-      asset: assetName,
-      assetId,
-      totalTrades,
-      wins,
-      losses,
-      winRate: `${((wins / totalTrades) * 100).toFixed(1)}%`,
-      totalProfit: `$${totalProfit.toFixed(2)}`,
-      martingale: useMartingale,
-      mode: session.demoMode ? 'DEMO' : 'REAL 💰',
-      results,
-    };
+    // Send immediate confirmation
+    const startMsg = `🚀 **AUTO-TRADE GESTARTET**
 
-    console.log(`[BinaryFaster] 🏁 Auto-trade complete: ${wins}W/${losses}L, Profit: $${totalProfit.toFixed(2)}`);
-    return summary;
+📊 Asset: ${assetName}
+💰 Startbetrag: $${baseAmount}
+⏱️ Duration: ${duration}s (${duration / 60} min)
+🔢 Trades: ${totalTrades}
+📈 Martingale: ${useMartingale ? 'JA' : 'NEIN'}
+🎯 Strategie: ${directionStrategy}
+💵 Mode: ${session.demoMode ? 'DEMO' : 'REAL 💰'}
+
+Ich sende Updates nach jedem Trade...`;
+
+    if (agent) {
+      agent.emit('notification', startMsg);
+    }
+
+    // Run trades in background
+    runAutoTradesInBackground(assetId, assetName, baseAmount, duration, totalTrades, useMartingale, directionStrategy, agent);
+
+    // Return immediately
+    return {
+      success: true,
+      message: startMsg,
+      status: 'STARTED',
+      asset: assetName,
+      trades: totalTrades,
+      mode: session.demoMode ? 'DEMO' : 'REAL',
+    };
   },
 };
 
