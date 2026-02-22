@@ -54,6 +54,11 @@ __pycache__/
 # Forum credentials (sensitive)
 workspace/forum-credentials.json
 
+# Config with live credentials (sensitive)
+kit-config.json
+forum-backend/.env.production
+forum-backend/.env.local
+
 # Sandbox test files (temporary)
 sandbox-test.*
 SANDBOX_TEST_REPORT.md
