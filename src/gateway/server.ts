@@ -1381,6 +1381,7 @@ export class GatewayServer extends EventEmitter {
     return {
       status: this.state.status === 'running' ? 'healthy' : 'degraded',
       version,
+      node: process.version,
       uptime,
       uptimeFormatted: this.formatUptime(uptime),
       startedAt: this.state.startedAt?.toISOString(),
