@@ -1,10 +1,26 @@
 /**
- * Bridge K.I.T.'s core Logger to the ts-logger-pack Logger shape (console-like arity).
+ * Bridge K.I.T.'s core Logger to the sleek-pretty Logger shape (console-like arity).
  */
 
-import type { Logger as TsPackLogger } from 'ts-logger-pack';
-import { dummyLogger } from 'ts-logger-pack';
 import type { Logger as KitLogger } from '../core/logger';
+
+/** Console-like logger shape used by sleek-pretty and compatible libraries. */
+export interface SleekPrettyLogger {
+  trace(message?: any, ...optionalParams: any[]): void;
+  debug(message?: any, ...optionalParams: any[]): void;
+  info(message?: any, ...optionalParams: any[]): void;
+  warn(message?: any, ...optionalParams: any[]): void;
+  error(message?: any, ...optionalParams: any[]): void;
+}
+
+/** No-op logger for optional/null K.I.T. logger adapters. */
+export const dummyLogger: SleekPrettyLogger = {
+  trace: () => {},
+  debug: () => {},
+  info: () => {},
+  warn: () => {},
+  error: () => {},
+};
 
 function metaFromOptionalParams(optionalParams: any[]): Record<string, unknown> | undefined {
   if (optionalParams.length === 0) return undefined;
@@ -20,9 +36,9 @@ function metaFromOptionalParams(optionalParams: any[]): Record<string, unknown> 
 }
 
 /**
- * Wrap a K.I.T. core logger so libraries expecting ts-logger-pack's Logger can use it.
+ * Wrap a K.I.T. core logger so libraries expecting sleek-pretty's Logger can use it.
  */
-export function kitLoggerToTsPack(kit: KitLogger | null | undefined): TsPackLogger {
+export function kitLoggerToSleekPretty(kit: KitLogger | null | undefined): SleekPrettyLogger {
   if (!kit) {
     return dummyLogger;
   }
@@ -46,6 +62,6 @@ export function kitLoggerToTsPack(kit: KitLogger | null | undefined): TsPackLogg
       }
       const meta = metaFromOptionalParams(rest);
       kit.error(String(message ?? ''), meta, err);
-    }
+    },
   };
 }

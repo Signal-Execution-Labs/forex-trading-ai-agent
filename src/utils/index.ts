@@ -3,4 +3,8 @@
  */
 
 export * from './logger';
-export { kitLoggerToTsPack } from './kit_ts_logger_pack';
+export {
+  kitLoggerToSleekPretty,
+  dummyLogger,
+  type SleekPrettyLogger,
+} from './kit_sleek_pretty';
