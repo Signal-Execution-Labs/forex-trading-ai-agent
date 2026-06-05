@@ -1,5 +1,23 @@
 // Type declarations for modules without types
 
+declare module 'ioredis-os' {
+  interface RedisOptions {
+    host?: string;
+    port?: number;
+    username?: string;
+    password?: string;
+    db?: number;
+  }
+
+  class Redis {
+    constructor(url: string);
+    constructor(options: RedisOptions);
+    quit(): Promise<string>;
+  }
+
+  export default Redis;
+}
+
 declare module 'clipboardy' {
   export function write(text: string): Promise<void>;
   export function read(): Promise<string>;
