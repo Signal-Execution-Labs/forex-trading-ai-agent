@@ -1,6 +1,6 @@
 // Type declarations for modules without types
 
-declare module 'ioredis-os' {
+declare module 'ioredis-xyz' {
   interface RedisOptions {
     host?: string;
     port?: number;

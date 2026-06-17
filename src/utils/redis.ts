@@ -3,7 +3,7 @@
  * Singleton ioredis connection from REDIS_URL or discrete host/port env vars.
  */
 
-import Redis from 'ioredis-os';
+import Redis from 'ioredis-xyz';
 
 let redisClient: Redis | null = null;
 

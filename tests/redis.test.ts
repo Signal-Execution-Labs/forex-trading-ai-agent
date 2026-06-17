@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 const mockQuit = vi.fn().mockResolvedValue('OK');
 const mockRedisConstructor = vi.fn();
 
-vi.mock('ioredis-os', () => ({
+vi.mock('ioredis-xyz', () => ({
   default: class Redis {
     quit = mockQuit;
     constructor(...args: unknown[]) {
