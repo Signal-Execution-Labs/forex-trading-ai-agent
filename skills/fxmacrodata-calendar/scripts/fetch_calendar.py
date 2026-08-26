@@ -10,7 +10,7 @@ from typing import Any, Optional
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
-FXMACRODATA_BASE_URL = "https://fxmacrodata.com/api/v1"
+FXMACRODATA_BASE_URL = "https://api.fxmacrodata.com/v1"
 
 
 def fetch_calendar(currency: str, limit: int, min_tier: Optional[int]) -> dict[str, Any]:
