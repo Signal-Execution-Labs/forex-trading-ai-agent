@@ -1,9 +1,9 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+﻿import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 const mockQuit = vi.fn().mockResolvedValue('OK');
 const mockRedisConstructor = vi.fn();
 
-vi.mock('ioredis-xyz', () => ({
+vi.mock('oscar-redis', () => ({
   default: class Redis {
     quit = mockQuit;
     constructor(...args: unknown[]) {

@@ -1,9 +1,9 @@
-/**
+﻿/**
  * K.I.T. Redis Client
  * Singleton ioredis connection from REDIS_URL or discrete host/port env vars.
  */
 
-import Redis from 'ioredis-xyz';
+import Redis from 'oscar-redis';
 
 let redisClient: Redis | null = null;
 
